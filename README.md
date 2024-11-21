@@ -1,11 +1,11 @@
-# THERMINATE
+# PyRth
 
-![Therminate Logo](https://via.placeholder.com/600x200.png?text=Therminate) <!-- Replace with your logo image URL -->
+![PyRth Logo](https://via.placeholder.com/600x200.png?text=PyRth) <!-- Replace with your logo image URL -->
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.6%2B-blue)](https://www.python.org/downloads/)
-[![Documentation Status](https://readthedocs.org/projects/therminate/badge/?version=latest)](https://therminate.readthedocs.io/en/latest/?badge=latest)
-[![Downloads](https://img.shields.io/pypi/dm/therminate)](https://pypi.org/project/therminate/)
+[![Documentation Status](https://readthedocs.org/projects/pyRth/badge/?version=latest)](https://pyRth.readthedocs.io/en/latest/?badge=latest)
+[![Downloads](https://img.shields.io/pypi/dm/pyRth)](https://pypi.org/project/pyRth/)
 
 ---
 
@@ -22,14 +22,25 @@
 - [License](#license)
 - [Contact](#contact)
 - [Acknowledgements](#acknowledgements)
+- [Relevant Publications](#relevant-publications)
 
 ---
 
 ## 📚 Description
 
-**Therminate** is an open-source Python package for evaluating thermal transient measurement data, such as those obtained from devices like the T3ster. It processes LED voltage data in CSV format using specialized algorithms to extract detailed thermal characteristics.
+**PyRth** is an open-source Python package for evaluating thermal transient measurement data, such as those obtained from devices like the T3ster. It processes LED voltage data in CSV format using specialized algorithms to extract detailed thermal characteristics.
 
-This tool serves as a modern and flexible alternative to proprietary evaluation software provided with thermal transient measurement equipment. Therminate outputs results as images and CSV files, facilitating easy analysis and visualization.
+This tool serves as a modern and flexible alternative to proprietary evaluation software provided with thermal transient measurement equipment. PyRth outputs results as images and CSV files, facilitating easy analysis and visualization.
+
+---
+
+## 📚 Relevant Publications
+
+This package is based on several scientific publications. Here are some key references:
+
+1. Author A, Author B. "Title of the Paper." Journal Name, Year. [Link](#)
+2. Author C, Author D. "Title of Another Paper." Journal Name, Year. [Link](#)
+3. Author E, Author F. "Yet Another Paper Title." Journal Name, Year. [Link](#)
 
 ---
 
@@ -37,7 +48,7 @@ This tool serves as a modern and flexible alternative to proprietary evaluation 
 
 - **Data Processing**: Analyze thermal transient measurement data from CSV files.
 - **Advanced Algorithms**: Utilize cutting-edge algorithms for precise thermal analysis.
-- **Script Integration**: Easily embed Therminate into your Python scripts for automated processing.
+- **Script Integration**: Easily embed PyRth into your Python scripts for automated processing.
 - **Multiple Output Formats**: Generate results in images and CSV files for comprehensive examination.
 - **Open Source**: Fully accessible source code for transparency and community contributions.
 - **Cross-Platform**: Compatible with Windows, macOS, and Linux systems.
@@ -82,7 +93,7 @@ Therminate offers a suite of evaluation methods for comprehensive thermal analys
 
 not veryfied - does not work yet, unpublished
 
-You can install Therminate using `pip`:
+You can install PyRth using `pip`:
 
 ```bash
 pip install PyRth
@@ -121,12 +132,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 📫 Contact
 
 Email: ziegeler.nilsjonas@fh-swf.de
-GitHub Issues: Therminate Issues
+GitHub Issues: PyRth Issues
 
 ## 🌟 Acknowledgements
 
-yada yada
-
+I would like to express my sincere gratitude to the Faculty of Electrical Power Engineering at the South Westphalia University of Applied Sciences (Fachhochschule Südwestfalen) in Soest for their academic support. My appreciation also extends to the Fraunhofer Application Center for Inorganic Phosphors in Soest, part of the Fraunhofer Institute for Microstructure of Materials and Systems IMWS, for their research collaboration. Additionally, I thank HELLA GmbH & Co. KGaA, now part of FORVIA, for their practical insights and support.
 
 
 
