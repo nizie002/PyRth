@@ -12,6 +12,7 @@
 ## 📖 Table of Contents
 
 - [Description](#description)
+- [Relevant Publications](#relevant-publications)
 - [Features](#features)
 - [Evaluation Methods](#evaluation-methods)
 - [Installation](#installation)
@@ -22,32 +23,37 @@
 - [License](#license)
 - [Contact](#contact)
 - [Acknowledgements](#acknowledgements)
-- [Relevant Publications](#relevant-publications)
 
 ---
 
 ## 📚 Description
 
-**PyRth** is an open-source Python package for evaluating thermal transient measurement data, such as those obtained from devices like the T3ster. It processes LED voltage data in CSV format using specialized algorithms to extract detailed thermal characteristics.
+**PyRth** is an open-source Python package for evaluating thermal transient measurement data, such as those obtained from devices like the T3ster. It processes LED voltage data using specialized algorithms to extract detailed thermal characteristics such as the thermal structure function.
 
-This tool serves as a modern and flexible alternative to proprietary evaluation software provided with thermal transient measurement equipment. PyRth outputs results as images and CSV files, facilitating easy analysis and visualization.
+This tool serves as a modern and flexible alternative to proprietary evaluation software provided with thermal transient measurement equipment. PyRth optinally outputs results as images and CSV files, facilitating easy analysis and visualization.
 
 ---
 
 ## 📚 Relevant Publications
 
-This package is based on several scientific publications. Here are some key references:
+1. N. J. Ziegeler and S. Schweizer, "Lanczos-based Foster-to-Cauer Transformation for Network Identification by Deconvolution," 2024 30th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Toulouse, France, 2024, pp. 1-6, [doi: 10.1109/THERMINIC62015.2024.10732055](https://doi.org/10.1109/THERMINIC62015.2024.10732055).
 
-1. Author A, Author B. "Title of the Paper." Journal Name, Year. [Link](#)
-2. Author C, Author D. "Title of Another Paper." Journal Name, Year. [Link](#)
-3. Author E, Author F. "Yet Another Paper Title." Journal Name, Year. [Link](#)
+2. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Tridiagonal Approaches for Network Identification by Deconvolution," 2023 29th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Budapest, Hungary, 2023, pp. 1-6, [doi: 10.1109/THERMINIC60375.2023.10325879](https://doi.org/10.1109/THERMINIC60375.2023.10325879).
+
+3. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Accuracy Comparison of T3ster-Master and Optimization-based Network Identification," 2023 29th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Budapest, Hungary, 2023, pp. 1-6, [doi: 10.1109/THERMINIC60375.2023.10325681](https://doi.org/10.1109/THERMINIC60375.2023.10325681).
+
+4. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "J-Fraction Approach for Calculating Thermal Structure Functions," 2022 28th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Dublin, Ireland, 2022, pp. 1-4, [doi: 10.1109/THERMINIC57263.2022.9950656](https://doi.org/10.1109/THERMINIC57263.2022.9950656).
+
+5. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Optimization-Based Network Identification for Thermal Transient Measurements," *Energies*, vol. 14, no. 22, p. 7648, Nov. 2021, [doi: 10.3390/en14227648](https://doi.org/10.3390/en14227648).
+
+6. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Quantitative Performance Comparison of Thermal Structure Function Computations," *Energies*, vol. 14, no. 21, p. 7068, Oct. 2021, [doi: 10.3390/en14217068](https://doi.org/10.3390/en14217068).
 
 ---
 
 ## ✨ Features
 
-- **Data Processing**: Analyze thermal transient measurement data from CSV files.
-- **Advanced Algorithms**: Utilize cutting-edge algorithms for precise thermal analysis.
+- **Data Processing**: Analyze thermal transient measurement data from CSV files or passed as NumPy arrays.
+- **Advanced Algorithms**: Utilize scientifically validated cutting-edge algorithms for precise thermal analysis.
 - **Script Integration**: Easily embed PyRth into your Python scripts for automated processing.
 - **Multiple Output Formats**: Generate results in images and CSV files for comprehensive examination.
 - **Open Source**: Fully accessible source code for transparency and community contributions.
