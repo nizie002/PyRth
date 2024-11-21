@@ -99,37 +99,52 @@ Therminate offers a suite of evaluation methods for comprehensive thermal analys
 
 ## 🚀 Installation
 
-not veryfied - does not work yet, unpublished
+### For Normal Usage
 
-You can install PyRth using `pip`:
+You can install PyRth using `pip` directly from PyPI:
 
 ```bash
 pip install PyRth
-git clone https://github.com/yourusername/therminate.git
-cd therminate
-python setup.py install
-
 ```
+
+### For Development
+If you want to contribute or modify the code, install PyRth in editable mode:
+
+```bash
+git clone https://github.com/nizie002/PyRth
+cd PyRth
+pip install --editable .
+```
+
 
 ## 🛠️ Usage
 
 ### Quick Start
 
 ```python
-import PyRth as th
-
-+++++
-
-TODO
-
-
+import PyRth
 ```
 
+### Examples
 
-### Example
+Below is a basic example to get you started with PyRth. The repository includes test data located in the tests/data directory. For this data, you can use a special read_mode and conv_mode to ensure proper processing. For More detailed examples please refer to the test directory.
 
-```bash
-xyz
+```python
+params = {
+                "infile": "tests/data/MOSFET_tim.txt",
+                "output_dir": "tests/output/basic_test",
+                "label": "MOSTFET_tim_basic_sobhy",
+                "read_mode": "clean",
+                "conv_mode": "TDIM",
+                "bayesian": True,
+                "bay_steps": 1000,
+                "struc_method": "sobhy",
+            }
+
+eval_instance = PyRth.Evaluation()
+modules = standard_evaluation(params)
+eval_instance.modules_output()
+eval_instance.save_all_figures(override_save=True)
 
 ```
 

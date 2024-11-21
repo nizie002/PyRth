@@ -10,7 +10,6 @@ import time
 
 import gmpy2 as gp
 from gmpy2 import mpfr
-import h5py as h5
 import numpy as np
 import numpy.fft as fftpack
 import numpy.polynomial.polynomial as poly
