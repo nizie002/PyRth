@@ -3,8 +3,8 @@ from setuptools import setup, find_packages
 setup(
     name="PyRth",
     version="0.1.0",
-    author="Nils Ziegeler",
-    author_email="nils@example.com",
+    author="Nils J. Ziegeler",
+    author_email="ziegeler.nilsjonas@fh-swf.de",
     description="A tool for thermal transient analysis",
     packages=find_packages(),
     install_requires=[
@@ -16,7 +16,7 @@ setup(
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: MIT License",
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.6",
