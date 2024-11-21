@@ -1,6 +1,7 @@
 # PyRth
 
-![PyRth Logo](assets/images/logo.png)
+<img src="assets/images/logo.png" alt="PyRth Logo" width="400"/>
+
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.6%2B-blue)](https://www.python.org/downloads/)
 [![Documentation Status](https://readthedocs.org/projects/pyRth/badge/?version=latest)](https://pyRth.readthedocs.io/en/latest/?badge=latest)
