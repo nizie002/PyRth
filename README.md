@@ -12,7 +12,7 @@
 ## 📖 Table of Contents
 
 - [Description](#description)
-- [Relevant Publications](#relevant-publications)
+- [Publications](#relevant-publications)
 - [Features](#features)
 - [Evaluation Methods](#evaluation-methods)
 - [Installation](#installation)
@@ -34,7 +34,9 @@ This tool serves as a modern and flexible alternative to proprietary evaluation 
 
 ---
 
-## 📚 Relevant Publications
+## 📄 Publications
+
+PyRth is based on extensive research. Below are key publications that demonstrate its capabilities and development. For further mathematical background, please refer to these publications.
 
 1. N. J. Ziegeler and S. Schweizer, "Lanczos-based Foster-to-Cauer Transformation for Network Identification by Deconvolution," 2024 30th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Toulouse, France, 2024, pp. 1-6, [doi: 10.1109/THERMINIC62015.2024.10732055](https://doi.org/10.1109/THERMINIC62015.2024.10732055).
 
