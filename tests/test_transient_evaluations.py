@@ -9,6 +9,13 @@ import re
 import numpy as np
 
 import PyRth
+from test_data import (
+    test_cases_basic,
+    test_cases_theoretical,
+    test_cases_set,
+    test_cases_bootstrap,
+    test_cases_optimization,
+)
 
 logger = logging.getLogger("PyRthLogger")
 logger.setLevel(logging.DEBUG)
@@ -51,232 +58,11 @@ def log_to_file(log_file_path: str):
 
 
 class TestTransientEvaluations(unittest.TestCase):
-    test_cases_basic: List[Dict[str, Any]] = [
-        {
-            "name": "MOSTFET_dry_basic_fft",
-            "params": {
-                "infile": "tests/data/MOSFET_dry.txt",
-                "output_dir": "tests/output/basic_test",
-                "label": "MOSTFET_dry_basic_fft",
-                "read_mode": "clean",
-                "conv_mode": "TDIM",
-                "filter_name": "hann",
-                "filter_range": 0.60,
-                "filter_parameter": 0.0,
-                "pad_factor_pre": 0.15,
-                "pad_factor_after": 0.15,
-            },
-        },
-        {
-            "name": "MOSTFET_tim_basic_bayesian",
-            "params": {
-                "infile": "tests/data/MOSFET_tim.txt",
-                "output_dir": "tests/output/basic_test",
-                "label": "MOSTFET_tim_basic_bayesian",
-                "read_mode": "clean",
-                "conv_mode": "TDIM",
-                "bayesian": True,
-                "bay_steps": 1000,
-            },
-        },
-        {
-            "name": "MOSTFET_tim_basic_polylong",
-            "params": {
-                "infile": "tests/data/MOSFET_tim.txt",
-                "output_dir": "tests/output/basic_test",
-                "label": "MOSTFET_tim_basic_polylong",
-                "read_mode": "clean",
-                "conv_mode": "TDIM",
-                "bayesian": True,
-                "bay_steps": 1000,
-                "struc_method": "polylong",
-            },
-        },
-        {
-            "name": "MOSTFET_tim_basic_khatwani",
-            "params": {
-                "infile": "tests/data/MOSFET_tim.txt",
-                "output_dir": "tests/output/basic_test",
-                "label": "MOSTFET_tim_basic_khatwani",
-                "read_mode": "clean",
-                "conv_mode": "TDIM",
-                "bayesian": True,
-                "bay_steps": 1000,
-                "struc_method": "khatwani",
-                "log_time_size": 75,
-                "precision": 2000,
-            },
-        },
-        {
-            "name": "MOSTFET_tim_basic_sobhy",
-            "params": {
-                "infile": "tests/data/MOSFET_tim.txt",
-                "output_dir": "tests/output/basic_test",
-                "label": "MOSTFET_tim_basic_sobhy",
-                "read_mode": "clean",
-                "conv_mode": "TDIM",
-                "bayesian": True,
-                "bay_steps": 1000,
-                "struc_method": "sobhy",
-            },
-        },
-        {
-            "name": "MOSTFET_tim_basic_boor_golub",
-            "params": {
-                "infile": "tests/data/MOSFET_tim.txt",
-                "output_dir": "tests/output/basic_test",
-                "label": "MOSTFET_tim_basic_boor_golub",
-                "read_mode": "clean",
-                "conv_mode": "TDIM",
-                "bayesian": True,
-                "bay_steps": 1000,
-                "struc_method": "boor_golub",
-                "log_time_size": 75,
-                "precision": 2000,
-            },
-        },
-        {
-            "name": "MOSTFET_tim_basic_lanczos",
-            "params": {
-                "infile": "tests/data/MOSFET_tim.txt",
-                "output_dir": "tests/output/basic_test",
-                "label": "MOSTFET_tim_basic_lanczos",
-                "read_mode": "clean",
-                "conv_mode": "TDIM",
-                "bayesian": True,
-                "bay_steps": 1000,
-                "struc_method": "lanczos",
-            },
-        },
-    ]
-
-    test_cases_theoretical: List[Dict[str, Any]] = [
-        {
-            "name": "theoretical_case_1",
-            "params": {
-                "output_dir": "tests/output/theoretical_test",
-                "label": "theoretical_case_1",
-                "theo_log_time": [-10, 3],
-                "theo_log_time_size": 10000,
-                "theo_delta": 1.5 * (2 * np.pi / 360),
-                "theo_added_noise": 3.0,
-                "theo_lengths": [
-                    1e-2,
-                    1e-2,
-                    1e-2,
-                    1e-2,
-                    1e-2,
-                ],
-                "theo_resistances": [500, 1500, 1000, 1000, 1000],
-                "theo_capacitances": [1e-3, 1e-1, 1e-2, 1e-0, 1e1],
-            },
-        },
-        {
-            "name": "theoretical_case_2",
-            "params": {
-                "output_dir": "tests/output/theoretical_test",
-                "label": "theoretical_case_2",
-                "theo_log_time": [-15, 5],
-                "theo_log_time_size": 30000,
-                "theo_delta": 0.5 * (2 * np.pi / 360),
-                "theo_lengths": [
-                    1e-2,
-                    1e-2,
-                    1e-2,
-                    1e-2,
-                    1e-2,
-                ],
-                "theo_resistances": [1000, 1000, 1000, 1000, 1000],
-                "theo_capacitances": [1e-2, 1e1, 1e-2, 1e-1, 1e2],
-            },
-        },
-    ]
-
-    test_cases_set: List[Dict[str, Any]] = [
-        {
-            "name": f"bayesian_evaluation_set_bay_step",
-            "params": {
-                "infile": "tests/data/MOSFET_dry.txt",
-                "output_dir": "tests/output/set_test",
-                "label": f"bayesian_evaluation_set_bay_step",
-                "read_mode": "clean",
-                "conv_mode": "TDIM",
-                "bayesian": True,
-                "bay_steps": [50, 1000, 10000],
-                "iterable_keywords": ["bay_steps"],
-                "evaluation_type": "standard",
-            },
-        }
-    ]
-
-    test_cases_bootstrap = [
-        {
-            "name": "bootstrap_evaluation_from_theo",
-            "params": {
-                "output_dir": "tests/output/bootstrap_test",
-                "label": "bootstrap_evaluation_from_theo",
-                "repetitions": 10,
-                "bayesian": True,
-                "bay_steps": 100,
-                "mode": "from_theo",
-                "signal_to_noise_ratio": 50,
-                "theo_log_time": [-17, 10],
-                "theo_log_time_size": 10000,
-                "theo_delta": 2 * (2 * np.pi / 360),
-                "theo_lengths": [
-                    1e-2,
-                    1e-2,
-                    1e-2,
-                    1e-2,
-                    1e-2,
-                ],
-                "theo_resistances": [1000, 1000, 1000, 1000, 1000],
-                "theo_capacitances": [1e-2, 1e1, 1e-2, 1e-1, 1e2],
-            },
-        },
-        {
-            "name": "bootstrap_evaluation_from_exp",
-            "params": {
-                "infile": "tests/data/MOSFET_dry.txt",
-                "output_dir": "tests/output/bootstrap_test",
-                "label": "bootstrap_evaluation_from_exp",
-                "repetitions": 10,
-                "bayesian": True,
-                "bay_steps": 100,
-                "mode": "from_exp",
-                "signal_to_noise_ratio": 100,
-                "read_mode": "clean",
-                "conv_mode": "TDIM",
-            },
-        },
-    ]
-
-    test_cases_optimization: List[Dict[str, Any]] = [
-        {
-            "name": "optimization_case_1",
-            "params": {
-                "infile": "tests/data/MOSFET_dry.txt",
-                "output_dir": "tests/output/optimization_test",
-                "label": "optimization_case_1",
-                "read_mode": "clean",
-                "conv_mode": "TDIM",
-                "opt_model_layers": 5,
-                "opt_method": "Powell",
-            },
-        },
-        {
-            "name": "optimization_case_2",
-            "params": {
-                "infile": "tests/data/MOSFET_tim.txt",
-                "output_dir": "tests/output/optimization_test",
-                "label": "optimization_case_2",
-                "read_mode": "clean",
-                "conv_mode": "TDIM",
-                "opt_model_layers": 10,
-                "opt_method": "COBYLA",
-            },
-        },
-    ]
+    test_cases_basic = test_cases_basic
+    test_cases_theoretical = test_cases_theoretical
+    test_cases_set = test_cases_set
+    test_cases_bootstrap = test_cases_bootstrap
+    test_cases_optimization = test_cases_optimization
 
     @classmethod
     def setUpClass(cls):
@@ -457,7 +243,6 @@ class TestTransientEvaluations(unittest.TestCase):
         self._run_evaluation_test(
             name=name, params=params, evaluation_method="bootstrap_evaluation"
         )
-
 
     @parameterized.expand(
         [(case["name"], case["params"]) for case in test_cases_optimization]
