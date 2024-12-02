@@ -12,13 +12,14 @@
 ## 📖 Table of Contents
 
 - [Description](#description)
-- [Publications](#relevant-publications)
 - [Features](#features)
-- [Evaluation Methods](#evaluation-methods)
 - [Installation](#installation)
 - [Usage](#usage)
   - [Quick Start](#quick-start)
   - [Examples](#examples)
+  - [Basic Documentation](#basic-documentation)
+- [Publications](#publications)
+- [Evaluation Methods](#evaluation-methods)
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
@@ -34,24 +35,6 @@ This tool serves as a modern and flexible alternative to proprietary evaluation 
 
 ---
 
-## 📄 Publications
-
-PyRth is based on extensive research. Below are key publications that demonstrate its capabilities and development. For further mathematical background, please refer to these publications.
-
-1. N. J. Ziegeler and S. Schweizer, "Lanczos-based Foster-to-Cauer Transformation for Network Identification by Deconvolution," 2024 30th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Toulouse, France, 2024, pp. 1-6, [doi: 10.1109/THERMINIC62015.2024.10732055](https://doi.org/10.1109/THERMINIC62015.2024.10732055).
-
-2. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Tridiagonal Approaches for Network Identification by Deconvolution," 2023 29th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Budapest, Hungary, 2023, pp. 1-6, [doi: 10.1109/THERMINIC60375.2023.10325879](https://doi.org/10.1109/THERMINIC60375.2023.10325879).
-
-3. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Accuracy Comparison of T3ster-Master and Optimization-based Network Identification," 2023 29th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Budapest, Hungary, 2023, pp. 1-6, [doi: 10.1109/THERMINIC60375.2023.10325681](https://doi.org/10.1109/THERMINIC60375.2023.10325681).
-
-4. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "J-Fraction Approach for Calculating Thermal Structure Functions," 2022 28th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Dublin, Ireland, 2022, pp. 1-4, [doi: 10.1109/THERMINIC57263.2022.9950656](https://doi.org/10.1109/THERMINIC57263.2022.9950656).
-
-5. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Optimization-Based Network Identification for Thermal Transient Measurements," *Energies*, vol. 14, no. 22, p. 7648, Nov. 2021, [doi: 10.3390/en14227648](https://doi.org/10.3390/en14227648).
-
-6. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Quantitative Performance Comparison of Thermal Structure Function Computations," *Energies*, vol. 14, no. 21, p. 7068, Oct. 2021, [doi: 10.3390/en14217068](https://doi.org/10.3390/en14217068).
-
----
-
 ## ✨ Features
 
 - **Data Processing**: Analyze thermal transient measurement data from CSV files or passed as NumPy arrays.
@@ -60,40 +43,6 @@ PyRth is based on extensive research. Below are key publications that demonstrat
 - **Multiple Output Formats**: Generate results in images and CSV files for comprehensive examination.
 - **Open Source**: Fully accessible source code for transparency and community contributions.
 - **Cross-Platform**: Compatible with Windows, macOS, and Linux systems.
-
----
-
-## 🔬 Evaluation Methods
-
-Therminate offers a suite of evaluation methods for comprehensive thermal analysis:
-
-1. **Standard Evaluation**
-   - Performs default analysis to extract impedance and structure functions.
-   - Ideal for quick assessments and initial data exploration.
-
-2. **Evaluation Set**
-   - Enables batch processing over various parameters or datasets.
-   - Suitable for systematic studies requiring multiple evaluations.
-
-3. **Bootstrap Evaluation**
-   - Implements statistical bootstrap methods.
-   - Assesses variability and confidence intervals of thermal properties.
-
-4. **Optimization Evaluation**
-   - Optimizes structure functions to fit impedance data.
-   - Adjusts thermal resistance and capacitance for detailed layer-wise characterization.
-
-5. **Theoretical Evaluation**
-   - Generates theoretical thermal behavior models.
-   - Aids in validating experimental data against expected results.
-
-6. **Comparison Evaluation**
-   - Compares multiple evaluation results or datasets.
-   - Useful for benchmarking and identifying characteristic differences.
-
-7. **Temperature Prediction Evaluation**
-   - Predicts temperature profiles based on evaluated properties.
-   - Essential for thermal management and design optimization.
 
 ---
 
@@ -127,14 +76,13 @@ import PyRth
 
 ### Examples
 
-Below is a basic example to get you started with PyRth. The repository includes test data located in the tests/data directory. For this data, you can use a special read_mode and conv_mode to ensure proper processing. For More detailed examples please refer to the test directory.
+Below is a basic example to get you started with PyRth. The repository includes test data located in the tests/data directory. For this data, you can use a special read_mode and conv_mode to ensure proper processing. For more detailed examples please refer to the tests directory.
 
 ```python
 params = {
-                "infile": "tests/data/MOSFET_tim.txt",
+                "data": data, # insert numpy array with test data here
                 "output_dir": "tests/output/basic_test",
                 "label": "MOSTFET_tim_basic_sobhy",
-                "read_mode": "clean",
                 "conv_mode": "TDIM",
                 "bayesian": True,
                 "bay_steps": 1000,
@@ -142,12 +90,107 @@ params = {
             }
 
 eval_instance = PyRth.Evaluation()
-modules = standard_evaluation(params)
+modules = standard_module(params)
 eval_instance.modules_output()
 eval_instance.save_all_figures(override_save=True)
 
 ```
 
+### Basic Documentation
+
+**Usage Flow**
+
+From a user's perspective, using PyRth involves the following steps:
+
+1. **Import PyRth**: Start by importing the PyRth package into your Python script.
+2. **Instantiate Evaluation**: Create an instance of the `Evaluation` class.
+3. **Configure Parameters**: Define the parameters for your evaluation, such as input data, output directory, and analysis methods.
+4. **Add Modules**: Incorporate various evaluation modules (e.g., theoretical, standard, bootstrap) using dedicated methods.
+5. **Run Evaluation**: Execute the desired evaluation methods with the configured parameters.
+6. **Generate Outputs**: Save and visualize the results, including CSV files and generated figures.
+
+PyRth's streamlined workflow allows users to efficiently process and analyze thermal transient data with minimal setup.
+
+**Parameter Configuration and Evaluation Management**
+
+PyRth offers flexible configuration through various parameters, enabling users to tailor the evaluation process to their specific needs. Parameters are categorized into Data Processing, Input/Output, and Power Settings. For instance, `log_time_tize` controls the number of points in the impedance curve, `bayesian` toggles Bayesian deconvolution, and `struc_method` selects the method for structure function calculation. I/O parameters like `data`, `output_dir`, and `label` manage data sources and output destinations, while Power Settings such as `power_step`, `is_heating`, and `optical_power` adjust power-related measurements.
+
+When conducting more complex analysis, PyRth offers the possibility to organize procedure into different evaluation, which can each be combined from different modules. In each `Evaluation` instance, PyRth handles the functionality independently through dedicated methods like `add_theoretical_module`, `add_standard_module`, `add_bootstrap_module`, and others. Within each `Evaluation` instance all results are combined into the same plot, to allow easy comparison of results if demanded. This modular approach ensures that each evaluation type operates with its specific parameters without conflict. 
+
+**Parameter Dictionaries**
+
+PyRth offers flexible configuration through various parameters, e.g.:
+
+**Data Processing Parameters:**
+- `log_time_tize`: Number of points in impedance curve (default: 250)
+- `bayesian`: Enable Bayesian deconvolution (default: True)
+- `struc_method`: Method for structure function calculation (options: "sobhy", "lanczos", "boor_golub", "khatwani", "polylong")
+
+**Input/Output Parameters:**
+- `data`: Field should contain the main data, as an example, use the data in the tests directory
+- `output_dir`: Directory for output files
+- `label`: Label for output files
+
+**Power Settings:**
+- `power_step`: Power step in Watts (default: 1.0)
+- `is_heating`: Analyze Heating or Cooling transients
+- `optical_power`: For LED testing to subtract optical power in W
+
+For a complete list of parameters and their descriptions, refer to the `transient_defaults.py` file in the source code.
+
+---
+
+## 📄 Publications
+
+PyRth is based on extensive research. Below are key publications that demonstrate its capabilities and development. For further mathematical background, please refer to these publications.
+
+1. N. J. Ziegeler and S. Schweizer, "Lanczos-based Foster-to-Cauer Transformation for Network Identification by Deconvolution," 2024 30th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Toulouse, France, 2024, pp. 1-6, [doi: 10.1109/THERMINIC62015.2024.10732055](https://doi.org/10.1109/THERMINIC62015.2024.10732055).
+
+2. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Tridiagonal Approaches for Network Identification by Deconvolution," 2023 29th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Budapest, Hungary, 2023, pp. 1-6, [doi: 10.1109/THERMINIC60375.2023.10325879](https://doi.org/10.1109/THERMINIC60375.2023.10325879).
+
+3. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Accuracy Comparison of T3ster-Master and Optimization-based Network Identification," 2023 29th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Budapest, Hungary, 2023, pp. 1-6, [doi: 10.1109/THERMINIC60375.2023.10325681](https://doi.org/10.1109/THERMINIC60375.2023.10325681).
+
+4. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "J-Fraction Approach for Calculating Thermal Structure Functions," 2022 28th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Dublin, Ireland, 2022, pp. 1-4, [doi: 10.1109/THERMINIC57263.2022.9950656](https://doi.org/10.1109/THERMINIC57263.2022.9950656).
+
+5. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Optimization-Based Network Identification for Thermal Transient Measurements," *Energies*, vol. 14, no. 22, p. 7648, Nov. 2021, [doi: 10.3390/en14227648](https://doi.org/10.3390/en14227648).
+
+6. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Quantitative Performance Comparison of Thermal Structure Function Computations," *Energies*, vol. 14, no. 21, p. 7068, Oct. 2021, [doi: 10.3390/en14217068](https://doi.org/10.3390/en14217068).
+
+---
+
+## 🔬 Evaluation Methods
+
+PyRth offers a suite of evaluation modules for comprehensive thermal analysis:
+
+1. **Standard Module**
+   - Performs default analysis to extract impedance and structure functions.
+   - Ideal for quick assessments and initial data exploration.
+
+2. **Evaluation Set Module**
+   - Enables batch processing over various parameters or datasets.
+   - Suitable for systematic studies requiring multiple evaluations.
+
+3. **Bootstrap Module**
+   - Implements statistical bootstrap methods.
+   - Assesses variability and confidence intervals of thermal properties.
+
+4. **Optimization Module**
+   - Optimizes structure functions to fit impedance data.
+   - Adjusts thermal resistance and capacitance for detailed layer-wise characterization.
+
+5. **Theoretical Module**
+   - Generates theoretical thermal behavior models.
+   - Aids in validating experimental data against expected results.
+
+6. **Comparison Module**
+   - Compares multiple evaluation results or datasets.
+   - Useful for benchmarking and identifying characteristic differences.
+
+7. **Temperature Prediction Module**
+   - Predicts temperature profiles based on evaluated properties.
+   - Essential for thermal management and design optimization.
+
+---
 
 ## 📄 License
 This project is licensed under the MIT License - see the LICENSE file for details.

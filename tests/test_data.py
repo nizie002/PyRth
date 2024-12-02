@@ -33,6 +33,7 @@ test_cases_basic = [
             "filter_parameter": 0.0,
             "pad_factor_pre": 0.15,
             "pad_factor_after": 0.15,
+            "ASDASDSA": "asdasd",
         },
     },
     {

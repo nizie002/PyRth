@@ -93,7 +93,7 @@ class TestTransientEvaluations(unittest.TestCase):
         self,
         name: str,
         params: Dict[str, Any],
-        evaluation_method: str,
+        evaluation_module: str,
         additional_assertions: callable = None,
     ) -> None:
         """Helper method to run evaluation tests with common logic"""
@@ -103,7 +103,7 @@ class TestTransientEvaluations(unittest.TestCase):
             try:
                 # Perform evaluation
                 eval_instance = PyRth.Evaluation()
-                method = getattr(eval_instance, evaluation_method)
+                method = getattr(eval_instance, evaluation_module)
                 modules = method(params)
                 eval_instance.modules_output()
                 eval_instance.save_all_figures(override_save=True)
@@ -218,7 +218,7 @@ class TestTransientEvaluations(unittest.TestCase):
     def test_standard_evaluation(self, name: str, params: Dict[str, Any]) -> None:
         """Test standard evaluation with different parameter sets"""
         self._run_evaluation_test(
-            name, params, "standard_evaluation", self._standard_assertions
+            name, params, "standard_module", self._standard_assertions
         )
 
     @parameterized.expand(
@@ -227,21 +227,19 @@ class TestTransientEvaluations(unittest.TestCase):
     def test_theoretical_evaluation(self, name: str, params: Dict[str, Any]) -> None:
         """Test theoretical evaluation with different parameter sets"""
         self._run_evaluation_test(
-            name, params, "add_theoretical_evaluation", self._theoretical_assertions
+            name, params, "theoretical_module", self._theoretical_assertions
         )
 
     @parameterized.expand([(case["name"], case["params"]) for case in test_cases_set])
     def test_evaluation_set(self, name: str, params: Dict[str, Any]):
-        self._run_evaluation_test(
-            name, params, evaluation_method="standard_evaluation_set"
-        )
+        self._run_evaluation_test(name, params, evaluation_method="standard_module_set")
 
     @parameterized.expand(
         [(case["name"], case["params"]) for case in test_cases_bootstrap]
     )
     def test_bootstrap_evaluation(self, name, params):
         self._run_evaluation_test(
-            name=name, params=params, evaluation_method="bootstrap_evaluation"
+            name=name, params=params, evaluation_method="bootstrap_module"
         )
 
     @parameterized.expand(
@@ -249,5 +247,5 @@ class TestTransientEvaluations(unittest.TestCase):
     )
     def test_optimization_evaluation(self, name, params):
         self._run_evaluation_test(
-            name=name, params=params, evaluation_method="add_optimization_evaluation"
+            name=name, params=params, evaluation_method="optimization_module"
         )

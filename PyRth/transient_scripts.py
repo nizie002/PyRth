@@ -100,13 +100,13 @@ class Evaluation:
                 else:
                     logger.error(f"Handler {capability} not found")
 
-    def standard_evaluation(self, parameters):
+    def standard_module(self, parameters):
         if not isinstance(parameters, dict):
             raise TypeError("Parameters must be provided as a dictionary.")
 
         self.parameters = dbase.validate_and_merge_defaults(parameters, self.parameters)
 
-        module = self._add_standard_evaluation(self.parameters)
+        module = self._standard_module(self.parameters)
         self._add_module_to_eval_dict(module)
 
         return [module]
@@ -124,7 +124,7 @@ class Evaluation:
             )
         self.modules[module.label] = module
 
-    def _add_standard_evaluation(self, parameters):
+    def _standard_module(self, parameters):
 
         module = core.Structure_function(parameters)
 
@@ -203,7 +203,7 @@ class Evaluation:
 
         return module
 
-    def standard_evaluation_set(self, parameters):
+    def standard_module_set(self, parameters):
 
         if not isinstance(parameters, dict):
             raise TypeError("Parameters must be provided as a dictionary.")
@@ -245,9 +245,9 @@ class Evaluation:
 
             # Call the appropriate method with the modified parameters
             if evaluation_type == "standard":
-                module = self._add_standard_evaluation(modified_parameters)
+                module = self._standard_evaluation(modified_parameters)
             elif evaluation_type == "optimization":
-                module = self._add_optimization_evaluation(
+                module = self._optimization_evaluation(
                     modified_parameters, mode="from_asc"
                 )
             else:
@@ -267,7 +267,7 @@ class Evaluation:
 
         return modules_list
 
-    def bootstrap_evaluation(self, parameters, mode=None):
+    def bootstrap_module(self, parameters, mode=None):
 
         self.parameters = dbase.validate_and_merge_defaults(parameters, self.parameters)
 
@@ -285,13 +285,13 @@ class Evaluation:
             )
 
         if mode == "from_theo":
-            module = self.add_theoretical_evaluation(self.parameters)
+            module = self.theoretical_module(self.parameters)
             var = module.theo_impedance[-1] / self.parameters["signal_to_noise_ratio"]
             self.parameters["expected_var"] = var
 
         elif mode == "from_data":
 
-            module = self._add_standard_evaluation(self.parameters)
+            module = self._standard_module(self.parameters)
 
             module.hist, bin_edge = np.histogram(
                 module.impedance - module.imp_smooth_full, bins=30
@@ -335,7 +335,7 @@ class Evaluation:
                     0.0, var, len(module.theo_impedance)
                 )
                 self.parameters["time"] = np.exp(module.theo_log_time)
-                (boot_module,) = self._add_standard_evaluation(self.parameters)
+                (boot_module,) = self._standard_module(self.parameters)
 
                 boot_module.reference_impedance = module.theo_impedance
                 boot_module.reference_time_imp = module.theo_log_time
@@ -358,7 +358,7 @@ class Evaluation:
                 )
                 self.parameters["time"] = np.exp(module.log_time)
 
-                (boot_module,) = self._add_standard_evaluation(self.parameters)
+                (boot_module,) = self._standard_module(self.parameters)
 
                 boot_module.reference_impedance = module.imp_smooth_full
                 boot_module.reference_time_imp = module.log_time
@@ -383,7 +383,7 @@ class Evaluation:
                     "impedance_no_noise"
                 ] + rng.normal(0.0, var, len(self.parameters["impedance_no_noise"]))
 
-                (boot_module,) = self._add_standard_evaluation(self.parameters)
+                (boot_module,) = self._standard_module(self.parameters)
 
                 boot_module.reference_time_imp = np.log(self.parameters["time"])
                 boot_module.reference_impedance = self.parameters["impedance_no_noise"]
@@ -412,7 +412,7 @@ class Evaluation:
                     "impedance_no_noise"
                 ] + rng.normal(0.0, var, len(self.parameters["impedance_no_noise"]))
 
-                boot_module = self.add_optimization_evaluation({}, mode="from_internal")
+                boot_module = self.optimization_module({}, mode="from_internal")
 
                 boot_module.reference_time_imp = np.log(self.parameters["time"])
                 boot_module.reference_impedance = self.parameters["impedance_no_noise"]
@@ -621,7 +621,7 @@ class Evaluation:
         self._add_module_to_eval_dict(boot_module)
         return boot_module
 
-    def add_optimization_evaluation(self, parameters):
+    def optimization_module(self, parameters):
         if not isinstance(parameters, dict):
             raise TypeError("Parameters must be provided as a dictionary.")
 
@@ -629,18 +629,16 @@ class Evaluation:
 
         self.parameters = dbase.validate_and_merge_defaults(parameters, self.parameters)
 
-        module = self._add_optimization_evaluation(parameters, mode=mode)
+        module = self._optimization_module(parameters, mode=mode)
 
         self._add_module_to_eval_dict(module)
 
         return module
 
-    def _add_optimization_evaluation(
-        self, parameters, mode="from_asc", external_module=None
-    ):
+    def _optimization_module(self, parameters, mode="from_asc", external_module=None):
 
         if mode == "from_asc":
-            module = self._add_standard_evaluation(self.parameters)
+            module = self._standard_module(self.parameters)
             module.theo_log_time = np.linspace(
                 self.parameters["theo_log_time"][0],
                 self.parameters["theo_log_time"][1],
@@ -668,7 +666,7 @@ class Evaluation:
             self.parameters["read_mode"] = "none"
             self.parameters["conv_mode"] = "none"
 
-            module = self._add_standard_evaluation(self.parameters)
+            module = self._standard_module(self.parameters)
 
             module.cau_res_opt = module.int_cau_res
             module.cau_cap_opt = module.int_cau_cap
@@ -829,7 +827,7 @@ class Evaluation:
 
         return module
 
-    def add_theoretical_evaluation(self, parameters):
+    def theoretical_module(self, parameters):
 
         self.parameters = {
             **dbase.std_eval_defaults,
@@ -884,7 +882,7 @@ class Evaluation:
 
         return [module]
 
-    def add_comparison_evaluation(self, parameters, modifier):
+    def comparison_module(self, parameters, modifier):
 
         for key, value in parameters.items():
             self.parameters[key] = value
@@ -893,7 +891,7 @@ class Evaluation:
         self.parameters["label"] = label_base + "theo_ideal"
 
         if not modifier["mod_method"] == "measure_opt":
-            theo_module = self.add_theoretical_evaluation({})
+            theo_module = self.theoretical_module({})
 
         self.parameters["look_at_backwards_imp_deriv"] = False
         self.parameters["look_at_backwards_impedance"] = False
@@ -955,7 +953,7 @@ class Evaluation:
 
             if modifier["mod_method"] == "theoretical":
 
-                comp_module = self.add_theoretical_evaluation({})
+                comp_module = self.theoretical_module({})
 
                 print("end impedance", comp_module.theo_impedance[-1])
 
@@ -980,7 +978,7 @@ class Evaluation:
                 self.parameters["read_mode"] = parameters["read_mode"]
                 self.parameters["conv_mode"] = parameters["conv_mode"]
 
-                comp_module = self._add_optimization_evaluation(
+                comp_module = self._optimization_module(
                     self.parameters, mode="from_asc"
                 )
 
@@ -994,7 +992,7 @@ class Evaluation:
                 self.parameters["impedance"] = theo_module.impedance
                 self.parameters["time"] = np.exp(theo_module.log_time)
 
-                comp_module = self._add_standard_evaluation(self.parameters)
+                comp_module = self._standard_module(self.parameters)
 
                 comp_module.time_const_comparison[n] = top.l2_norm_time_const(
                     theo_module.theo_log_time,
@@ -1018,7 +1016,7 @@ class Evaluation:
                 self.parameters["impedance"] = theo_module.impedance
                 self.parameters["time"] = np.exp(theo_module.log_time)
 
-                comp_module = self._add_optimization_evaluation(
+                comp_module = self._optimization_module(
                     {}, mode="from_external", external_module=theo_module
                 )
 
@@ -1056,7 +1054,7 @@ class Evaluation:
                 self.parameters["reference_cum_res"] = theo_module.theo_int_cau_res
                 self.parameters["reference_cum_cap"] = theo_module.theo_int_cau_cap
 
-                comp_module = self.bootstrap_evaluation({}, mode="given")
+                comp_module = self.bootstrap_module({}, mode="given")
 
                 comp_module.time_const_comparison[n] = top.l2_norm_time_const(
                     theo_module.theo_log_time,
@@ -1095,7 +1093,7 @@ class Evaluation:
                 self.parameters["reference_cum_res"] = theo_module.theo_int_cau_res
                 self.parameters["reference_cum_cap"] = theo_module.theo_int_cau_cap
 
-                comp_module = self.bootstrap_evaluation({}, mode="given_with_opt")
+                comp_module = self.bootstrap_module({}, mode="given_with_opt")
 
                 comp_module.time_const_comparison[n] = top.l2_norm_time_const(
                     theo_module.theo_log_time,
@@ -1167,7 +1165,7 @@ class Evaluation:
                 self.parameters["reference_cum_res"] = theo_module.theo_int_cau_res
                 self.parameters["reference_cum_cap"] = theo_module.theo_int_cau_cap
 
-                comp_module = self.bootstrap_evaluation({}, mode="given")
+                comp_module = self.bootstrap_module({}, mode="given")
 
                 comp_module.time_const_comparison[n] = top.l2_norm_time_const(
                     theo_module.theo_log_time,
@@ -1240,7 +1238,7 @@ class Evaluation:
                 self.parameters["reference_cum_res"] = theo_module.theo_int_cau_res
                 self.parameters["reference_cum_cap"] = theo_module.theo_int_cau_cap
 
-                comp_module = self.bootstrap_evaluation({}, mode="given_with_opt")
+                comp_module = self.bootstrap_module({}, mode="given_with_opt")
 
                 comp_module.time_const_comparison[n] = top.l2_norm_time_const(
                     theo_module.theo_log_time,
@@ -1309,12 +1307,12 @@ class Evaluation:
 
         return comp_module
 
-    def add_temperature_prediction_evaluation(self, parameters):
+    def temperature_prediction_module(self, parameters):
 
         for key, value in parameters.items():
             self.parameters[key] = value
 
-        module = self._add_optimization_evaluation({}, mode="from_data")
+        module = self._optimization_module({}, mode="from_data")
 
         self.parameters["infile"] = self.parameters["infile_3"]
         self.parameters["infile_2"] = self.parameters["infile_4"]
@@ -1322,7 +1320,7 @@ class Evaluation:
         self.parameters["label"] = self.parameters["label_2"]
 
         self.parameters["power_step"] = 1.0
-        module_2 = self.area_evaluation({"only_make_z": True})
+        module_2 = self._standard_module({"only_make_z": True})
 
         module_2.reference_impedance = module.theo_impedance
         module_2.reference_time = np.exp(module.theo_log_time)

@@ -13,9 +13,9 @@ def validate_and_merge_defaults(params, self_parameters):
 
     # This function is used to integrate the standard evaluation defaults and the standard output defaults into the parameters dictionary.
 
-    # reject any keys that are not in the standard evaluation defaults or the standard output defaults and warn the user
+    # reject any keys that are not in the standard evaluation defaults or the standard output defaults and warn the user and remove it
 
-    for key in params.keys():
+    for key in list(params.keys()):
         if (
             key not in std_eval_defaults.keys()
             and key not in std_output_defaults.keys()
@@ -23,6 +23,8 @@ def validate_and_merge_defaults(params, self_parameters):
             logger.warning(
                 f"Parameter {key} is not a standard parameter and will be ignored."
             )
+
+            params.pop(key)
 
     # add self_parameters to the parameters dictionary
     for key in self_parameters.keys():
@@ -117,6 +119,7 @@ std_eval_defaults = {
     "iterable_keywords": [],  # keywords that can be iterated over in standard_evaluation_set. Each such specified keyword should be a list of values
     #
     # I/O settings
+    "data": None,  # data to be analyzed, should be a 2-d array with time in the first column and temperature or voltage in the second
     "output_dir": "output\\csv",  # output directory for csv files
     "label": "no_label",  # default label for output files, should be changed to something meaningful by the user
     #
