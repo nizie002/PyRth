@@ -75,67 +75,19 @@ class Structure_function(DataExporter):
 
     def __init__(self, params):
 
-        self.data_handlers = []
-
+        # Set attributes
         for key, value in params.items():
             setattr(self, key, value)
 
-        gp.get_context().precision = int(self.precision)
+        self.data_handlers = []
 
-    # @timer_decorator
-    def read(self):
-        if self.read_mode == "none":
-            logger.info("No read mode selected")
-            return
-        elif self.read_mode == "given":
-            self.read_given()
-            self.data_handlers.append("temp")
-            logger.info("Data has been given")
-        else:
-            logger.info(f"Opening file: {self.infile}...")
-            self.data_handlers.append("temp")
+        # Validate precision
+        if not isinstance(self.precision, int) or self.precision <= 0:
+            raise ValueError(
+                f"Parameter 'precision' must be a positive integer, got {self.precision}"
+            )
 
-            with open(self.infile) as f:
-                if self.read_mode == "clean":
-                    self.read_clean(f)
-                elif self.read_mode == "clean_csv":
-                    self.read_clean_csv(f)
-                elif self.read_mode == "raw_ir":
-                    self.read_raw_ir(f)
-                elif self.read_mode == "from_raw":
-                    self.read_from_raw(f)
-                elif self.read_mode == "t3ster":
-                    self.read_t3ster(f)
-                else:
-                    raise ValueError(
-                        "Read mode not recognised. It is currently set to: "
-                        + str(self.read_mode)
-                    )
-
-    def read_clean(self, f):
-        # Skip lines until "DATA" is found
-        for line in f:
-            if line.strip() == "DATA":
-                break
-        # Read the data after "DATA"
-        self.data = np.loadtxt(f)
-
-    def read_clean_csv(self, f):
-        self.data = pd.read_csv(f, delimiter=",").to_numpy()
-
-    def read_raw_ir(self, f):
-        self.data = np.loadtxt((utl.pd_conv(x) for x in f), skiprows=2)
-
-    def read_from_raw(self, f):
-        data_raw = np.loadtxt(self.infile, dtype="str", delimiter=",")
-        self.data = data_raw[:, [23, 1]].astype(float)
-        self.data[:, 0] = [
-            float(data_raw[line, 22][0:2]) * 3600.0
-            + float(data_raw[line, 22][3:5]) * 60.0
-            + float(data_raw[line, 22][6:])
-            + float(self.data[line, 0])
-            for line in range(self.data.shape[0])
-        ]
+        gp.get_context().precision = self.precision
 
     def read_t3ster(self, f):
         self.data_header = [np.array(line.strip().split(" ")) for line in f]
@@ -159,41 +111,44 @@ class Structure_function(DataExporter):
             self.data_tco[:, 0], self.data_tco[:, 1], self.kfac_fit_deg
         )
 
-    def read_given(self):
-        assert self.data is not None, "Data has not been given"
-        assert self.calib is not None, "Volt to Temp Calibration has not been given"
-        self.data = np.array(self.data)
-        assert self.data.shape[1] == 2, "Data has to have two columns"
-
-        pass
-
-    # @timer_decorator
     def make_z(self):
+        valid_conv_modes = ["TDIM", "t3ster", "temp", "volt", "none"]
+
+        if self.conv_mode not in valid_conv_modes:
+            raise ValueError(
+                f"Conversion mode '{self.conv_mode}' not recognised. Valid options are: {valid_conv_modes}"
+            )
+
+        # Data validation for non-t3ster modes
+        if self.conv_mode != "t3ster":
+            # Check if data exists and has correct shape
+            if self.data is None:
+                raise ValueError("Data has not been given.")
+
+            self.data = np.array(self.data)
+
+            # Validate data shape and length
+            if self.data.shape[1] != 2:
+                raise ValueError("Data has to have two columns. Maybe transpose?")
+
+            min_data_length = 100
+            if self.data.shape[0] < min_data_length:
+                logger.warning(
+                    f"Data length ({self.data.shape[0]}) is shorter than "
+                    f"recommended minimum ({min_data_length} points). "
+                    "Results may be unreliable."
+                )
+
+        self.data_handlers.append("temp")
+
         if self.conv_mode == "TDIM":
             self.make_z_tdim()
         elif self.conv_mode == "t3ster":
             self.make_z_t3ster()
-        elif self.conv_mode == "basic":
-            self.make_z_basic()
-        elif self.conv_mode == "only_time":
-            self.make_z_only_time()
-        elif self.conv_mode == "volt":
-            self.make_z_volt()
-        elif self.conv_mode == "volt_extr":
-            self.make_z_volt_extr()
-        elif self.conv_mode == "volt_no_extr":
-            self.make_z_volt_no_extr()
-        elif self.conv_mode == "k_factor":
-            self.make_z_k_factor()
-        elif self.conv_mode == "k_factor_no_extr":
-            self.make_z_k_factor_no_extr()
+        elif self.conv_mode in ["temp", "volt"]:
+            self._process_temp_volt_data()
         elif self.conv_mode == "none":
             logger.info("No conv mode selected")
-        else:
-            raise ValueError(
-                "Conversion mode not recognised. It is currently set to: "
-                + str(self.conv_mode)
-            )
 
         # all calculations are done in logarithmic time
         self.log_time = np.log(self.time)
@@ -201,7 +156,62 @@ class Structure_function(DataExporter):
             f = interp.interp1d(self.log_time, self.impedance)
             self.impedance *= self.stored_early_zth / f(np.log(1e-4))
 
+    def _process_temp_volt_data(self):
+        """Process temperature or voltage data with optional extrapolation"""
+        if self.conv_mode == "volt" and self.calib is None:
+            raise ValueError("Calibration data is required for voltage conversion")
+
+        # Convert voltage to temperature if needed
+        if self.conv_mode == "volt":
+            self.voltage = self.data[:, 1]
+            self.temp_raw = utl.volt_to_temp(
+                self.voltage, self.calib, self.kfac_fit_deg
+            )
+        else:
+            self.temp_raw = self.data[:, 1]
+
+        self.time_raw = self.data[:, 0] - self.data[0, 0]
+
+        if self.extrapolate:
+            # Extrapolate temperature data
+            self.time, self.temperature, self.expl_ft_prm, t_null = (
+                utl.extrapolate_temperature(
+                    self.time_raw,
+                    self.temp_raw,
+                    self.lower_fit_limit,
+                    self.upper_fit_limit,
+                )
+            )
+        else:
+            # Apply data cutting based on specified indices
+            start_idx = max(0, self.data_cut_lower)
+            end_idx = min(len(self.time_raw), self.data_cut_upper)
+
+            self.time = self.time_raw[start_idx:end_idx]
+            self.temperature = self.temp_raw[start_idx:end_idx]
+
+            # Calculate t_null using average over specified range
+            t0_start = max(0, self.temp_0_avg_range[0])
+            t0_end = min(len(self.temp_raw), self.temp_0_avg_range[1])
+            t_null = np.mean(self.temp_raw[t0_start:t0_end])
+
+        # Calculate impedance
+        self.impedance = utl.tmp_to_z(
+            self.temperature,
+            t_null,
+            self.power_step,
+            self.optical_power,
+            self.power_scale_factor,
+            is_heating=self.is_heating,
+        )
+
     def make_z_tdim(self):
+
+        if not self.extrapolate:
+            raise ValueError(
+                "TDIM without extrapolation is not possible. Set 'extrapolate' to True."
+            )
+
         self.voltage = self.data[:, 1]
         self.temp_raw = utl.volt_to_temp_TDIM(self.voltage)
         if self.extrapolate == True:
@@ -225,9 +235,15 @@ class Structure_function(DataExporter):
             self.time = self.data[:, 0]
             self.time_raw = self.data[:, 0]
         else:
-            raise ValueError("TDIM without extrapolation")
+            raise ValueError(
+                "TDIM without extrapolation not possible. Need to truncate voltage transient."
+            )
 
     def make_z_t3ster(self):
+
+        with open(self.infile) as f:
+            self.read_t3ster(f)
+
         fnzi = utl.first_nonzero_index(self.data[:, 0])
         self.dig = self.data[fnzi:, 1]
         if self.kfac_fit_deg == 1:
@@ -273,7 +289,7 @@ class Structure_function(DataExporter):
                 is_heating=self.is_heating,
             )
 
-    def make_z_basic(self):
+    def make_z_temp(self):
         self.temperature = self.data[1:, 1]
         self.impedance = utl.tmp_to_z(
             self.temperature,
@@ -283,25 +299,15 @@ class Structure_function(DataExporter):
             self.power_scale_factor,
             is_heating=self.is_heating,
         )
-        # no conversion for time
         self.time = self.data[1:, 0] - self.data[0, 0]
 
-    def make_z_only_time(self):
-        self.temperature = self.data[1:, 1]
-        self.temp_raw = self.temperature
-        self.impedance = utl.tmp_to_z(
-            self.temperature,
-            self.data[0, 1],
-            self.power_step,
-            self.optical_power,
-            self.power_scale_factor,
-            is_heating=self.is_heating,
-        )
-        # conversion from milisecond to second
-        self.time = (self.data[1:, 0] - self.data[0, 0]) / 1e3
-        self.time_raw = self.time
-
     def make_z_volt(self):
+
+        if self.calib is None:
+            raise ValueError(
+                "Calibration data is missing. Calibration data is needed for the conversion from voltage to temperature."
+            )
+
         self.temperature = utl.volt_to_temp(
             self.data[:, 1], self.calib, self.kfac_fit_deg
         )
@@ -315,7 +321,35 @@ class Structure_function(DataExporter):
         )
         self.time = self.data[1:, 0] - self.data[0, 0]
 
+    def make_z_volt_no_extr(self):
+
+        if self.calib is None:
+            raise ValueError(
+                "Calibration data is missing. Calibration file is needed for the conversion from voltage to temperature."
+            )
+
+        self.time = self.data[1:, 0] - self.data[0, 0]
+        self.time = self.time[self.lower_fit_limit :]
+        self.time_raw = self.data[1:, 0]
+        self.voltage = self.data[1:, 1]
+        self.temp_raw = utl.volt_to_temp(self.voltage, self.calib, self.kfac_fit_deg)
+        self.temperature = self.temp_raw[self.lower_fit_limit :]
+        self.impedance = utl.tmp_to_z(
+            self.temperature,
+            self.temperature[0],
+            self.power_step,
+            self.optical_power,
+            self.power_scale_factor,
+            is_heating=self.is_heating,
+        )
+
     def make_z_volt_extr(self):
+
+        if not self.extrapolate:
+            raise ValueError(
+                "Voltage without extrapolation is not possible. Set 'extrapolate' to True or use a different conversion mode."
+            )
+
         self.voltage = self.data[1:, 1]
         self.temp_raw = utl.volt_to_temp(self.voltage, self.calib, self.kfac_fit_deg)
         self.time_raw = self.data[1:, 0] - self.data[0, 0]
@@ -338,66 +372,10 @@ class Structure_function(DataExporter):
                 is_heating=self.is_heating,
             )
         else:
-            raise ValueError("TDIM without extrapolation")
-
-    def make_z_volt_no_extr(self):
-        self.time = self.data[1:, 0] - self.data[0, 0]
-        self.time = self.time[self.lower_fit_limit :]
-        self.time_raw = self.data[1:, 0]
-        self.voltage = self.data[1:, 1]
-        self.temp_raw = utl.volt_to_temp(self.voltage, self.calib, self.kfac_fit_deg)
-        self.temperature = self.temp_raw[self.lower_fit_limit :]
-        self.impedance = utl.tmp_to_z(
-            self.temperature,
-            self.temperature[0],
-            self.power_step,
-            self.optical_power,
-            self.power_scale_factor,
-            is_heating=self.is_heating,
-        )
-
-    def make_z_k_factor(self):
-        self.time = self.data[1:, 0] - self.data[0, 0]
-        self.temp_raw = utl.k_factor_translation(self.data[:-1, 1], self.k_factor)
-        self.time_raw = self.data[:, 1]
-
-        if self.extrapolate == True:
-            self.expl_ft_prm = np.polyfit(
-                np.sqrt(self.time[self.lower_fit_limit : self.upper_fit_limit]),
-                self.temp_raw[self.lower_fit_limit : self.upper_fit_limit],
-                1,
+            raise ValueError(
+                "voltage without extrapolation not possible. Need to truncate voltage transient."
             )
-            self.temperature = np.append(
-                utl.pl_curve(self.time[: self.lower_fit_limit], self.expl_ft_prm),
-                self.temp_raw[self.lower_fit_limit :],
-            )
-            self.impedance = utl.tmp_to_z(
-                self.temperature,
-                self.expl_ft_prm[1],
-                self.power_step,
-                self.optical_power,
-                self.power_scale_factor,
-                is_heating=self.is_heating,
-            )
-        else:
-            raise ValueError("Need extrapolation")
 
-    def make_z_k_factor_no_extr(self):
-        self.temp_raw = utl.k_factor_translation(self.data[:-1, 1], self.k_factor)
-        self.time_raw = self.data[:, 1]
-        self.time = self.data[1:, 0] - self.data[0, 0]
-        self.temperature = self.temp_raw[self.lower_fit_limit :]
-        self.time = self.time[self.lower_fit_limit :]
-        self.impedance = utl.tmp_to_z(
-            self.temperature,
-            self.temperature[0],
-            self.power_step,
-            self.optical_power,
-            self.power_scale_factor,
-            is_heating=self.is_heating,
-        )
-
-    # @timer_decorator
     def z_fit_deriv(self):
 
         (
@@ -424,7 +402,9 @@ class Structure_function(DataExporter):
         self.pad_time_size = np.size(self.log_time_pad)
 
         if not np.any(self.imp_deriv_interp):
-            raise ValueError("Impedance derivative is empty or contains all zeros.")
+            raise ValueError(
+                "Impedance derivative is empty or contains all zeros. Maybe  heating / cooling transient interchanged?"
+            )
 
     def fft_signal(self):
         # calculates the fourier transform and power periodogram
@@ -458,7 +438,6 @@ class Structure_function(DataExporter):
             self.time_spec, x=self.log_time_pad, initial=0.0
         )
 
-    # @timer_decorator
     def perform_bayesian_deconvolution(self):
         # calculates the bayesian deconvolution
 
@@ -473,7 +452,6 @@ class Structure_function(DataExporter):
             self.time_spec, x=self.log_time_pad, initial=0.0
         )
 
-    # @timer_decorator
     def foster_network(self):
         # derives the foster thermal equivalent network, lumped from the time constant spectrum
         # remove all the zeros we padded to avoid bad numerics
@@ -505,7 +483,6 @@ class Structure_function(DataExporter):
         self.therm_resist_fost = self.crop_time_spec * delta
         self.therm_capa_fost = np.exp(self.crop_log_time) / self.therm_resist_fost
 
-    # @timer_decorator
     def mpfr_foster_impedance(self):
         # use gmp2 for arbitrary precision floating point arithmetic
         self.mpfr_resist_fost = [
@@ -519,7 +496,6 @@ class Structure_function(DataExporter):
             self.mpfr_resist_fost, self.mpfr_capa_fost
         )
 
-    # @timer_decorator
     def poly_long_div(self):
         # transforms the foster to the cauer thermal equivalent network
 
@@ -554,7 +530,6 @@ class Structure_function(DataExporter):
                     self.int_cau_res[i] - self.int_cau_res[i + 1]
                 )
 
-    # @timer_decorator
     def boor_golub(self):
 
         poles = []
@@ -658,7 +633,6 @@ class Structure_function(DataExporter):
                     self.int_cau_res[i] - self.int_cau_res[i + 1]
                 )
 
-    # @timer_decorator
     def j_fraction_methods(self):
         # use gmp2 for arbitrary precision floating point arithmetic
 
@@ -822,7 +796,6 @@ class Structure_function(DataExporter):
                     self.int_cau_res[i] - self.int_cau_res[i + 1]
                 )
 
-    # @timer_decorator
     def lanczos(self):
 
         res, cap = eng.lanczos_inner(self.therm_capa_fost, self.therm_resist_fost)

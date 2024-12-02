@@ -101,14 +101,12 @@ class Evaluation:
                     logger.error(f"Handler {capability} not found")
 
     def standard_evaluation(self, parameters):
+        if not isinstance(parameters, dict):
+            raise TypeError("Parameters must be provided as a dictionary.")
 
-        self.parameters = {
-            **dbase.std_eval_defaults,
-            **dbase.std_output_defaults,
-            **parameters,
-        }
-        (module,) = self._add_standard_evaluation(parameters)
+        self.parameters = dbase.validate_and_merge_defaults(parameters, self.parameters)
 
+        module = self._add_standard_evaluation(self.parameters)
         self._add_module_to_eval_dict(module)
 
         return [module]
@@ -127,20 +125,28 @@ class Evaluation:
         self.modules[module.label] = module
 
     def _add_standard_evaluation(self, parameters):
-        module = core.Structure_function(
-            {**dbase.std_eval_defaults, **dbase.std_output_defaults, **parameters}
-        )
+
+        module = core.Structure_function(parameters)
+
+        # Ensure required parameters are set in the module
+        if not hasattr(module, "label"):
+            raise AttributeError(
+                "Module is missing 'label' attribute. It is used to identify the results in CSV and image output."
+            )
+        if not hasattr(module, "conv_mode"):
+            raise AttributeError(
+                "Module is missing 'conv_mode' attribute. It is used for converting input data to the correct thermal impedance."
+            )
+        if not hasattr(module, "read_mode"):
+            raise AttributeError(
+                "Module is missing 'read_mode' attribute. It is used for reading input data in different formats."
+            )
 
         if module.normalize_impedance_to_previous and hasattr(self, "stored_early_zth"):
             module.stored_early_zth = self.stored_early_zth
 
         module.figures = self.figures
-        matrix_len = module.log_time_size + (
-            int(module.log_time_size * module.pad_factor_after)
-            + int(module.log_time_size * module.pad_factor_pre)
-        )
 
-        module.read()
         logger.info(f"Compiled impedance for '{module.label}'...")
         module.make_z()
 
@@ -195,18 +201,28 @@ class Evaluation:
         ):
             self.stored_early_zth = utl.get_early_zth(module)
 
-        return [module]
+        return module
 
     def standard_evaluation_set(self, parameters):
+
+        if not isinstance(parameters, dict):
+            raise TypeError("Parameters must be provided as a dictionary.")
+
+        if "iterable_keywords" not in parameters:
+            raise ValueError(
+                "iterable_keywords must be provided in parameters. It is used to determine the keywords to iterate over."
+            )
+
+        if "evaluation_type" not in parameters:
+            raise ValueError(
+                "evaluation_type must be provided in parameters. It must be either 'standard' or 'optimization'. It is used to determine the type of evaluation to perform."
+            )
+
         iterable_keywords = parameters.pop("iterable_keywords", [])
         evaluation_type = parameters.pop("evaluation_type", [])
         base_label = parameters.get("label", "")
 
-        self.parameters = {
-            **dbase.std_eval_defaults,
-            **dbase.std_output_defaults,
-            **parameters,
-        }
+        self.parameters = dbase.validate_and_merge_defaults(parameters, self.parameters)
 
         # Get the lists for each keyword and ensure they all have the same length
         lists = [parameters.get(keyword, []) for keyword in iterable_keywords]
@@ -229,7 +245,7 @@ class Evaluation:
 
             # Call the appropriate method with the modified parameters
             if evaluation_type == "standard":
-                module = self._add_standard_evaluation(modified_parameters)[0]
+                module = self._add_standard_evaluation(modified_parameters)
             elif evaluation_type == "optimization":
                 module = self._add_optimization_evaluation(
                     modified_parameters, mode="from_asc"
@@ -253,24 +269,29 @@ class Evaluation:
 
     def bootstrap_evaluation(self, parameters, mode=None):
 
-        if mode is None:
-            mode = parameters.pop("mode", "No mode given")
+        self.parameters = dbase.validate_and_merge_defaults(parameters, self.parameters)
 
-        for key, value in parameters.items():
-            self.parameters[key] = value
+        mode = self.parameters["bootstrap_mode"]
 
+        if mode not in ["from_theo", "from_data", "given", "given_with_opt"]:
+            raise ValueError(
+                f"Invalid mode '{mode}' for bootstrap evaluation. Valid options are: ['from_theo', 'from_data', 'given', 'given_with_opt']"
+            )
         repetitions = self.parameters["repetitions"]
 
-        self.parameters["calc_struc"] = True
+        if not self.parameters["calc_struc"]:
+            raise ValueError(
+                "Structure function calculation must be enabled for bootstrapping."
+            )
 
         if mode == "from_theo":
-            (module,) = self.add_theoretical_evaluation(self.parameters)
+            module = self.add_theoretical_evaluation(self.parameters)
             var = module.theo_impedance[-1] / self.parameters["signal_to_noise_ratio"]
             self.parameters["expected_var"] = var
 
-        elif mode == "from_exp":
+        elif mode == "from_data":
 
-            (module,) = self._add_standard_evaluation(self.parameters)
+            module = self._add_standard_evaluation(self.parameters)
 
             module.hist, bin_edge = np.histogram(
                 module.impedance - module.imp_smooth_full, bins=30
@@ -298,18 +319,20 @@ class Evaluation:
         min_res = 1e100
         max_res = 1e-100
 
-        seed = 57245
+        # Set up the random number generator
+        seed = self.parameters.get("random_seed")
+        if seed is not None:
+            rng = np.random.default_rng(seed)
+        else:
+            rng = np.random.default_rng()
 
         for n in range(repetitions):
 
             logger.info(f"Repetition {n + 1}...")
 
             if mode == "from_theo":
-                self.parameters["impedance"] = (
-                    module.theo_impedance
-                    + np.random.default_rng(n + seed).normal(
-                        0.0, var, len(module.theo_impedance)
-                    )
+                self.parameters["impedance"] = module.theo_impedance + rng.normal(
+                    0.0, var, len(module.theo_impedance)
                 )
                 self.parameters["time"] = np.exp(module.theo_log_time)
                 (boot_module,) = self._add_standard_evaluation(self.parameters)
@@ -327,14 +350,11 @@ class Evaluation:
                 boot_module.reference_cum_res = module.theo_int_cau_res
                 boot_module.reference_cum_cap = module.theo_int_cau_cap
 
-            elif mode == "from_exp":
+            elif mode == "from_data":
 
                 self.parameters["expected_var"] = popt[1]
-                self.parameters["impedance"] = (
-                    module.imp_smooth_full
-                    + np.random.default_rng(n + seed).normal(
-                        0.0, abs(popt[1]), len(module.imp_smooth_full)
-                    )
+                self.parameters["impedance"] = module.imp_smooth_full + rng.normal(
+                    0.0, abs(popt[1]), len(module.imp_smooth_full)
                 )
                 self.parameters["time"] = np.exp(module.log_time)
 
@@ -361,9 +381,7 @@ class Evaluation:
                 self.parameters["expected_var"] = var
                 self.parameters["impedance"] = self.parameters[
                     "impedance_no_noise"
-                ] + np.random.default_rng(n + seed).normal(
-                    0.0, var, len(self.parameters["impedance_no_noise"])
-                )
+                ] + rng.normal(0.0, var, len(self.parameters["impedance_no_noise"]))
 
                 (boot_module,) = self._add_standard_evaluation(self.parameters)
 
@@ -392,13 +410,9 @@ class Evaluation:
                 self.parameters["expected_var"] = var
                 self.parameters["impedance"] = self.parameters[
                     "impedance_no_noise"
-                ] + np.random.default_rng(n + seed).normal(
-                    0.0, var, len(self.parameters["impedance_no_noise"])
-                )
+                ] + rng.normal(0.0, var, len(self.parameters["impedance_no_noise"]))
 
-                (boot_module,) = self.add_optimization_evaluation(
-                    {}, mode="from_internal"
-                )
+                boot_module = self.add_optimization_evaluation({}, mode="from_internal")
 
                 boot_module.reference_time_imp = np.log(self.parameters["time"])
                 boot_module.reference_impedance = self.parameters["impedance_no_noise"]
@@ -419,7 +433,7 @@ class Evaluation:
             else:
                 logger.error("Invalid mode for bootstrapping")
 
-            if mode == "from_theo" or mode == "from_exp" or mode == "given":
+            if mode == "from_theo" or mode == "from_data" or mode == "given":
 
                 if n == 0:
                     self.imp_time = boot_module.log_time
@@ -605,23 +619,21 @@ class Evaluation:
         boot_module.data_handlers.append("boot")
 
         self._add_module_to_eval_dict(boot_module)
-        if mode == "from_theo" or mode == "from_exp":
-            return [boot_module, module]
-        elif mode == "given" or mode == "given_with_opt":
-            return [boot_module]
+        return boot_module
 
     def add_optimization_evaluation(self, parameters):
+        if not isinstance(parameters, dict):
+            raise TypeError("Parameters must be provided as a dictionary.")
 
         mode = parameters.pop("mode", "from_asc")
 
-        for key, value in parameters.items():
-            self.parameters[key] = value
+        self.parameters = dbase.validate_and_merge_defaults(parameters, self.parameters)
 
-        (module,) = self._add_optimization_evaluation(parameters, mode=mode)
+        module = self._add_optimization_evaluation(parameters, mode=mode)
 
         self._add_module_to_eval_dict(module)
 
-        return [module]
+        return module
 
     def _add_optimization_evaluation(
         self, parameters, mode="from_asc", external_module=None
@@ -647,20 +659,6 @@ class Evaluation:
             elif module.opt_extrapolate == False:
                 module.opt_log_time = module.log_time
                 module.opt_imp = module.impedance
-
-            module.cau_res_opt = module.int_cau_res
-            module.cau_cap_opt = module.int_cau_cap
-
-        if mode == "from_data":
-            module = self.area_evaluation({})
-            module.theo_log_time = np.linspace(
-                self.parameters["theo_log_time"][0],
-                self.parameters["theo_log_time"][1],
-                self.parameters["theo_log_time_size"],
-            )
-
-            module.opt_log_time = module.log_time
-            module.opt_imp = module.impedance
 
             module.cau_res_opt = module.int_cau_res
             module.cau_cap_opt = module.int_cau_cap
@@ -829,32 +827,7 @@ class Evaluation:
             top.weighted_diff(module.opt_log_time, module.opt_imp, theo_impedance_int),
         )
 
-        #  recalculation of the forward direction with the optimized parameters for increased accuracy
-        if self.parameters["opt_recalc_forward"]:
-            logger.info("Recalculating forward direction:")
-
-            self.parameters.update(
-                {
-                    "save_temperature": False,
-                    "look_at_raw_data": False,
-                    "look_at_extrpl": False,
-                    "look_at_temp": False,
-                    "look_at_voltage": False,
-                    "look_at_z_curve": False,
-                    "read_mode": "none",
-                    "conv_mode": "none",
-                    "impedance": module.theo_impedance,
-                    "time": np.exp(module.theo_log_time),
-                }
-            )
-
-            remodule = self._add_standard_evaluation(self.parameters)
-
-            logger.info("Done")
-
-            return [module, remodule]
-
-        return [module]
+        return module
 
     def add_theoretical_evaluation(self, parameters):
 
@@ -902,38 +875,6 @@ class Evaluation:
 
         module.theo_imp_deriv, module.theo_impedance = top.time_const_to_imp(
             module.theo_log_time, module.theo_time_const
-        )
-
-        if not self.parameters["theo_realistic_z"]:
-
-            up_bound = np.searchsorted(
-                module.theo_log_time, self.parameters["theo_z_cut"][1]
-            )
-            low_bound = np.searchsorted(
-                module.theo_log_time, self.parameters["theo_z_cut"][0]
-            )
-
-            module.impedance = module.theo_impedance[low_bound:up_bound]
-            module.log_time = module.theo_log_time[low_bound:up_bound]
-
-        if self.parameters["theo_realistic_z"]:
-
-            intervals = self.parameters["theo_freq_spacing"]
-            times = np.empty(0)
-            start_time = 1.0 / intervals[0][1]
-
-            for count, freq in intervals:
-                end_time = start_time + (count - 1) / freq
-                times = np.append(times, np.linspace(start_time, end_time, count))
-                start_time = end_time
-
-            module.log_time = np.log(times)
-            module.impedance = np.interp(
-                module.log_time, module.theo_log_time, module.theo_impedance
-            )
-
-        module.impedance = module.impedance + np.random.normal(
-            scale=self.parameters["theo_added_noise"], size=len(module.impedance)
         )
 
         self._add_module_to_eval_dict(module)
@@ -1052,7 +993,6 @@ class Evaluation:
                 self.parameters["expected_var"] = 0.0
                 self.parameters["impedance"] = theo_module.impedance
                 self.parameters["time"] = np.exp(theo_module.log_time)
-                self.parameters["save_temperature"] = False
 
                 comp_module = self._add_standard_evaluation(self.parameters)
 
@@ -1077,7 +1017,6 @@ class Evaluation:
                 self.parameters["expected_var"] = 0.0
                 self.parameters["impedance"] = theo_module.impedance
                 self.parameters["time"] = np.exp(theo_module.log_time)
-                self.parameters["save_temperature"] = False
 
                 comp_module = self._add_optimization_evaluation(
                     {}, mode="from_external", external_module=theo_module
@@ -1100,16 +1039,6 @@ class Evaluation:
                 )
 
             elif modifier["mod_method"] == "forward_with_noise":
-
-                self.parameters["save_time_spec"] = False
-                self.parameters["save_impedance"] = False
-                self.parameters["save_impedance_smooth"] = False
-                self.parameters["save_derivative"] = False
-                self.parameters["save_cumul_struc"] = False
-                self.parameters["save_temperature"] = False
-                self.parameters["save_back_impedance"] = False
-                self.parameters["save_back_derivative"] = False
-                self.parameters["save_sum_time_spec"] = False
 
                 coarse_num = int(1e4)
 
@@ -1150,13 +1079,6 @@ class Evaluation:
 
             elif modifier["mod_method"] == "optimization_with_noise":
 
-                self.parameters["save_time_spec"] = False
-                self.parameters["save_impedance"] = False
-                self.parameters["save_impedance_smooth"] = False
-                self.parameters["save_derivative"] = False
-                self.parameters["save_cumul_struc"] = False
-                self.parameters["save_temperature"] = False
-
                 coarse_num = int(1e4)
 
                 log_time_coarse = np.linspace(
@@ -1194,13 +1116,6 @@ class Evaluation:
                 )
 
             elif modifier["mod_method"] == "forward_with_noise_sparse":
-
-                self.parameters["save_time_spec"] = False
-                self.parameters["save_impedance"] = False
-                self.parameters["save_impedance_smooth"] = False
-                self.parameters["save_derivative"] = False
-                self.parameters["save_cumul_struc"] = False
-                self.parameters["save_temperature"] = False
 
                 maxrate = 1e-7
                 log_frac = 0.3
@@ -1274,13 +1189,6 @@ class Evaluation:
                 )
 
             elif modifier["mod_method"] == "optimization_with_noise_sparse":
-
-                self.parameters["save_time_spec"] = False
-                self.parameters["save_impedance"] = False
-                self.parameters["save_impedance_smooth"] = False
-                self.parameters["save_derivative"] = False
-                self.parameters["save_cumul_struc"] = False
-                self.parameters["save_temperature"] = False
 
                 maxrate = 1e-7
                 log_frac = 0.3
