@@ -6,27 +6,11 @@ Created on Wed Dec 06 10:20:11 2017
 """
 
 import numpy as np
-import scipy.integrate as sin
 import scipy.interpolate as interp
 import numpy.polynomial.polynomial as poly
 import logging
 
 logger = logging.getLogger("PyRthLogger")
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# %%        some auxiliary functions
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-look_at_k_factor = False
-
-
-def announce_set_param(params, *args):
-
-    for key, value in args:
-        params[key] = value
-        print(key, "is", value)
 
 
 def first_nonzero_index(array):
@@ -39,48 +23,6 @@ def first_nonzero_index(array):
         fnzi = indices[0]
 
     return fnzi
-
-
-# @njit(cache=True)
-def tricubic_weight(x_range, x_center):
-
-    max_dist_cd1 = x_center - x_range[0]
-    max_dist_cd2 = x_range[-1] - x_center
-    max_dist = max_dist_cd1 if max_dist_cd1 > max_dist_cd2 else max_dist_cd2
-
-    weight = (1 - np.abs((x_range - x_center) / max_dist) ** 3) ** 3
-
-    return weight
-
-
-def gaussian_weight(x_range, x_center):
-    max_dist = (
-        x_center - x_range[0]
-        if x_center - x_range[0] > x_range[-1] - x_center
-        else x_range[-1] - x_center
-    )
-
-    weight = [0] * len(x_range)
-
-    for i in range(len(x_range)):
-        weight[i] = np.exp(-0.5 * np.abs((x_range[i] - x_center) / max_dist) ** 2)
-
-    return weight
-
-
-def pd_conv(x):
-    return x.replace(",", ".")
-
-
-def frange(start, stop, steps):
-    skip = (stop - start) / (steps)
-    i = 0
-    arr = []
-    while i < steps:
-        arr.append(start)
-        i += 1
-        start += skip
-    return np.array(arr), skip
 
 
 def weight_z(x):
