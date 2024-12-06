@@ -11,21 +11,21 @@
 
 ## 📖 Table of Contents
 
-- [Description](#description)
-- [Why PyRth?](#why-pyrth)
-- [Vision and Rationale](#vision-and-rationale)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
+- [Description](#-description)
+- [Why PyRth?](#-why-pyrth)
+- [Vision and Rationale](#-vision-and-rationale)
+- [Features](#-features)
+- [Installation](#-installation)
+- [Usage](#-usage)
   - [Quick Start](#quick-start)
   - [Examples](#examples)
   - [Basic Documentation](#basic-documentation)
-- [Publications](#publications)
-- [Evaluation Methods](#evaluation-methods)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
-- [Acknowledgements](#acknowledgements)
+- [Publications](#-publications)
+- [Evaluation Methods](#-evaluation-methods)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Contact](#-contact)
+- [Acknowledgements](#-acknowledgements)
 
 ---
 
