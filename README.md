@@ -109,7 +109,7 @@ params = {
             }
 
 eval_instance = PyRth.Evaluation()
-modules = standard_module(params)
+modules = eval_instance.standard_module(params)
 eval_instance.modules_output()
 eval_instance.save_all_figures(override_save=True)
 
