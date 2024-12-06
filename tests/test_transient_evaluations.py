@@ -9,18 +9,7 @@ import re
 import numpy as np
 
 import PyRth
-from transient_evaluations_test_data import (
-    test_cases_basic,
-    test_cases_theoretical,
-    test_cases_set,
-    test_cases_bootstrap,
-    test_cases_optimization,
-    standard_assertions,
-    theoretical_assertions,
-    bootstrap_assertions,
-    optimization_assertions,
-    standard_set_assertions,
-)
+import transient_evaluations_test_data as test_data
 
 logger = logging.getLogger("PyRthLogger")
 logger.setLevel(logging.DEBUG)
@@ -63,11 +52,11 @@ def log_to_file(log_file_path: str):
 
 
 class TestTransientEvaluations(unittest.TestCase):
-    test_cases_basic = test_cases_basic
-    test_cases_theoretical = test_cases_theoretical
-    test_cases_set = test_cases_set
-    test_cases_bootstrap = test_cases_bootstrap
-    test_cases_optimization = test_cases_optimization
+    test_cases_basic = test_data.test_cases_basic
+    test_cases_theoretical = test_data.test_cases_theoretical
+    test_cases_set = test_data.test_cases_set
+    test_cases_bootstrap = test_data.test_cases_bootstrap
+    test_cases_optimization = test_data.test_cases_optimization
 
     @classmethod
     def setUpClass(cls):
@@ -150,7 +139,9 @@ class TestTransientEvaluations(unittest.TestCase):
     @parameterized.expand([(case["name"], case["params"]) for case in test_cases_basic])
     def test_standard_module(self, name: str, params: Dict[str, Any]) -> None:
         """Test standard evaluation with different parameter sets"""
-        self._run_evaluation_test(name, params, "standard_module", standard_assertions)
+        self._run_evaluation_test(
+            name, params, "standard_module", test_data.standard_assertions
+        )
 
     @parameterized.expand(
         [(case["name"], case["params"]) for case in test_cases_theoretical]
@@ -158,13 +149,13 @@ class TestTransientEvaluations(unittest.TestCase):
     def test_theoretical_module(self, name: str, params: Dict[str, Any]) -> None:
         """Test theoretical evaluation with different parameter sets"""
         self._run_evaluation_test(
-            name, params, "theoretical_module", theoretical_assertions
+            name, params, "theoretical_module", test_data.theoretical_assertions
         )
 
     @parameterized.expand([(case["name"], case["params"]) for case in test_cases_set])
     def test_standard_module_set(self, name: str, params: Dict[str, Any]):
         self._run_evaluation_test(
-            name, params, "standard_module_set", standard_set_assertions
+            name, params, "standard_module_set", test_data.standard_set_assertions
         )
 
     @parameterized.expand(
@@ -172,7 +163,7 @@ class TestTransientEvaluations(unittest.TestCase):
     )
     def test_bootstrap_module(self, name, params):
         self._run_evaluation_test(
-            name, params, "bootstrap_module", bootstrap_assertions
+            name, params, "bootstrap_module", test_data.bootstrap_assertions
         )
 
     @parameterized.expand(
@@ -180,5 +171,5 @@ class TestTransientEvaluations(unittest.TestCase):
     )
     def test_optimization_module(self, name, params):
         self._run_evaluation_test(
-            name, params, "optimization_module", optimization_assertions
+            name, params, "optimization_module", test_data.optimization_assertions
         )
