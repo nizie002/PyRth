@@ -232,20 +232,16 @@ class TestTransientEvaluations(unittest.TestCase):
 
     @parameterized.expand([(case["name"], case["params"]) for case in test_cases_set])
     def test_evaluation_set(self, name: str, params: Dict[str, Any]):
-        self._run_evaluation_test(name, params, evaluation_method="standard_module_set")
+        self._run_evaluation_test(name, params, "standard_module_set")
 
     @parameterized.expand(
         [(case["name"], case["params"]) for case in test_cases_bootstrap]
     )
     def test_bootstrap_evaluation(self, name, params):
-        self._run_evaluation_test(
-            name=name, params=params, evaluation_method="bootstrap_module"
-        )
+        self._run_evaluation_test(name, params, "bootstrap_module")
 
     @parameterized.expand(
         [(case["name"], case["params"]) for case in test_cases_optimization]
     )
     def test_optimization_evaluation(self, name, params):
-        self._run_evaluation_test(
-            name=name, params=params, evaluation_method="optimization_module"
-        )
+        self._run_evaluation_test(name, params, "optimization_module")
