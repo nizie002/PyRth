@@ -34,6 +34,7 @@
 **PyRth** is an open-source Python package designed for evaluating thermal transient measurement data, such as those obtained from devices like the T3ster. It processes thermal transient data using specialized algorithms to extract detailed thermal characteristics, including the thermal structure function.
 
 PyRth serves as a modern and flexible alternative to proprietary evaluation software provided with thermal transient measurement equipment. It optionally outputs results as images and CSV files, facilitating comprehensive analysis and visualization.
+
 ---
 
 ## ❓ Why PyRth?
