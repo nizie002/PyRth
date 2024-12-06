@@ -12,6 +12,8 @@
 ## 📖 Table of Contents
 
 - [Description](#description)
+- [Why PyRth?](#why-pyrth)
+- [Vision and Rationale](#vision-and-rationale)
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -29,11 +31,27 @@
 
 ## 📚 Description
 
-**PyRth** is an open-source Python package for evaluating thermal transient measurement data, such as those obtained from devices like the T3ster. It processes LED voltage data using specialized algorithms to extract detailed thermal characteristics such as the thermal structure function.
+**PyRth** is an open-source Python package designed for evaluating thermal transient measurement data, such as those obtained from devices like the T3ster. It processes thermal transient data using specialized algorithms to extract detailed thermal characteristics, including the thermal structure function.
 
-This tool serves as a modern and flexible alternative to proprietary evaluation software provided with thermal transient measurement equipment. PyRth optinally outputs results as images and CSV files, facilitating easy analysis and visualization.
-
+PyRth serves as a modern and flexible alternative to proprietary evaluation software provided with thermal transient measurement equipment. It optionally outputs results as images and CSV files, facilitating comprehensive analysis and visualization.
 ---
+
+## ❓ Why PyRth?
+
+**PyRth** stands out by offering:
+- **Academic Rigor**: Rooted in PhD-level research, ensuring robust and reliable thermal analysis.
+- **Reproducibility**: Open-source nature allows for transparent verification and replication of results.
+- **Flexibility**: Supports both commercial and custom-built measurement setups, catering to diverse research needs.
+- **Community-Driven**: Encourages contributions and collaborations to continuously enhance functionality and performance.
+
+
+## 🔭 Vision and Rationale
+
+Thermal management is critical to the performance, reliability, and longevity of semiconductor devices. By subjecting devices to controlled power steps and recording their thermal responses over time, thermal transient measurements yield deep insights into the device’s internal heat-flow paths. The resulting structure functions—as defined in standards like JEDEC JESD51-14—provide layer-by-layer thermal resistance and capacitance distributions, essential for diagnosing design inefficiencies and improving packaging strategies.
+
+Commercial solutions, such as the Siemens T3STER, offer turnkey instrumentation for capturing high-fidelity transient data. However, as research needs grow beyond standardized workflows, scientists and engineers increasingly require open, adaptable analysis methods. 
+
+PyRth is built upon the comprehensive research conducted during my PhD, ensuring that it incorporates cutting-edge thermal analysis techniques and scientifically validated methodologies. It integrates directly with Python-based open-source research environments, supports data from both commercial and custom-built measurement setups, and applies state-of-the-art algorithms to produce reliable structure functions and related thermal metrics. As a result, PyRth empowers the scientific community to conduct reproducible, transparent, and innovative thermal analyses, advancing both fundamental research and applied device engineering.
 
 ## ✨ Features
 
@@ -192,13 +210,46 @@ PyRth offers a suite of evaluation modules for comprehensive thermal analysis:
 
 ---
 
+## 🛠️ Contributing
+
+Contributions are welcome! To contribute to PyRth, please follow these steps:
+
+1. **Fork the Repository**: Click the fork button on the top right of this page to create your own copy.
+2. **Clone the Fork**: Clone your forked repository to your local machine using:
+    ```bash
+    git clone https://github.com/your-username/PyRth.git
+    ```
+3. **Create a Branch**: Create a new branch for your feature or bugfix:
+    ```bash
+    git checkout -b feature/your-feature-name
+    ```
+4. **Commit Changes**: Make your changes and commit them with clear messages:
+    ```bash
+    git commit -m "Add feature: your feature description"
+    ```
+5. **Push to Fork**: Push your changes to your forked repository:
+    ```bash
+    git push origin feature/your-feature-name
+    ```
+6. **Submit a Pull Request**: Navigate to the original repository and submit a pull request detailing your changes.
+
+### Guidelines
+
+- **Code Standards**: Ensure your code follows the existing style and conventions.
+- **Documentation**: Update or add documentation as necessary.
+- **Tests**: Include tests for new features or bug fixes.
+- **Issue Tracking**: Check existing issues or create a new one to discuss your proposed changes.
+
+Thank you for contributing to PyRth!
+
+---
+
 ## 📄 License
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 📫 Contact
 
 Email: ziegeler.nilsjonas@fh-swf.de
-GitHub Issues: PyRth Issues
 
 ## 🌟 Acknowledgements
 
