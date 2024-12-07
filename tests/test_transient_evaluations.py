@@ -6,7 +6,6 @@ import shutil
 import os
 from contextlib import contextmanager
 import re
-import numpy as np
 
 import PyRth
 import transient_evaluations_test_data as test_data
