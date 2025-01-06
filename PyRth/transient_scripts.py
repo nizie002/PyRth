@@ -12,10 +12,14 @@ import scipy.optimize as spo
 import scipy.integrate as sin
 import logging
 
+from typing import Dict, List
+
 from . import transient_utils as utl
 from . import transient_optimization as top
 from . import transient_defaults as dbase
 from . import transient_core as core
+
+from .transient_core import StructureFunction
 
 logger = logging.getLogger("PyRthLogger")
 
@@ -23,10 +27,10 @@ logger = logging.getLogger("PyRthLogger")
 class Evaluation:
 
     def __init__(self):
-        self.parameters = {**dbase.std_eval_defaults, **dbase.std_output_defaults}
+        self.parameters: dict = {**dbase.std_eval_defaults, **dbase.std_output_defaults}
         self.figures = dict()
 
-        self.modules = {}
+        self.modules: Dict[str, StructureFunction] = {}
 
         core.numba_preloader()
         logger.info("Evaluation instance initialized.")
@@ -126,7 +130,7 @@ class Evaluation:
 
     def _standard_module(self, parameters):
 
-        module = core.Structure_function(parameters)
+        module: StructureFunction = StructureFunction(parameters)
 
         # Ensure required parameters are set in the module
         if not hasattr(module, "label"):
@@ -265,11 +269,11 @@ class Evaluation:
 
         return modules_list
 
-    def bootstrap_module(self, parameters, mode=None):
+    def bootstrap_module(self, parameters: dict, mode=None):
 
         self.parameters = dbase.validate_and_merge_defaults(parameters, self.parameters)
 
-        mode = self.parameters["bootstrap_mode"]
+        mode = self.parameters.pop("bootstrap_mode", "from_data")
 
         if mode not in ["from_theo", "from_data", "given", "given_with_opt"]:
             raise ValueError(
@@ -329,11 +333,16 @@ class Evaluation:
             logger.info(f"Repetition {n + 1}...")
 
             if mode == "from_theo":
-                self.parameters["impedance"] = module.theo_impedance + rng.normal(
+                impedance = module.theo_impedance + rng.normal(
                     0.0, var, len(module.theo_impedance)
                 )
-                self.parameters["time"] = np.exp(module.theo_log_time)
-                (boot_module,) = self._standard_module(self.parameters)
+                time = np.exp(module.theo_log_time)
+
+                self.parameters["data"] = np.column_stack((time, impedance))
+                print(self.parameters["data"][:10, :])
+                self.parameters["conv_mode"] = "temp"
+
+                boot_module: StructureFunction = self._standard_module(self.parameters)
 
                 boot_module.reference_impedance = module.theo_impedance
                 boot_module.reference_time_imp = module.theo_log_time
@@ -356,7 +365,7 @@ class Evaluation:
                 )
                 self.parameters["time"] = np.exp(module.log_time)
 
-                (boot_module,) = self._standard_module(self.parameters)
+                boot_module: StructureFunction = self._standard_module(self.parameters)
 
                 boot_module.reference_impedance = module.imp_smooth_full
                 boot_module.reference_time_imp = module.log_time
@@ -694,7 +703,6 @@ class Evaluation:
                 module.opt_imp = self.parameters["impedance"]
 
         N = self.parameters["opt_model_layers"]
-        theo_lengths = [1] * N
         if self.parameters["struc_init_method"] == "optimal_fit":
             logger.info("Optimizing structure function approximation...")
 
@@ -753,7 +761,7 @@ class Evaluation:
         print(module.fin_res_diff, module.fin_cap_diff)
 
         module.theo_int_cau_res, module.theo_int_cau_cap = top.struc_params_to_func(
-            1000, theo_lengths, module.fin_res_diff, module.fin_cap_diff
+            1000, module.fin_res_diff, module.fin_cap_diff
         )
 
         module.theo_diff_struc = np.zeros(len(module.theo_int_cau_res) - 1)
@@ -766,7 +774,6 @@ class Evaluation:
         module.theo_time_const = top.struc_to_time_const(
             module.theo_log_time,
             self.parameters["theo_delta"],
-            theo_lengths,
             module.fin_res_diff,
             module.fin_cap_diff,
         )
@@ -778,7 +785,6 @@ class Evaluation:
         module.init_theo_time_const = top.struc_to_time_const(
             module.theo_log_time,
             self.parameters["theo_delta"],
-            theo_lengths,
             module.init_opt_imp_res_diff,
             module.init_opt_imp_cap_diff,
         )
@@ -833,7 +839,7 @@ class Evaluation:
             **parameters,
         }
 
-        module = core.Structure_function(self.parameters)
+        module: StructureFunction = StructureFunction(self.parameters)
         module.figures = self.figures
 
         module.theo_log_time = np.linspace(
@@ -843,12 +849,11 @@ class Evaluation:
         )
         module.theo_delta = self.parameters["theo_delta"]
 
-        module.theo_lengths = self.parameters["theo_lengths"]
         module.theo_resistances = self.parameters["theo_resistances"]
         module.theo_capacitances = self.parameters["theo_capacitances"]
 
         module.theo_int_cau_res, module.theo_int_cau_cap = top.struc_params_to_func(
-            1000, module.theo_lengths, module.theo_resistances, module.theo_capacitances
+            1000, module.theo_resistances, module.theo_capacitances
         )
 
         module.theo_int_cau_res = module.theo_int_cau_res[1:]
@@ -864,7 +869,6 @@ class Evaluation:
         module.theo_time_const = top.struc_to_time_const(
             module.theo_log_time,
             module.theo_delta,
-            module.theo_lengths,
             module.theo_resistances,
             module.theo_capacitances,
         )
@@ -878,7 +882,7 @@ class Evaluation:
         module.data_handlers.append("theo_structure")
         module.data_handlers.append("theo")
 
-        return [module]
+        return module
 
     def comparison_module(self, parameters, modifier):
 
@@ -891,8 +895,6 @@ class Evaluation:
         if not modifier["mod_method"] == "measure_opt":
             theo_module = self.theoretical_module({})
 
-        self.parameters["look_at_backwards_imp_deriv"] = False
-        self.parameters["look_at_backwards_impedance"] = False
         self.parameters["look_at_temp"] = False
 
         for key, value in modifier.items():

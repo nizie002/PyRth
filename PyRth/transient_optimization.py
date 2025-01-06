@@ -21,11 +21,11 @@ def cm_tanh(arr):
 
 
 @functools.lru_cache(maxsize=80)
-def give_rung_imp(res, cap, length):
+def give_rung_imp(res, cap):
 
     global complex_time
 
-    gamma_l = np.sqrt(res * cap * complex_time) * length
+    gamma_l = np.sqrt(res * cap * complex_time)
     z_null = np.sqrt(res / (cap * complex_time))
 
     tanh_gamma_l = cm_tanh(gamma_l)
@@ -59,9 +59,6 @@ def norm_structure(theo_x, theo_y, compare_x, compare_y):
     theo_x = theo_x[1:]
     theo_y = theo_y[1:]
 
-    # min_res = theo_x[0] if theo_x[0] > compare_x[0] else compare_x[0]
-    # max_res = theo_x[-1] if theo_x[-1] < compare_x[-1] else compare_x[-1]
-
     min_res = theo_x[0]
     max_res = compare_x[-1]
 
@@ -76,7 +73,7 @@ def norm_structure(theo_x, theo_y, compare_x, compare_y):
     return np.trapz(np.abs(compare_y_fine - theo_y_fine), x=res_fine)
 
 
-def struc_to_time_const(theo_log_time, delta, lengths, resistances, capacitances):
+def struc_to_time_const(theo_log_time, delta, resistances, capacitances):
 
     global complex_time
     global delta_in_global_complex_time
@@ -92,14 +89,12 @@ def struc_to_time_const(theo_log_time, delta, lengths, resistances, capacitances
             delta_in_global_complex_time = delta
             give_rung_imp.cache_clear()
 
-    n = len(lengths)
+    n = len(capacitances)
     last_z = 0.0
 
     for i in np.arange(n - 1, -1, -1):
 
-        z_null, tanh_gamma_l = give_rung_imp(
-            resistances[i], capacitances[i], lengths[i]
-        )
+        z_null, tanh_gamma_l = give_rung_imp(resistances[i], capacitances[i])
 
         z_result = (
             z_null * (last_z + tanh_gamma_l * z_null) / (last_z * tanh_gamma_l + z_null)
@@ -132,16 +127,16 @@ def time_const_to_imp(theo_log_time, time_const):
     return imp_deriv, imp
 
 
-def struc_params_to_func(number, lengths, resistances, capacities):
+def struc_params_to_func(number, resistances, capacities):
 
-    N = len(lengths)
+    N = len(resistances)
 
     sum_res = np.zeros(N + 1)
     sum_cap = np.zeros(N + 1)
 
     for i in range(N):
-        sum_res[i + 1] = sum_res[i] + lengths[i] * resistances[i]
-        sum_cap[i + 1] = sum_cap[i] + lengths[i] * capacities[i]
+        sum_res[i + 1] = sum_res[i] * resistances[i]
+        sum_cap[i + 1] = sum_cap[i] * capacities[i]
 
     sum_res_int = np.linspace(sum_res[0], sum_res[-1], number)
 
@@ -317,16 +312,13 @@ def to_minimize_imp(
     log_time,
     global_weight,
     N,
-    theo_lengths,
     theo_delta,
 ):
 
     opt_res = sort_and_lim_diff(arguments[:N])
     opt_cap = sort_and_lim_diff(np.exp(arguments[N:]))
 
-    theo_time_const = struc_to_time_const(
-        theo_log_time, theo_delta, theo_lengths, opt_res, opt_cap
-    )
+    theo_time_const = struc_to_time_const(theo_log_time, theo_delta, opt_res, opt_cap)
 
     theo_imp_deriv, theo_impedance = time_const_to_imp(theo_log_time, theo_time_const)
 
@@ -359,7 +351,6 @@ def optimize_to_imp(
     delta_in_global_complex_time = theo_delta
 
     N = len(res_init)
-    theo_lengths = np.ones(N)
 
     cap_init_log = np.log(cap_init)
 
@@ -430,7 +421,6 @@ def optimize_to_imp(
                 log_time,
                 global_weight,
                 N,
-                theo_lengths,
                 theo_delta,
             ),
             callback=callbackF,
@@ -470,7 +460,6 @@ def optimize_to_imp(
                 log_time,
                 global_weight,
                 N,
-                theo_lengths,
                 theo_delta,
             ),
             method="COBYLA",

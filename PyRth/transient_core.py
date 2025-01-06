@@ -71,7 +71,7 @@ def timer_decorator(func):
 
 
 # figures and data handling are split in transient_output
-class Structure_function(DataExporter):
+class StructureFunction(DataExporter):
 
     def __init__(self, params):
 

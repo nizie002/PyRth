@@ -9,15 +9,8 @@ test_cases_theoretical = [
             "theo_log_time": [-10, 3],
             "theo_log_time_size": 10000,
             "theo_delta": 1.5 * (2 * np.pi / 360),
-            "theo_lengths": [
-                1e-2,
-                1e-2,
-                1e-2,
-                1e-2,
-                1e-2,
-            ],
-            "theo_resistances": [500, 1500, 1000, 1000, 1000],
-            "theo_capacitances": [1e-3, 1e-1, 1e-2, 1e-0, 1e1],
+            "theo_resistances": [5, 15, 10, 10, 10],
+            "theo_capacitances": [1e-5, 1e-3, 1e-4, 1e-2, 1e-1],
         },
     },
     {
@@ -28,15 +21,8 @@ test_cases_theoretical = [
             "theo_log_time": [-15, 5],
             "theo_log_time_size": 30000,
             "theo_delta": 0.5 * (2 * np.pi / 360),
-            "theo_lengths": [
-                1e-2,
-                1e-2,
-                1e-2,
-                1e-2,
-                1e-2,
-            ],
-            "theo_resistances": [1000, 1000, 1000, 1000, 1000],
-            "theo_capacitances": [1e-2, 1e1, 1e-2, 1e-1, 1e2],
+            "theo_resistances": [10, 10, 10, 10, 10],
+            "theo_capacitances": [1e-4, 1e-1, 1e-4, 1e-3, 1e0],
         },
     },
     {
@@ -47,9 +33,8 @@ test_cases_theoretical = [
             "theo_log_time": [-10, 5],
             "theo_log_time_size": 1000,
             "theo_delta": np.pi / 90,  # 2 degrees
-            "theo_lengths": [1e-3, 1e-3, 1e-3],
-            "theo_resistances": [100, 200, 300],
-            "theo_capacitances": [1e-6, 1e-5, 1e-4],
+            "theo_resistances": [0.1, 0.2, 0.3],
+            "theo_capacitances": [1e-9, 1e-8, 1e-7],
         },
     },
     {
@@ -60,9 +45,8 @@ test_cases_theoretical = [
             "theo_log_time": [-15, 10],
             "theo_log_time_size": 2000,
             "theo_delta": np.pi / 45,  # 4 degrees
-            "theo_lengths": [1e-3, 2e-3, 1e-3, 2e-3, 1e-3],
-            "theo_resistances": [100, 200, 300, 400, 500],
-            "theo_capacitances": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2],
+            "theo_resistances": [0.1, 0.4, 0.3, 0.8, 0.5],
+            "theo_capacitances": [1e-9, 2e-8, 1e-7, 2e-9, 1e-5],
         },
     },
 ]

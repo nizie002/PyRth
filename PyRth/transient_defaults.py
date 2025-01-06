@@ -5,11 +5,11 @@ import logging
 logger = logging.getLogger("PyRthLogger")
 
 
-def figure_logic(boole):
+def figure_logic(boole: bool) -> bool:
     return (boole or global_look_at) and not suppress_all_figures
 
 
-def validate_and_merge_defaults(params, self_parameters):
+def validate_and_merge_defaults(params: dict, self_parameters: dict) -> dict:
 
     # This function is used to integrate the standard evaluation defaults and the standard output defaults into the parameters dictionary.
 
@@ -44,7 +44,7 @@ def validate_and_merge_defaults(params, self_parameters):
     return params
 
 
-std_eval_defaults = {
+std_eval_defaults: dict = {
     # Numerical Settings
     "precision": 250,  # number of points in the impedance curve
     "log_time_size": 250,  # number of points in the logtime array
@@ -65,6 +65,10 @@ std_eval_defaults = {
     #
     # Theoretical settings
     "theo_log_time_size": 30000,  # number of points in the logtime array for the theoretical model
+    "theo_resistances": None,  # list of resistances for the theoretical model, user should provide this
+    "theo_capacitances": None,  # list of capacitances for the theoretical model, user should provide this
+    "theo_log_time": [-17, 10],  # range of the logtime array for the theoretical model
+    "signal_to_noise_ratio": 100,  # signal to noise ratio for added noise in theoretical impedances
     "theo_delta": 0.5
     * (
         2 * np.pi / 360
@@ -134,12 +138,12 @@ std_eval_defaults = {
 }
 
 
-global_look_at = False  # whether to look at all figures or not
-suppress_all_figures = False  # whether to suppress all figures or not
+global_look_at: bool = False  # whether to look at all figures or not
+suppress_all_figures: bool = False  # whether to suppress all figures or not
 
 # This dictionary, std_output_defaults, controls the saving and output behavior of the system.
 # Each key-value pair represents a specific operation, where a value of True enables the operation, and False disables it.
-std_output_defaults = {
+std_output_defaults: dict = {
     "fig_save_on": False,
     "save_voltage": True,
     "save_temperature": True,

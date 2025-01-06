@@ -138,6 +138,13 @@ def extrapolate_temperature(
         expl_ft_prm (array): Polynomial fit parameters.
         t_null (float): Temperature at time zero.
     """
+    print(time_raw.shape)
+    print(temp_raw.shape)
+
+    # Check if time_raw contains zero at index 0
+    if time_raw[0] == 0:
+        raise ValueError(f"time_raw contains zero at index 0 with value {time_raw[0]}")
+
     # Calculate the total number of decades for the entire range
     total_decades = np.log10(time_raw[-1]) - np.log10(time_raw[0])
 

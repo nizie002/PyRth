@@ -22,7 +22,7 @@ The `Evaluation` class orchestrates the handling of various evaluation modules w
 ## Inter-Module Interactions
 
 - **Core Dependencies**: `transient_core.py` relies on utilities from `transient_utils.py` and computations from `transient_engine.py`.
-- **Workflow Orchestration**: High-level scripts in `transient_scripts.py` use the `Structure_function` class to manage evaluations.
+- **Workflow Orchestration**: High-level scripts in `transient_scripts.py` use the `StructureFunction` class to manage evaluations.
 - **Model Refinement**: Optimization routines in `transient_optimization.py` improve models used by `transient_core.py`.
 - **Data Handling**: Data export and figure generation are managed by `transient_data_export.py` and `transient_figures.py`.
 
@@ -139,7 +139,7 @@ By integrating data processing, numerical computation, optimization, and visuali
 
 **Content**:
 
-- **`Structure_function` Class**: Integrates data processing, numerical computation, and result generation.
+- **`StructureFunction` Class**: Integrates data processing, numerical computation, and result generation.
 
   - **Parameters**:
 
