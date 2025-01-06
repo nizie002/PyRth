@@ -10,12 +10,12 @@ authors = [
     { name = "Nils J. Ziegeler", email = "ziegeler.nilsjonas@fh-swf.de" }
 ]
 dependencies = [
-    "numpy>=1.26.0,<2.0.0",
-    "scipy>=1.11.0,<2.0.0",
-    "matplotlib>=3.8.0,<4.0.0",
-    "numba>=0.59.0,<1.0.0",
-    "gmpy2>=2.1.2,<3.0.0",
-    "pandas>=2.0.0,<3.0.0"
+    "numpy>=1.26.4,<2.0.0",
+    "scipy>=1.14.1,<2.0.0",
+    "matplotlib>=3.9.2,<4.0.0",
+    "numba>=0.60.0,<1.0.0",
+    "gmpy2>=2.2.1,<3.0.0",
+    "pandas>=2.2.3,<3.0.0"
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
