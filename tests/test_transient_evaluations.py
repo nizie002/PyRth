@@ -6,16 +6,9 @@ import shutil
 import os
 from contextlib import contextmanager
 import re
-import numpy as np
 
 import PyRth
-from test_data import (
-    test_cases_basic,
-    test_cases_theoretical,
-    test_cases_set,
-    test_cases_bootstrap,
-    test_cases_optimization,
-)
+import transient_evaluations_test_data as test_data
 
 logger = logging.getLogger("PyRthLogger")
 logger.setLevel(logging.DEBUG)
@@ -58,11 +51,11 @@ def log_to_file(log_file_path: str):
 
 
 class TestTransientEvaluations(unittest.TestCase):
-    test_cases_basic = test_cases_basic
-    test_cases_theoretical = test_cases_theoretical
-    test_cases_set = test_cases_set
-    test_cases_bootstrap = test_cases_bootstrap
-    test_cases_optimization = test_cases_optimization
+    test_cases_basic = test_data.test_cases_basic
+    test_cases_theoretical = test_data.test_cases_theoretical
+    test_cases_set = test_data.test_cases_set
+    test_cases_bootstrap = test_data.test_cases_bootstrap
+    test_cases_optimization = test_data.test_cases_optimization
 
     @classmethod
     def setUpClass(cls):
@@ -142,110 +135,40 @@ class TestTransientEvaluations(unittest.TestCase):
             + "\n".join(error_logs),
         )
 
-    def _theoretical_assertions(
-        self, test_case: unittest.TestCase, module: Any
-    ) -> None:
-        """Additional assertions for theoretical evaluation"""
-        test_case.assertTrue(hasattr(module, "theo_log_time"))
-        test_case.assertTrue(hasattr(module, "theo_delta"))
-        test_case.assertTrue(hasattr(module, "theo_lengths"))
-        test_case.assertTrue(hasattr(module, "theo_resistances"))
-        test_case.assertTrue(hasattr(module, "theo_capacitances"))
-
-    def _standard_assertions(self, test_case: unittest.TestCase, module: Any) -> None:
-        """Additional assertions for standard evaluation"""
-        # Basic data attributes
-        test_case.assertTrue(hasattr(module, "data"), "Missing data attribute")
-        test_case.assertTrue(hasattr(module, "time"), "Missing time attribute")
-        test_case.assertTrue(
-            hasattr(module, "impedance"), "Missing impedance attribute"
-        )
-        test_case.assertTrue(hasattr(module, "log_time"), "Missing log_time attribute")
-
-        # time spectrum related attributes
-        test_case.assertTrue(
-            hasattr(module, "time_spec"), "Missing time_spec attribute"
-        )
-
-        # Structure function results
-        test_case.assertTrue(hasattr(module, "cau_res"), "Missing cau_res attribute")
-        test_case.assertTrue(hasattr(module, "cau_cap"), "Missing cau_cap attribute")
-        test_case.assertTrue(
-            hasattr(module, "int_cau_res"), "Missing int_cau_res attribute"
-        )
-        test_case.assertTrue(
-            hasattr(module, "int_cau_cap"), "Missing int_cau_cap attribute"
-        )
-        test_case.assertTrue(
-            hasattr(module, "diff_struc"), "Missing diff_struc attribute"
-        )
-
-        # Strict non-negativity checks for Cauer network
-        test_case.assertTrue(
-            np.all(module.cau_res >= 0),
-            f"Cauer resistances contain negative values: {module.cau_res[module.cau_res < 0]}",
-        )
-        test_case.assertTrue(
-            np.all(module.cau_cap >= 0),
-            f"Cauer capacitances contain negative values: {module.cau_cap[module.cau_cap < 0]}",
-        )
-
-        # Data validation
-        test_case.assertTrue(len(module.time) > 0, "Time array is empty")
-        test_case.assertTrue(len(module.impedance) > 0, "Impedance array is empty")
-        test_case.assertTrue(len(module.log_time) > 0, "Log time array is empty")
-        test_case.assertTrue(len(module.time_spec) > 0, "Time spectrum is empty")
-
-        # Result validation
-        test_case.assertTrue(
-            np.all(np.isfinite(module.impedance)),
-            "Impedance contains non-finite values",
-        )
-        test_case.assertTrue(
-            np.all(np.isfinite(module.time_spec)),
-            "Time spectrum contains non-finite values",
-        )
-        test_case.assertTrue(
-            np.all(np.isfinite(module.cau_res)),
-            "Cauer resistances contain non-finite values",
-        )
-        test_case.assertTrue(
-            np.all(np.isfinite(module.cau_cap)),
-            "Cauer capacitances contain non-finite values",
-        )
-
     @parameterized.expand([(case["name"], case["params"]) for case in test_cases_basic])
-    def test_standard_evaluation(self, name: str, params: Dict[str, Any]) -> None:
+    def test_standard_module(self, name: str, params: Dict[str, Any]) -> None:
         """Test standard evaluation with different parameter sets"""
         self._run_evaluation_test(
-            name, params, "standard_module", self._standard_assertions
+            name, params, "standard_module", test_data.standard_assertions
         )
 
     @parameterized.expand(
         [(case["name"], case["params"]) for case in test_cases_theoretical]
     )
-    def test_theoretical_evaluation(self, name: str, params: Dict[str, Any]) -> None:
+    def test_theoretical_module(self, name: str, params: Dict[str, Any]) -> None:
         """Test theoretical evaluation with different parameter sets"""
         self._run_evaluation_test(
-            name, params, "theoretical_module", self._theoretical_assertions
+            name, params, "theoretical_module", test_data.theoretical_assertions
         )
 
     @parameterized.expand([(case["name"], case["params"]) for case in test_cases_set])
-    def test_evaluation_set(self, name: str, params: Dict[str, Any]):
-        self._run_evaluation_test(name, params, evaluation_method="standard_module_set")
+    def test_standard_module_set(self, name: str, params: Dict[str, Any]):
+        self._run_evaluation_test(
+            name, params, "standard_module_set", test_data.standard_set_assertions
+        )
 
     @parameterized.expand(
         [(case["name"], case["params"]) for case in test_cases_bootstrap]
     )
-    def test_bootstrap_evaluation(self, name, params):
+    def test_bootstrap_module(self, name, params):
         self._run_evaluation_test(
-            name=name, params=params, evaluation_method="bootstrap_module"
+            name, params, "bootstrap_module", test_data.bootstrap_assertions
         )
 
     @parameterized.expand(
         [(case["name"], case["params"]) for case in test_cases_optimization]
     )
-    def test_optimization_evaluation(self, name, params):
+    def test_optimization_module(self, name, params):
         self._run_evaluation_test(
-            name=name, params=params, evaluation_method="optimization_module"
+            name, params, "optimization_module", test_data.optimization_assertions
         )

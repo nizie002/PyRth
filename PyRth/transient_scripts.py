@@ -245,11 +245,9 @@ class Evaluation:
 
             # Call the appropriate method with the modified parameters
             if evaluation_type == "standard":
-                module = self._standard_evaluation(modified_parameters)
+                module = self._standard_module(modified_parameters)
             elif evaluation_type == "optimization":
-                module = self._optimization_evaluation(
-                    modified_parameters, mode="from_asc"
-                )
+                module = self._optimization_module(modified_parameters, mode="from_asc")
             else:
                 raise ValueError(
                     "Invalid evaluation_type. Choose either 'standard' or 'optimization'."
