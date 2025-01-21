@@ -1,8 +1,5 @@
-
-
 import numpy as np
 from scipy import fftpack
-
 
 
 def give_current_filter(name, frequency, filter_range, filter_parameter):

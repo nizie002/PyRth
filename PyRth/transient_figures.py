@@ -29,7 +29,7 @@ class StructureFigure:
         self.colorlist = cmp.get_cmap(colormap)(np.linspace(0, 1, total_calls))
 
     def close(self):
-        self.fig.clf()     # Clear the figure
+        self.fig.clf()  # Clear the figure
         plt.close(self.fig)  # Just in case, ensure the figure is closed
 
     def base_fig(self):
