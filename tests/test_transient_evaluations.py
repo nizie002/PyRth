@@ -101,6 +101,9 @@ class TestTransientEvaluations(unittest.TestCase):
                 eval_instance.modules_output()
                 eval_instance.save_all_figures(override_save=True)
 
+                if not isinstance(modules, list):
+                    modules = [modules]
+
                 # Basic assertions
                 self.assertTrue(modules, "Modules list is empty")
 

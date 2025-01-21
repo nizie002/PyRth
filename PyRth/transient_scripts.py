@@ -113,7 +113,7 @@ class Evaluation:
         module = self._standard_module(self.parameters)
         self._add_module_to_eval_dict(module)
 
-        return [module]
+        return module
 
     def _add_module_to_eval_dict(self, module):
         """Handle collision if module label already exists by adding incrementing counter."""
