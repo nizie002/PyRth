@@ -135,8 +135,8 @@ def struc_params_to_func(number, resistances, capacities):
     sum_cap = np.zeros(N + 1)
 
     for i in range(N):
-        sum_res[i + 1] = sum_res[i] * resistances[i]
-        sum_cap[i + 1] = sum_cap[i] * capacities[i]
+        sum_res[i + 1] = sum_res[i] + resistances[i]
+        sum_cap[i + 1] = sum_cap[i] + capacities[i]
 
     sum_res_int = np.linspace(sum_res[0], sum_res[-1], number)
 
