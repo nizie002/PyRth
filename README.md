@@ -115,6 +115,17 @@ eval_instance.save_all_figures(override_save=True)
 
 ```
 
+### Plot Handling
+
+PyRth generates and saves plots based on the processed data. To ensure efficient data processing, these plots are created in a non-interactive Matplotlib environment and closed immediately after generation.
+
+If interactive plots are created before using PyRth, they will also be suppressed. However, if you want to display your plots, add the following code to your script:
+
+```python
+import matplotlib
+matplotlib.use("TkAgg")
+```
+
 ### Basic Documentation
 
 **Usage Flow**
