@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Dec 06 10:20:11 2017
-
-@author: Nils Ziegeler
-"""
-
 import sys
 import time
 
