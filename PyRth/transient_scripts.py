@@ -825,6 +825,64 @@ class Evaluation:
         return module
 
     def theoretical_module(self, parameters):
+        """
+        With given Cauer Resistors and Capacities the module calculates the different
+        representations of the driving point thermal impedances.
+
+        Parameters
+        ----------
+        theo_resistances : list of size N
+            List of Cauer resistances for the theoretical network.
+
+        theo_capacitances : list of size N
+            List of Cauer capacitances for the theoretical network.
+
+        output_dir : string, default="output\\csv"
+            Output directory for plots saved as PNG-files. Additionally a subfolder
+            named "csv" is created where the CSV files are saved.
+
+        label : string, default="no_label"
+            Label of the given parameter set. The label is used for the output files.
+
+        theo_log_time : list of size 2, default=[-17, 10]
+            The logarithmic time range for the theoretical network. The exponents of the
+            time range are given in the list. [-10, 5] means that the time range
+            is from e^-10 to e^5.
+
+        theo_log_time_size : integer, default=30000
+            Number of points evenly distributed over the logarithmic time domain.
+
+        theo_delta : float, default=0.5
+            Angel added to make the numerical calculation possible. For more information
+            read the paper "Possible acception criteria for structure functions" of
+            Szalai et. al. (doi: 10.1016/j.mejo.2011.08.010)
+
+        theo_added_noise : float
+
+
+        Examples
+        --------
+        The following example generates a theoretical network with the size N=3. The
+        temperature response, thermal impedance, derivated impedance, time constant
+        spectrum, integrated time constant spectrum, structure function and differential
+        structure function are saved as CSV-files in the folder "theoretical".
+
+        >>> import PyRth
+        >>> parameters = {
+        ...     "output_dir": "theoretical/",
+        ...     "label": "theoretical",
+        ...     "theo_log_time": [-10, 5],
+        ...     "theo_log_time_size": 10000,
+        ...     "theo_delta": 1.5 * (2 * np.pi / 360),
+        ...     "theo_added_noise": 3.0,
+        ...     "theo_resistances": [0.0004, 0.004, 0.003],
+        ...     "theo_capacitances": [2.5, 9.8, 4.0],
+        ... }
+        >>> eval_instance = PyRth.Evaluation()
+        >>> eval_instance.theoretical_module(parameters)
+        >>> eval_instance.modules_output()
+        >>> eval_instance.save_all_figures(override_save=True)
+        """
 
         self.parameters = {
             **dbase.std_eval_defaults,
