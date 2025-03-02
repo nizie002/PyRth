@@ -1,0 +1,57 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Virtual environments
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.cache
+.pytest_cache/
+
+# IDE settings
+.vscode/
+*.code-workspace
+.idea/
+
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+
+# Output directories
+output/
+tests/__pycache__/
+tests/output/
+
+# Thumbnails and system files
+Thumbs.db
+.DS_Store
+
+# Ignore egg-info directory
+PyRth.egg-info/
+
+
+# Copilot Files
+.github/
+
+
+# analytics
+analytics/
