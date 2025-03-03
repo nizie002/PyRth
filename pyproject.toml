@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "PyRth"
-version = "1.0.0"
+version = "1.0.2"
 description = "A tool for thermal transient analysis"
 readme = "README.md"
 authors = [
@@ -28,4 +28,4 @@ requires-python = ">=3.11"
 Homepage = "https://github.com/nizie002/PyRth"
 
 [tool.setuptools]
-packages = ["PyRth"]
+packages = ["PyRth", "PyRth.utils", "PyRth.exporter"]
