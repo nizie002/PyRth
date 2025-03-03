@@ -93,7 +93,7 @@ import PyRth
 Below is a basic example to get you started with PyRth. The repository includes test data located in the tests/data directory. For this data, you can use a special conv_mode to ensure proper processing. For more detailed examples please refer to the tests directory.
 
 ```python
-params = {MOSFET_tim_basic_sobhy
+params = {
                 "data": data, # insert numpy array with test data here
                 "output_dir": "tests/output/basic_test",
                 "label": "MOSFET_tim_basic_sobhy",
@@ -101,6 +101,8 @@ params = {MOSFET_tim_basic_sobhy
                 "bayesian": True,
                 "bay_steps": 1000,
                 "struc_method": "sobhy",
+                "lower_fit_limit": 5e-4,
+                "upper_fit_limit": 1e-3,
                 "calib": calib # insert numpy array with calibration data here
             }
 
