@@ -6,6 +6,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
 [![Documentation Status](https://readthedocs.org/projects/PyRth/badge/?version=latest)](https://PyRth.readthedocs.io/en/latest/?badge=latest)
 [![Downloads](https://img.shields.io/pypi/dm/PyRth)](https://pypi.org/project/PyRth/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14965794.svg)](https://doi.org/10.5281/zenodo.14965794)
 
 ---
 
