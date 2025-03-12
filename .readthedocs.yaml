@@ -1,9 +1,16 @@
 version: 2
 
+# Set the OS, Python version and other tools
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.11"
+
+# Build documentation with Sphinx
 sphinx:
   configuration: docs/conf.py
 
+# Python dependencies required for building docs
 python:
-  version: 3.11
   install:
     - requirements: docs/requirements.txt
