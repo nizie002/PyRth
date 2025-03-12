@@ -29,7 +29,6 @@ htmlcov/
 *.code-workspace
 .idea/
 
-
 # Logs and temporary files
 *.log
 *.tmp
@@ -48,10 +47,15 @@ Thumbs.db
 # Ignore egg-info directory
 PyRth.egg-info/
 
-
 # Copilot Files
 .github/
 
-
 # analytics
 analytics/
+
+# Sphinx documentation
+docs/_build/
+docs/.doctrees/
+docs/_autosummary/
+docs/generated/
+docs/*/_build/
