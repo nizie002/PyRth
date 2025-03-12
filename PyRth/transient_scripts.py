@@ -60,6 +60,11 @@ class Evaluation:
         self.modules[module.label] = module
 
     def standard_module(self, parameters):
+        """
+        Standard module for evaluation of the impedance function.
+        This method compiles the necessary parameters and initializes the structure function based on validation and requirements.
+        """
+
         if not isinstance(parameters, dict):
             raise TypeError("Parameters must be provided as a dictionary.")
 
@@ -153,6 +158,9 @@ class Evaluation:
         return module
 
     def standard_module_set(self, parameters):
+        """
+        Standard module set for evaluation of the impedance function. This method is used to evaluate multiple impedance approximations using different parameters.
+        """
 
         if not isinstance(parameters, dict):
             raise TypeError("Parameters must be provided as a dictionary.")
@@ -244,6 +252,9 @@ class Evaluation:
         return modules_list
 
     def bootstrap_module(self, parameters: Dict):
+        """
+        Bootstrap module for evaluation with specified parameters. The module is used to evaluate the impedance approximation using a structure function. The structure function is calculated from a given set of resistances and capacitances.
+        """
 
         self.parameters = dbase.validate_and_merge_defaults(parameters, self.parameters)
         module = self._bootstrap_module()
@@ -458,6 +469,10 @@ class Evaluation:
         return module
 
     def optimization_module(self, parameters: dict):
+        """
+        Optimizes the impedance approximation using a structure function. The structure function is calculated from a given set of resistances and capacitances.
+        """
+
         if not isinstance(parameters, dict):
             raise TypeError("Parameters must be provided as a dictionary.")
 
@@ -756,6 +771,12 @@ class Evaluation:
         return module
 
     def comparison_module(self, parameters: dict):
+        """
+        Compares the impedance of a system to a theoretical impedance. The theoretical impedance is calculated from a given set of resistances and capacitances.
+        Each resistance and capacitance is associated with constant RC-transmission line section, which is concatenated to the previous.
+
+        """
+
         if not isinstance(parameters, dict):
             raise TypeError("Parameters must be provided as a dictionary.")
 
@@ -865,6 +886,9 @@ class Evaluation:
         return results_module
 
     def temperature_prediction_module(self, parameters):
+        """
+        Predicts the temperature of a system given a power function and an impulse response.
+        """
 
         for key, value in parameters.items():
             self.parameters[key] = value
