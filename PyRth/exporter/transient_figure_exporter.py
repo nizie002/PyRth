@@ -116,7 +116,7 @@ class FigureExporter(BaseExporter):
             try:
                 output_dir = os.path.join(fig_obj.output_dir, fig_obj.label)
                 os.makedirs(output_dir, exist_ok=True)
-                filename = os.path.join(output_dir, f"{fig_name}_.png")
+                filename = os.path.join(output_dir, f"{fig_name}.png")
                 fig_obj.fig.savefig(filename)
                 fig_obj.close()
                 logger.debug(f"Figure '{fig_name}' saved successfully.")
