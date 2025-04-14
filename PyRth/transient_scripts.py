@@ -220,13 +220,19 @@ class Evaluation:
         self.set_length = 0
 
         # Lazy iteration using zip (since all iterators have equal length)
-        for values in zip(*iterators):
+        for counter, values in enumerate(zip(*iterators)):
             # Update parameters with the current set of values.
             modified_parameters = org_parameters.copy()
-            label_suffix = "_".join(
-                f"{k}_{v}" for k, v in zip(iterable_keywords, values)
-            )
+
+            # Use simpler label suffix: first keyword + counter
+            if iterable_keywords:
+                first_keyword = iterable_keywords[0]
+                label_suffix = f"{first_keyword}_{counter}"
+            else:
+                label_suffix = f"set_{counter}"
+
             modified_parameters["label"] = f"{base_label}_{label_suffix}"
+
             for keyword, value in zip(iterable_keywords, values):
                 modified_parameters[keyword] = value
 
