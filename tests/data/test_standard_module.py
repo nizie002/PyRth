@@ -126,7 +126,7 @@ test_cases_basic = [
         "params": {
             "data": TEMP_DATA,
             "output_dir": "tests/output/basic_test",
-            "label": "TEMP_DATA",
+            "label": "temp_transient",
             "conv_mode": "temp",
             "extrapolate": False,
             "data_cut_lower": 242,
