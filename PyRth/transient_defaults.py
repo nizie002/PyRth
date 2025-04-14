@@ -168,7 +168,7 @@ std_eval_defaults: dict = {
     # T3ster Interface Settings
     "infile": None,  # input directory for data files, default is None
     "infile_pwr": None,  # input directory for T3ster power files, default is None
-    "infile_tconst": None,  # input directory for T3ster time constant files, default is None
+    "infile_tco": None,  # input directory for T3ster calibration files, default is None
     #
     # Image settings
     "total_calls": 1,
