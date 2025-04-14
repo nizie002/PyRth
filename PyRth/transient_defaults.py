@@ -156,7 +156,7 @@ std_eval_defaults: dict = {
     "bootstrap_mode": "from_data",  # method to generate the bootstrap samples, options are "from_theo", "from_data", "given", "given_with_opt"
     #
     # standard_evaluation_set settings
-    "normalize_impedance_to_previous": False,  # normalize the impedance curve to the previous impedance curve during standard_evaluation_set
+    "normalize_impedance_to_previous": False,  # normalize the impedance curve to the first impedance curve in the evaluation
     "evaluation_type": "standard",  # for standard_evaluation_set to choose the type
     "iterable_keywords": [],  # keywords that can be iterated over in standard_evaluation_set. Each such specified keyword should be a list of values
     #
