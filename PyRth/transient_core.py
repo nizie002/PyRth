@@ -185,7 +185,11 @@ class StructureFunction:
                 self.dig, self.t3_lsb, self.t3_uref, self.t3_kfac
             )
         elif self.kfac_fit_deg == 2:
-            span = (np.min(self.data_tco[:, 0]), np.max(self.data_tco[:, 0]))
+            extrapol_limit = 20 # only allow extrapolation for 20 K beyond the range of the calibration
+            span = (
+                np.min(self.data_tco[:, 0]) - extrapol_limit,
+                np.max(self.data_tco[:, 0]) + extrapol_limit,
+            )
             self.temp_raw, self.voltage = utl.volt_to_temp_t3ster(
                 self.dig, self.t3_lsb, self.t3_uref, self.t3_kfac, span=span
             )
