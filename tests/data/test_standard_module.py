@@ -134,6 +134,32 @@ test_cases_basic = [
             "temp_0_avg_range": (230, 241),
         },
     },
+    {
+        "name": "T3ster_basic_1",
+        "params": {
+            "infile": "tests/data/t3ster/T25_I-m5m-I-h600m_100s.raw",
+            "infile_pwr": "tests/data/t3ster/T25_I-m5m-I-h600m_100s.pwr",
+            "infile_tco": "tests/data/t3ster/calib.tco",
+            "output_dir": "tests/output/basic_test",
+            "label": "t3ster_basic_1",
+            "conv_mode": "t3ster",
+            "lower_fit_limit": 5e-4,
+            "upper_fit_limit": 1e-3,
+        },
+    },
+    {
+        "name": "T3ster_basic_2",
+        "params": {
+            "infile": "tests/data/t3ster/T25_I-m5m-I-h600m_100s_2.raw",
+            "infile_pwr": "tests/data/t3ster/T25_I-m5m-I-h600m_100s_2.pwr",
+            "infile_tco": "tests/data/t3ster/calib.tco",
+            "output_dir": "tests/output/basic_test",
+            "label": "t3ster_basic_2",
+            "conv_mode": "t3ster",
+            "lower_fit_limit": 5e-4,
+            "upper_fit_limit": 1e-3,
+        },
+    },
 ]
 
 
