@@ -185,7 +185,7 @@ class StructureFunction:
                 self.dig, self.t3_lsb, self.t3_uref, self.t3_kfac
             )
         elif self.kfac_fit_deg == 2:
-            extrapol_limit = 20 # only allow extrapolation for 20 K beyond the range of the calibration
+            extrapol_limit = 20  # only allow extrapolation for 20 K beyond the range of the calibration
             span = (
                 np.min(self.data_tco[:, 0]) - extrapol_limit,
                 np.max(self.data_tco[:, 0]) + extrapol_limit,
@@ -283,39 +283,6 @@ class StructureFunction:
             self.power_scale_factor,
             is_heating=self.is_heating,
         )
-
-    def make_z_volt_extr(self):
-
-        if not self.extrapolate:
-            raise ValueError(
-                "Voltage without extrapolation is not possible. Set 'extrapolate' to True or use a different conversion mode."
-            )
-
-        self.voltage = self.data[1:, 1]
-        self.temp_raw = utl.volt_to_temp(self.voltage, self.calib, self.kfac_fit_deg)
-        self.time_raw = self.data[1:, 0] - self.data[0, 0]
-
-        if self.extrapolate == True:
-            self.time, self.temperature, self.expl_ft_prm, t_null = (
-                utl.extrapolate_temperature(
-                    self.time_raw,
-                    self.temp_raw,
-                    self.lower_fit_limit,
-                    self.upper_fit_limit,
-                )
-            )
-            self.impedance = utl.tmp_to_z(
-                self.temperature,
-                t_null,
-                self.power_step,
-                self.optical_power,
-                self.power_scale_factor,
-                is_heating=self.is_heating,
-            )
-        else:
-            raise ValueError(
-                "voltage without extrapolation not possible. Need to truncate voltage transient."
-            )
 
     def z_fit_deriv(self):
 
