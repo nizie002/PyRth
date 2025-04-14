@@ -1,5 +1,3 @@
-import numpy as np
-import scipy.integrate as sin
 import os
 import logging
 
