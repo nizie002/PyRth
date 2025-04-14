@@ -1,0 +1,24 @@
+; power settings file *T3STER* Build Date: Oct 11 2017
+[before]
+;programmed sources
+Ie=           0.600000
+Ucb=          0.000000
+Imeas=        0.005000
+;measured values
+U_DVM=        2.900000
+I_DVM2A=      0.000000
+I_DVM20A=     0.050000
+U_CHANNELS= 2.920610	
+[after]
+;programmed sources
+Ie=           0.000000
+Ucb=          0.000000
+Imeas=        0.005000
+;measured values
+U_DVM=        2.590000
+I_DVM2A=      0.001000
+I_DVM20A=     0.050000
+U_CHANNELS= 2.582367	
+[power]
+;Calculated power
+Power=1.754057
