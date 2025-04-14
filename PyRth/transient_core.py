@@ -194,13 +194,16 @@ class StructureFunction:
 
         self.time_raw = self.data[fnzi:, 0] * 1e-6
 
+        lower_fit_index = np.searchsorted(self.time_raw, self.lower_fit_limit)
+        upper_fit_index = np.searchsorted(self.time_raw, self.upper_fit_limit)
+
         if self.extrapolate == True:
             self.time, self.temperature, self.expl_ft_prm, t_null = (
                 utl.extrapolate_temperature(
                     self.time_raw,
                     self.temp_raw,
-                    self.lower_fit_limit,
-                    self.upper_fit_limit,
+                    lower_fit_index,
+                    upper_fit_index,
                 )
             )
             self.impedance = utl.tmp_to_z(
