@@ -24,15 +24,8 @@ class ExtrapolationFigure(StructureFigure):
         self.ax.set_xlabel(r"square root of time, $\sqrt{s}$, in s$^{1/2}$")
         self.ax.set_ylabel(r"temperature, $T$, in $^\circ\!$C")
 
-        lower_fit_index = np.searchsorted(
-            self.module.data[:, 0], self.module.lower_fit_limit
-        )
-        upper_fit_index = np.searchsorted(
-            self.module.data[:, 0], self.module.upper_fit_limit
-        )
-
         self.ax.plot(
-            np.sqrt(self.time),
+            np.sqrt(self.module.time),
             self.module.temperature,
             label="temperatur",
             markersize=2.5,
@@ -42,8 +35,14 @@ class ExtrapolationFigure(StructureFigure):
             np.sqrt(self.module.time_raw), self.module.temp_raw, label="temp_raw"
         )
         self.ax.plot(
-            np.sqrt(self.module.time_raw[lower_fit_index:upper_fit_index]),
-            self.module.temp_raw[lower_fit_index:upper_fit_index],
+            np.sqrt(
+                self.module.time_raw[
+                    self.module.lower_fit_index : self.module.upper_fit_index
+                ]
+            ),
+            self.module.temp_raw[
+                self.module.lower_fit_index : self.module.upper_fit_index
+            ],
             label="fit window",
             markersize=1.5,
             marker="o",
@@ -56,11 +55,11 @@ class ExtrapolationFigure(StructureFigure):
 
         self.ax.set_xlim(
             0,
-            np.sqrt(self.module.time_raw[upper_fit_index] * 2.5),
+            np.sqrt(self.module.time_raw[self.module.upper_fit_index] * 2.5),
         )
         self.ax.set_ylim(
-            self.module.temp_raw[lower_fit_index] * 0.75,
-            self.module.temp_raw[upper_fit_index] * 1.25,
+            self.module.temp_raw[self.module.lower_fit_index] * 0.75,
+            self.module.temp_raw[self.module.upper_fit_index] * 1.25,
         )
 
 

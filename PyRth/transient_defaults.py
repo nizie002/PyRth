@@ -183,6 +183,7 @@ std_output_defaults: dict = {
     "save_temperature": True,
     "save_impedance": True,
     "save_impedance_smooth": True,
+    "save_extrpl": True,
     "save_derivative": True,
     "save_back_impedance": True,
     "save_back_derivative": True,

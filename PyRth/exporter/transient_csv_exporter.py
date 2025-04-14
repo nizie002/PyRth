@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.polynomial.polynomial as poly
 import scipy.integrate as sin
 import os
 import logging
@@ -27,6 +28,27 @@ class CSVExporter(BaseExporter):
         output_dir = os.path.join(module.output_dir, module.label)
         os.makedirs(output_dir, exist_ok=True)
         return os.path.join(output_dir, name)
+
+    def extrapol_data_handler(self, module):
+        logger.debug("extrapol_data_handler called")
+        self.save_csv(
+            module.save_extrpl,
+            self.construct_filename(module, "exptrapolate_full"),
+            np.sqrt(module.time_raw),
+            module.temp_raw,
+        )
+        self.save_csv(
+            module.save_extrpl,
+            self.construct_filename(module, "exptrapolate_fitting_values"),
+            np.sqrt(module.time_raw[module.lower_fit_index : module.upper_fit_index]),
+            module.temp_raw[module.lower_fit_index : module.upper_fit_index],
+        )
+        self.save_csv(
+            module.save_extrpl,
+            self.construct_filename(module, "exptrapolate_polyval"),
+            np.sqrt(module.time_raw),
+            poly.polyval(np.sqrt(module.time_raw), module.expl_ft_prm),
+        )
 
     def voltage_data_handler(self, module):
         logger.debug("voltage_data_handler called")
