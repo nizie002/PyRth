@@ -366,30 +366,32 @@ class StructureFunction:
         # derives the foster thermal equivalent network, lumped from the time constant spectrum
         # remove all the zeros we padded to avoid bad numerics
 
-        where = np.where(self.time_spec >= 1e-10)
-
-        self.crop_time_spec = self.time_spec[where]
-        self.crop_log_time = self.log_time_pad[where]
-
-        if self.crop_time_spec.size == 0:
-            raise ValueError("Time constant spectrum is empty after filtering.")
-
         factor = int(self.timespec_interpolate_factor)
 
         if factor > 1:
             # f = interpolate.interp1d(self.crop_log_time, self.crop_time_spec)
-            f = interp.InterpolatedUnivariateSpline(
-                self.crop_log_time, self.crop_time_spec
+            f = interp.InterpolatedUnivariateSpline(self.log_time_pad, self.time_spec)
+            int_log_time = np.linspace(
+                self.log_time_pad.min(),
+                self.log_time_pad.max(),
+                len(self.log_time_pad) * factor,
             )
-            self.crop_log_time = np.linspace(
-                self.crop_log_time.min(),
-                self.crop_log_time.max(),
-                len(self.crop_log_time) * factor,
-            )
-            self.crop_time_spec = f(self.crop_log_time)
+            int_time_spec = f(self.log_time_pad)
+        else:
+            int_log_time = self.log_time_pad.copy()
+            int_time_spec = self.time_spec.copy()
 
-        delta = self.crop_log_time[1:] - self.crop_log_time[0:-1]
+        delta = int_log_time[1:] - int_log_time[0:-1]
         delta = np.insert(delta, 0, delta[0])
+
+        where = np.where(int_time_spec >= 1e-10)
+        self.crop_time_spec = int_time_spec[where]
+        self.crop_log_time = int_log_time[where]
+        delta = delta[where]
+
+        if self.crop_time_spec.size == 0:
+            raise ValueError("Time constant spectrum is empty after filtering.")
+
         self.therm_resist_fost = self.crop_time_spec * delta
         self.therm_capa_fost = np.exp(self.crop_log_time) / self.therm_resist_fost
 

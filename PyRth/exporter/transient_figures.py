@@ -175,9 +175,9 @@ class TimeSpecFigure(StructureFigure):
             self._axis_initialized = True
 
         self.ax.semilogx(
-            np.exp(module.log_time_pad),
-            module.time_spec,
-            label="spectrum_" + module.label,
+            np.exp(module.crop_log_time),
+            module.crop_time_spec,
+            label=module.label,
             lw=0.7,
             ms=3.0,
             marker="o",
@@ -215,6 +215,19 @@ class SumTimeSpecFigure(StructureFigure):
             ms=1.5,
             color=self.next_color(),
         )
+
+        # sum_time_spec_crop = sin.cumulative_trapezoid(
+        #     module.crop_time_spec, x=module.crop_log_time, initial=0.0
+        # )
+
+        # self.ax.semilogx(
+        #     np.exp(module.crop_log_time),
+        #     sum_time_spec_crop,
+        #     label="spect." + module.label,
+        #     lw=1.0,
+        #     ms=1.5,
+        #     color=self.same_color(),
+        # )
 
 
 class CumulStrucFigure(StructureFigure):
