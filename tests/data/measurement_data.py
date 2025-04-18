@@ -10,6 +10,16 @@ MOSFET_CALIB_DATA = np.array(
     ]
 )
 
+LED_CALIB_DATA = np.array(
+    [
+        [20.0, 2.53473992],
+        [30.0, 2.55473992],
+        [40.0, 2.57473992],
+        [50.0, 2.59473992],
+        [60.0, 2.61473992],
+    ]
+)
+
 
 def read_voltage_data(filepath: str) -> np.ndarray:
     """Read measurement data from file, skipping header and calibration."""
@@ -47,4 +57,5 @@ def read_temp_data(file, column_1, column_2, sep="\t"):
 # Load data once at module level
 MOSFET_DRY_DATA = read_voltage_data("tests/data/MOSFET_dry.txt")
 MOSFET_TIM_DATA = read_voltage_data("tests/data/MOSFET_tim.txt")
+LED_DATA = read_voltage_data("tests/data/LED_data.txt")
 TEMP_DATA = read_temp_data("tests/data/temp_transient.asc", 5, 2)

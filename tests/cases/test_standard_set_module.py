@@ -1,5 +1,11 @@
 import numpy as np
-from data.measurement_data import MOSFET_DRY_DATA, MOSFET_TIM_DATA, MOSFET_CALIB_DATA
+from tests.data.measurement_data import (
+    MOSFET_DRY_DATA,
+    MOSFET_TIM_DATA,
+    MOSFET_CALIB_DATA,
+    LED_DATA,
+    LED_CALIB_DATA,
+)
 from parameterized import parameterized
 from test_transient_base import TransientTestBase
 from assertions.standard_set_assertions import standard_set_assertions
@@ -20,6 +26,30 @@ test_cases_set = [
             "calib": MOSFET_CALIB_DATA,
             "lower_fit_limit": [5e-4, 5.5e-4, 6e-4],
             "upper_fit_limit": 1e-3,
+        },
+    },
+    {
+        "name": "LED_high_bayesian",
+        "params": {
+            "data": LED_DATA,
+            "output_dir": "tests/output/set_test",
+            "label": "LED_high_bayesian",
+            "conv_mode": "volt",
+            "bayesian": True,
+            "bay_steps": [100, 1000, 10000, 100000, 1000000, 10000000],
+            "log_time_size": 250,
+            "struc_method": "lanczos",
+            "calib": LED_CALIB_DATA,
+            "lower_fit_limit": 1e-7,
+            "upper_fit_limit": 2e-7,
+            "minimum_window_length": 0.2,
+            "maximum_window_length": 3.0,
+            "minimum_window_size": 5,
+            "window_increment": 0.05,
+            "expected_var": 0.01,
+            "min_index": 3,
+            "iterable_keywords": ["bay_steps"],
+            "evaluation_type": "standard",
         },
     },
     {

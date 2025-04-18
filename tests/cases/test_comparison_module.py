@@ -1,5 +1,9 @@
 import numpy as np
-from data.measurement_data import MOSFET_DRY_DATA, MOSFET_TIM_DATA, MOSFET_CALIB_DATA
+from tests.data.measurement_data import (
+    MOSFET_DRY_DATA,
+    MOSFET_TIM_DATA,
+    MOSFET_CALIB_DATA,
+)
 from parameterized import parameterized
 from test_transient_base import TransientTestBase
 from assertions.comparison_assertions import comparison_assertions
