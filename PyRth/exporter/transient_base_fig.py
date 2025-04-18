@@ -32,6 +32,7 @@ class StructureFigure:
         self._axis_initialized = False
         # Secondary axis handling
         self.ax2 = None
+        self.last_call = None  # Initialize last_call
 
     def _create_fig_ax(self):
         fig = Figure(figsize=(10, 6))
@@ -40,11 +41,11 @@ class StructureFigure:
         return fig, ax
 
     def add_legend(self):
-        """Adds a legend to the plot, combining entries from primary and secondary axes if present."""
+        """Adds a legend to the plot, combining entries from primary and secondary axes if present,
+        truncating long labels, and using multiple columns if needed."""
         handles, labels = self.ax.get_legend_handles_labels()
         if hasattr(self, "ax2") and self.ax2:  # Check if ax2 exists and is not None
             handles2, labels2 = self.ax2.get_legend_handles_labels()
-            # Avoid duplicate labels if plotting same thing on both axes
             unique_labels = set(labels)
             for h, l in zip(handles2, labels2):
                 if l not in unique_labels:
@@ -53,10 +54,25 @@ class StructureFigure:
                     unique_labels.add(l)
 
         if handles:  # Only add legend if there are items to add
-            # Place legend outside the plot area to avoid overlap
-            self.ax.legend(handles, labels, loc="center left", bbox_to_anchor=(1, 0.5))
-            # Adjust layout to prevent legend cutoff
-            self.fig.tight_layout(rect=[0, 0, 0.85, 1])  # Adjust right boundary
+            # Truncate labels longer than 25 characters (15 start + ... + 5 end)
+            truncated_labels = []
+            for label in labels:
+                if len(label) > 25:
+                    truncated_label = label[:15] + "..." + label[-5:]
+                    truncated_labels.append(truncated_label)
+                else:
+                    truncated_labels.append(label)
+
+            # Determine number of columns
+            num_items = len(handles)
+            ncol = 2 if num_items > 10 else 1
+
+            # Place legend inside the plot area
+            self.ax.legend(
+                handles, truncated_labels, loc="best", fontsize="x-small", ncol=ncol
+            )
+            # A general tight_layout might still be useful
+            self.fig.tight_layout()
 
     def plot_module_data(self, module):
         """
@@ -92,4 +108,5 @@ class StructureFigure:
         ):  # Check if a color has been used yet
             # Optionally, return the first color or raise error
             return self.next_color()  # Return the first color if none used yet
+        # Use last_call which stores the index before incrementing num_calls
         return self.colorlist[self.last_call]
