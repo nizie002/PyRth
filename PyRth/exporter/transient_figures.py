@@ -26,7 +26,7 @@ class ExtrapolationFigure(StructureFigure):
         self.ax.plot(
             np.sqrt(module.time),
             module.temperature,
-            label="temperatur" + module.label,
+            label="temp." + module.label,
             markersize=2.5,
             marker="o",
         )
@@ -34,14 +34,12 @@ class ExtrapolationFigure(StructureFigure):
         self.ax.plot(
             np.sqrt(module.time_raw[module.lower_fit_index : module.upper_fit_index]),
             module.temp_raw[module.lower_fit_index : module.upper_fit_index],
-            label="fit window" + module.label,
             markersize=1.5,
             marker="o",
         )
         self.ax.plot(
             np.sqrt(module.time_raw),
             poly.polyval(np.sqrt(module.time_raw), module.expl_ft_prm),
-            label="fit",
         )
 
         self.ax.set_xlim(
@@ -106,7 +104,7 @@ class ZCurveFigure(StructureFigure):
             linewidth=0.0,
             marker="o",
             markersize=1.5,
-            label="impedance" + module.label,
+            label="imp." + module.label,
             color=self.next_color(),
         )
         self.ax.semilogx(
@@ -114,7 +112,7 @@ class ZCurveFigure(StructureFigure):
             module.imp_smooth,
             linewidth=1.5,
             markersize=0.0,
-            label="local average" + module.label,
+            label="loc. av." + module.label,
             color=self.same_color(),
         )
 
@@ -157,7 +155,7 @@ class FFTFigure(StructureFigure):
             module.current_filter,
             "o",
             markersize=3,
-            label="current filter" + module.label,
+            label="cur. filter" + module.label,
         )
         self.ax.semilogy(
             angular_freq,
@@ -212,7 +210,7 @@ class SumTimeSpecFigure(StructureFigure):
         self.ax.semilogx(
             np.exp(module.log_time_pad),
             sum_time_spec,
-            label="spectrum_" + module.label,
+            label="spect." + module.label,
             lw=1.0,
             ms=1.5,
             color=self.next_color(),
@@ -241,7 +239,7 @@ class CumulStrucFigure(StructureFigure):
             self.int_cau_res,
             self.int_cau_cap,
             color=self.next_color(),
-            label="structure " + module.label,
+            label="struc." + module.label,
             linewidth=1.0,
             markersize=1.5,
             marker="o",
@@ -266,7 +264,7 @@ class DiffStrucFigure(StructureFigure):
             self.int_cau_res,
             self.diff_struc,
             color=self.next_color(),
-            label="differential structure" + module.label,
+            label="dif. struc." + module.label,
             marker="o",
             markersize=2,
             linewidth=1.0,
@@ -287,7 +285,7 @@ class LocalResistFigure(StructureFigure):
             (module.int_cau_cap),
             module.cau_res,
             color=self.next_color(),
-            label="local_resistance_" + module.label,
+            label="local_res." + module.label,
             marker="o",
             markersize=2,
             linewidth=1.0,
@@ -312,7 +310,7 @@ class LocalGradientFigure(StructureFigure):
             module.int_cau_cap,
             module.cau_res / module.cau_cap,
             color=self.next_color(),
-            label="local_resistance_" + module.label,
+            label="local_grad." + module.label,
             marker="o",
             markersize=2,
             linewidth=1.0,
@@ -335,7 +333,7 @@ class TheoCStrucFigure(StructureFigure):
             module.theo_int_cau_res,
             module.theo_int_cau_cap,
             color=self.next_color(),
-            label="optimized structure" + module.label,
+            label="opt. struc." + module.label,
             linewidth=3.0,
         )
 
@@ -354,7 +352,7 @@ class TheoDiffStrucFigure(StructureFigure):
             module.theo_int_cau_res[:-1],
             module.theo_diff_struc,
             color=self.next_color(),
-            label="theo diff structure" + module.label,
+            label="theo diff struc." + module.label,
             marker="o",
             markersize=3,
             linewidth=1.0,
@@ -374,7 +372,7 @@ class TheoLocalResistFigure(StructureFigure):
         self.ax.semilogy(
             module.theo_int_cau_res,
             module.theo_int_cau_cap,
-            label="optimized structure",
+            label="opt. struc.",
             linewidth=3.0,
         )
 
@@ -392,7 +390,7 @@ class TheoTimeConstFigure(StructureFigure):
             module.theo_time_const,
             marker="o",
             color=self.next_color(),
-            label="optimized spectrum" + module.label,
+            label="opt. spect." + module.label,
             linewidth=1.0,
             markersize=1.5,
         )
@@ -417,7 +415,7 @@ class TheoSumTimeConstFigure(StructureFigure):
             sum_theo_time_spec,
             marker="o",
             color=self.next_color(),
-            label="theoretical integrated spectrum " + module.label,
+            label="theo. int. spec. " + module.label,
             linewidth=1.0,
             markersize=1.5,
         )
@@ -436,7 +434,7 @@ class TheoImpDerivFigure(StructureFigure):
             module.theo_imp_deriv,
             linewidth=1.5,
             color=self.next_color(),
-            label="theoretical derivative " + module.label,
+            label="theo. deriv. " + module.label,
             markersize=1.5,
         )
 
@@ -453,7 +451,7 @@ class TheoImpFigure(StructureFigure):
             np.exp(module.theo_log_time),
             module.theo_impedance,
             linewidth=1.5,
-            label="theoretical impedance " + module.label,
+            label="theo. imp. " + module.label,
             color=self.next_color(),
         )
 
@@ -470,7 +468,7 @@ class BackwardsImpDerivFigure(StructureFigure):
             np.exp(module.log_time_pad),
             module.imp_deriv_interp,
             linewidth=1.5,
-            label="original derivative " + module.label,
+            label="orig. deriv. " + module.label,
             markersize=1.5,
             color=self.next_color(),
         )
@@ -479,7 +477,7 @@ class BackwardsImpDerivFigure(StructureFigure):
             module.back_imp_deriv,
             linewidth=0.0,
             marker="o",
-            label="backwards derivative " + module.label,
+            label="backwards deriv. " + module.label,
             markersize=1.5,
             color=self.same_color(),
         )
@@ -499,7 +497,7 @@ class BackwardsImpFigure(StructureFigure):
             linewidth=0.0,
             marker="o",
             markersize=1.0,
-            label="original impedance " + module.label,
+            label="orig. imp. " + module.label,
         )
         self.ax.semilogx(
             np.exp(module.log_time_pad),
@@ -507,7 +505,7 @@ class BackwardsImpFigure(StructureFigure):
             linewidth=0.0,
             marker="o",
             markersize=2.0,
-            label="backwards impedance " + module.label,
+            label="backwards imp. " + module.label,
             color=self.next_color(),
         )
         self.ax.semilogx(
@@ -515,7 +513,7 @@ class BackwardsImpFigure(StructureFigure):
             module.imp_smooth,
             linewidth=1.5,
             markersize=0.0,
-            label="local average" + module.label,
+            label="loc. av." + module.label,
             color=self.same_color(),
         )
 
@@ -534,7 +532,7 @@ class TheoBackwardsImpFigure(StructureFigure):
             linewidth=3,
             marker="o",
             markersize=0.0,
-            label="Bayesian impedance" + module.label,
+            label="Bay. imp." + module.label,
             zorder=5,
         )
         self.ax.semilogx(
@@ -543,7 +541,7 @@ class TheoBackwardsImpFigure(StructureFigure):
             linewidth=3,
             marker="o",
             markersize=0.0,
-            label="optimized impedance" + module.label,
+            label="opt. imp." + module.label,
             zorder=10,
         )
         self.ax.semilogx(
@@ -552,7 +550,7 @@ class TheoBackwardsImpFigure(StructureFigure):
             linewidth=0.0,
             marker="o",
             markersize=6,
-            label="measured impedance" + module.label,
+            label="meas. imp." + module.label,
             zorder=0,
             fillstyle="none",
         )
@@ -569,7 +567,7 @@ class OptimizeStrucFigure(StructureFigure):
         self.ax.semilogy(
             module.int_cau_res,
             module.int_cau_cap,
-            label="structure " + module.label,
+            label="struc." + module.label,
             linewidth=1.0,
             markersize=1.5,
         )
@@ -614,7 +612,7 @@ class TimeConstComparisonFigure(StructureFigure):
         self.ax.scatter(
             module.mod_value_list,
             module.time_const_comparison,
-            label="time_const_comparison" + module.label,
+            label="time_const_comp." + module.label,
         )
 
 
@@ -629,7 +627,7 @@ class TotalResistComparisonFigure(StructureFigure):
         self.ax.scatter(
             module.mod_value_list,
             module.total_resist_diff,
-            label="total_resist_comparison" + module.label,
+            label="resist_comp." + module.label,
         )
 
 
@@ -645,7 +643,7 @@ class StrucComparisonFigure(StructureFigure):
         self.ax.scatter(
             module.mod_value_list,
             module.structure_comparison,
-            label="struc_comparison " + module.label,
+            label="struc_comp." + module.label,
         )
 
 
@@ -662,7 +660,7 @@ class BootZCurveFigure(StructureFigure):
             module.boot_imp_av,
             linewidth=1.5,
             markersize=0.0,
-            label="median impedance" + module.label,
+            label="median imp." + module.label,
             color=self.next_color(),
         )
         self.ax.fill_between(
@@ -688,7 +686,7 @@ class BootDerivFigure(StructureFigure):
             module.boot_deriv_av,
             linewidth=1.5,
             markersize=0.0,
-            label="median derivative" + module.label,
+            label="median deriv." + module.label,
             color=self.next_color(),
         )
         self.ax.fill_between(
@@ -696,7 +694,7 @@ class BootDerivFigure(StructureFigure):
             module.boot_deriv_perc_u,
             module.boot_deriv_perc_l,
             alpha=0.5,
-            label="confidence intervall" + module.label,
+            label="confidence interval" + module.label,
             color=self.same_color(),
         )
 
@@ -714,7 +712,7 @@ class BootTimeSpecFigure(StructureFigure):
             module.boot_time_spec_av,
             linewidth=1.5,
             markersize=0.0,
-            label="median spectrum" + module.label,
+            label="median spect." + module.label,
             color=self.next_color(),
         )
         self.ax.fill_between(
@@ -722,7 +720,7 @@ class BootTimeSpecFigure(StructureFigure):
             module.boot_time_spec_perc_u,
             module.boot_time_spec_perc_l,
             alpha=0.5,
-            label="confidence intervall" + module.label,
+            label="confidence interval" + module.label,
             color=self.same_color(),
         )
 
@@ -742,7 +740,7 @@ class BootSumTimeSpecFigure(StructureFigure):
             module.boot_sum_time_spec_av,
             linewidth=1.5,
             markersize=0.0,
-            label="median sum spectrum" + module.label,
+            label="median sum. spect." + module.label,
             color=self.next_color(),
         )
         self.ax.fill_between(
@@ -799,7 +797,7 @@ class ResidualFigure(StructureFigure):
             module.gaus_curve,
             linewidth=1.5,
             markersize=0.0,
-            label="gaussian fit" + module.label,
+            label="gauss fit" + module.label,
             color="blue",
         )
 
@@ -818,7 +816,7 @@ class PredictionFigure(StructureFigure):
             module.predicted_temperature,
             linewidth=1.5,
             markersize=0.0,
-            label="predicted temperature" + module.label,
+            label="pred. temp." + module.label,
             color="blue",
         )
 
@@ -833,7 +831,7 @@ class PredictionFigure(StructureFigure):
             linewidth=1.0,
             marker="o",
             markersize=1.0,
-            label="power function" + module.label,
+            label="power" + module.label,
             color="red",
         )
 
@@ -850,6 +848,6 @@ class PredictionImpulseUsedFigure(StructureFigure):
             module.reference_time,
             module.reference_impulse_response,
             linewidth=1.5,
-            label="linear time derivative" + module.label,
+            label="lin. impulse resp." + module.label,
             markersize=1.5,
         )
