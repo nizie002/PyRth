@@ -87,7 +87,7 @@ std_eval_defaults: dict = {
     "filter_name": "hann",  # name of the filter to use for deconvolution, options: "fermi", "gauss", "nuttall", "blackman_nuttall", "hann", "blackman_harris", "rectangular"
     "filter_range": 0.60,  # range of the filter for applicable during fft deconvolution
     "filter_parameter": 0.0,  # parameter for the filter of applicable during fft deconvolution
-    "bayesian": True,  # whether to use bayesian deconvolution (recommended)
+    "deconv_mode": "bayesian",  # whether to use bayesian deconvolution, fft, or lasso
     "bay_steps": 1000,  # number of steps for the bayesian deconvolution
     "pad_factor_pre": 0.01,  # padding factor for the deconvolution to append zeros to the beginning
     "pad_factor_after": 0.01,  # padding factor for the deconvolution to append zeros to the end
@@ -148,7 +148,7 @@ std_eval_defaults: dict = {
     "opt_model_layers": 10,  # number of layers for the optimization model
     #
     # Procedural settings
-    "conv_mode": "none",  # used to convert the data to a different format
+    "input_mode": "none",  # used to convert the data to a different format
     "calc_struc": True,  # calculate the structure function
     "only_make_z": False,  # only make the impedance curve, dont calculate the time constant spectrum or structure function
     "repetitions": 1000,  # number of repetitions for bootstrapping
