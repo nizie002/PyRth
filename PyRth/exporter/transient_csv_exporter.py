@@ -133,14 +133,12 @@ class CSVExporter(BaseExporter):
         )
 
         if module.save_sum_time_spec:
-            sum_time_spec = sin.cumulative_trapezoid(
-                module.time_spec, x=module.log_time_pad, initial=0.0
-            )
+
             self.save_csv(
                 True,
                 self.construct_filename(module, "sum_time_spec"),
                 np.exp(module.log_time_pad),
-                sum_time_spec,
+                module.sum_time_spec,
             )
 
     def structure_function_data_handler(self, module):
