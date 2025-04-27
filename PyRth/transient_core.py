@@ -6,6 +6,9 @@ import numpy.polynomial.polynomial as poly
 import scipy.integrate as sin
 import scipy.interpolate as interp
 
+from sklearn.linear_model import LassoCV  # automatic α via CV
+from sklearn.metrics import r2_score  # Import R2 score
+
 import logging
 
 
@@ -61,15 +64,15 @@ class StructureFunction:
         )
 
     def make_z(self):
-        valid_conv_modes = ["t3ster", "temp", "volt", "none"]
+        valid_input_modes = ["t3ster", "temp", "volt", "none"]
 
-        if self.conv_mode not in valid_conv_modes:
+        if self.input_mode not in valid_input_modes:
             raise ValueError(
-                f"Conversion mode '{self.conv_mode}' not recognised. Valid options are: {valid_conv_modes}"
+                f"Conversion mode '{self.input_mode}' not recognised. Valid options are: {valid_input_modes}"
             )
 
         # Data validation for non-t3ster modes
-        if self.conv_mode != "t3ster":
+        if self.input_mode != "t3ster":
             # Check if data exists and has correct shape
             if self.data is None:
                 raise ValueError("Data has not been given.")
@@ -88,16 +91,16 @@ class StructureFunction:
                     "Results may be unreliable."
                 )
 
-        if self.conv_mode in ["volt", "t3ster"]:
+        if self.input_mode in ["volt", "t3ster"]:
             self.data_handlers.add("volt")
-        if self.conv_mode != "none":
+        if self.input_mode != "none":
             self.data_handlers.add("temp")
 
-        if self.conv_mode == "t3ster":
+        if self.input_mode == "t3ster":
             self.make_z_t3ster()
-        elif self.conv_mode in ["temp", "volt"]:
+        elif self.input_mode in ["temp", "volt"]:
             self._process_temp_volt_data()
-        elif self.conv_mode == "none":
+        elif self.input_mode == "none":
             self.time = self.data[:, 0]
             self.impedance = self.data[:, 1]
             logger.info("taking impedance data directly from data array")
@@ -110,11 +113,11 @@ class StructureFunction:
 
     def _process_temp_volt_data(self):
         """Process temperature or voltage data with optional extrapolation"""
-        if self.conv_mode == "volt" and self.calib is None:
+        if self.input_mode == "volt" and self.calib is None:
             raise ValueError("Calibration data is required for voltage conversion")
 
         # Convert voltage to temperature if needed
-        if self.conv_mode == "volt":
+        if self.input_mode == "volt":
             self.voltage = self.data[:, 1]
             self.temp_raw = utl.volt_to_temp(
                 self.voltage, self.calib, self.kfac_fit_deg
@@ -294,7 +297,7 @@ class StructureFunction:
             self.log_time_interp,
             self.imp_smooth_full,
             self.log_time_pad,
-            self.fft_delta,
+            self.log_time_delta,
         ) = eng.derivative(
             self.impedance,
             self.log_time,
@@ -316,20 +319,108 @@ class StructureFunction:
                 "Impedance derivative is empty or contains all zeros. Maybe  heating / cooling transient interchanged?"
             )
 
+    @utl.timer_decorator
+    def z_fit_lasso(self):
+        # require at least one positive impedance
+        if not np.any(self.impedance > 0):
+            raise ValueError("z_fit_lasso: impedance must contain positive values")
+
+        time = self.time.flatten()
+
+        # --------------------------------------------------------
+        # 1.  Choose a τ-grid (log-spacing)
+        # --------------------------------------------------------
+        tau_min = 2 * np.diff(time).min()
+        tau_max = 1 * time.max()
+        # pts_per_dec = 25
+        # K = int(np.ceil(np.log10(tau_max / tau_min) * pts_per_dec))
+        K = self.log_time_size
+        tau_grid = np.logspace(np.log10(tau_min), np.log10(tau_max), K)
+
+        # --------------------------------------------------------
+        # 2.  Design matrix Φ   (n × K)
+        # --------------------------------------------------------
+        phi_unnormalized = 1.0 - np.exp(-time[:, None] / tau_grid[None, :])
+
+        # Calculate norms of the original columns
+        phi_norms = np.linalg.norm(phi_unnormalized, axis=0, keepdims=True)
+        # Avoid division by zero if a column is all zeros (unlikely but possible)
+        phi_norms[phi_norms == 0] = 1.0
+
+        # Optional: normalise columns for numeric stability
+        phi = phi_unnormalized / phi_norms
+
+        # --------------------------------------------------------
+        # 3.  Fit a non-negative sparse model (Lasso, positive=True)
+        # --------------------------------------------------------
+
+        # Choose 100 logarithmically spaced alphas and 5-fold CV
+        lasso = LassoCV(
+            alphas=np.logspace(-5, -2, 100),  # you can widen/narrow this range
+            cv=5,
+            positive=True,  # <<< ENFORCES  A_k ≥ 0
+            fit_intercept=False,
+            max_iter=10_000,
+            n_jobs=-1,  # use all cores
+            verbose=False,
+        )
+
+        lasso.fit(phi, self.impedance.ravel())  # y must be 1-D
+
+        # Get coefficients corresponding to the *normalized* phi
+        A_hat_normalized = lasso.coef_
+
+        # Rescale coefficients to match the *unnormalized* phi
+        A_hat = A_hat_normalized / phi_norms.flatten()  # Divide by the stored norms
+
+        # Recalculate sigma_hat using the unnormalized phi and rescaled A_hat for consistency
+        y_fit_unnormalized = (phi_unnormalized @ A_hat).ravel()
+        sigma_hat = np.sqrt(
+            ((self.impedance.ravel() - y_fit_unnormalized) ** 2).mean()
+        )  # RMS resid based on original scale
+
+        # Calculate R-squared
+        r2 = r2_score(self.impedance.ravel(), y_fit_unnormalized)
+
+        R_th_model = np.sum(A_hat)  # Sum of A_k
+
+        if not np.any(A_hat > 0):
+            raise ValueError(
+                "z_fit_lasso: time constant spectrum is empty (no active Lasso components)"
+            )
+
+        # Compare final values and print GoF metrics
+        logger.info(f"Final measured resistance: {self.impedance[-1]:.4f}")
+        logger.info(f"Model R_th (Sum of A_k): {R_th_model:.4f}")
+        logger.info(f"RMSE: {sigma_hat:.4f}")
+        logger.info(f"R-squared: {r2:.4f}")
+
+        self.log_time_pad = np.log(tau_grid.copy())
+        self.log_time_interp = self.log_time.copy()
+        self.time_spec = A_hat.flatten()
+        self.sum_time_spec = np.cumsum(self.time_spec)
+        self.pad_time_size = np.size(self.log_time_pad)
+        self.imp_smooth = y_fit_unnormalized.flatten()
+        self.imp_smooth_full = y_fit_unnormalized.flatten()
+
+        self.imp_deriv_interp, back_imp = utl.time_const_to_imp(
+            self.log_time_pad, A_hat
+        )
+
     def fft_signal(self):
         # calculates the fourier transform and power periodogram
         self.fft_idi = fftpack.fft(self.imp_deriv_interp)
-        self.fft_idi_pegrm = np.abs(self.fft_idi * self.fft_delta) ** 2
+        self.fft_idi_pegrm = np.abs(self.fft_idi * self.log_time_delta) ** 2
 
-        self.fft_freq = fftpack.fftfreq(self.pad_time_size, self.fft_delta)
+        self.fft_freq = fftpack.fftfreq(self.pad_time_size, self.log_time_delta)
 
     def fft_weight(self):
         # calculates the fourier transform of the weight function
         null_index = np.searchsorted(self.log_time_pad, 0.0)
 
         self.trans_weight = np.roll(utl.weight_z(self.log_time_pad), -null_index)
-        self.fft_wgt = fftpack.fft(self.trans_weight) * self.fft_delta
-        self.fft_wgt_freq = fftpack.fftfreq(self.pad_time_size, self.fft_delta)
+        self.fft_wgt = fftpack.fft(self.trans_weight) * self.log_time_delta
+        self.fft_wgt_freq = fftpack.fftfreq(self.pad_time_size, self.log_time_delta)
 
         if not np.array_equal(self.fft_freq, self.fft_wgt_freq):
             raise ValueError("Frequency ranges do not match up, check fouriertransform")
@@ -344,9 +435,9 @@ class StructureFunction:
         self.deconv_t = (self.fft_idi / self.fft_wgt) * self.current_filter
         self.time_spec = np.real(fftpack.ifft(self.deconv_t))
 
-        self.sum_time_spec = sin.cumulative_trapezoid(
-            self.time_spec, x=self.log_time_pad, initial=0.0
-        )
+        self.time_spec *= self.log_time_delta
+
+        self.sum_time_spec = np.cumsum(self.time_spec)
 
     def perform_bayesian_deconvolution(self):
         # calculates the bayesian deconvolution
@@ -358,9 +449,13 @@ class StructureFunction:
             re_mat, self.imp_deriv_interp, self.bay_steps
         )
 
-        self.sum_time_spec = sin.cumulative_trapezoid(
-            self.time_spec, x=self.log_time_pad, initial=0.0
-        )
+        self.time_spec *= self.log_time_delta
+
+        self.sum_time_spec = np.cumsum(self.time_spec)
+
+        # self.sum_time_spec = sin.cumulative_trapezoid(
+        #     self.time_spec, x=self.log_time_pad, initial=0.0
+        # )
 
     def foster_network(self):
         # derives the foster thermal equivalent network, lumped from the time constant spectrum
@@ -381,18 +476,14 @@ class StructureFunction:
             int_log_time = self.log_time_pad.copy()
             int_time_spec = self.time_spec.copy()
 
-        delta = int_log_time[1:] - int_log_time[0:-1]
-        delta = np.insert(delta, 0, delta[0])
-
         where = np.where(int_time_spec >= 1e-10)
         self.crop_time_spec = int_time_spec[where]
         self.crop_log_time = int_log_time[where]
-        delta = delta[where]
 
         if self.crop_time_spec.size == 0:
             raise ValueError("Time constant spectrum is empty after filtering.")
 
-        self.therm_resist_fost = self.crop_time_spec * delta
+        self.therm_resist_fost = self.crop_time_spec
         self.therm_capa_fost = np.exp(self.crop_log_time) / self.therm_resist_fost
 
     def mpfr_foster_impedance(self):
