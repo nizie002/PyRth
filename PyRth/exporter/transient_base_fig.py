@@ -16,23 +16,23 @@ class StructureFigure:
         Initializes the figure structure. Stores the initial module for context
         like output directory, creates figure and axes, and sets up color mapping.
         """
-        total_calls = 10  # Adjust if expecting more than 10 plots per figure
-        colormap = "viridis"
+        # Use a qualitative colormap for better distinction between plot lines
+        colormap_name = "tab10"  # Or "tab20" if you expect > 10 plots often
+        cmap = matplotlib.colormaps.get_cmap(colormap_name)
+        total_colors = len(cmap.colors)  # Get the number of colors in the map
 
         self.module = module  # Store the initial module for context (e.g., output_dir)
-        self.total_calls = total_calls
-        self.colormap = colormap
+        self.total_colors = total_colors
+        self.colormap = cmap
         self.fig, self.ax = self._create_fig_ax()  # Create figure & axis here
         self.num_calls = 0
-        self.colorlist = matplotlib.colormaps.get_cmap(colormap)(
-            np.linspace(0, 1, total_calls)
-        )
+        self.colorlist = cmap.colors  # Use the discrete colors from the map
         self.output_dir = module.output_dir
         # Axes titles and labels should be set ideally once, perhaps in the first plot_module_data call
         self._axis_initialized = False
         # Secondary axis handling
         self.ax2 = None
-        self.last_call = None  # Initialize last_call
+        self.last_call_index = None  # Initialize index for last color used
 
     def _create_fig_ax(self):
         fig = Figure(figsize=(10, 6))
@@ -95,18 +95,16 @@ class StructureFigure:
 
     def next_color(self):
         """Cycles through the color list."""
-        self.last_call = self.num_calls
+        color_index = (
+            self.num_calls % self.total_colors
+        )  # Cycle through available colors
+        self.last_call_index = color_index
         self.num_calls += 1
-        # Ensure cycling wraps around correctly, handle potential > total_calls plots if needed
-        self.num_calls = self.num_calls % self.total_calls
-        return self.colorlist[self.last_call]
+        return self.colorlist[color_index]
 
     def same_color(self):
         """Returns the last used color."""
-        if (
-            self.num_calls == 0 and self.last_call is None
-        ):  # Check if a color has been used yet
-            # Optionally, return the first color or raise error
-            return self.next_color()  # Return the first color if none used yet
-        # Use last_call which stores the index before incrementing num_calls
-        return self.colorlist[self.last_call]
+        if self.last_call_index is None:  # Check if a color has been used yet
+            # Return the first color if none used yet
+            return self.next_color()
+        return self.colorlist[self.last_call_index]
