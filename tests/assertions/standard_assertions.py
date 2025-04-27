@@ -14,26 +14,41 @@ def standard_assertions(test_case: unittest.TestCase, module: Any) -> None:
     # time spectrum related attributes
     test_case.assertTrue(hasattr(module, "time_spec"), "Missing time_spec attribute")
 
-    # Structure function results
-    test_case.assertTrue(hasattr(module, "cau_res"), "Missing cau_res attribute")
-    test_case.assertTrue(hasattr(module, "cau_cap"), "Missing cau_cap attribute")
-    test_case.assertTrue(
-        hasattr(module, "int_cau_res"), "Missing int_cau_res attribute"
-    )
-    test_case.assertTrue(
-        hasattr(module, "int_cau_cap"), "Missing int_cau_cap attribute"
-    )
-    test_case.assertTrue(hasattr(module, "diff_struc"), "Missing diff_struc attribute")
+    # Check if structure function calculation was requested and performed
+    calculate_structure_function = hasattr(module, "calc_struc") and module.calc_struc
 
-    # Strict non-negativity checks for Cauer network
-    test_case.assertTrue(
-        np.all(module.cau_res >= 0),
-        f"Cauer resistances contain negative values: {module.cau_res[module.cau_res < 0]}",
-    )
-    test_case.assertTrue(
-        np.all(module.cau_cap >= 0),
-        f"Cauer capacitances contain negative values: {module.cau_cap[module.cau_cap < 0]}",
-    )
+    if calculate_structure_function:
+        # Structure function results
+        test_case.assertTrue(hasattr(module, "cau_res"), "Missing cau_res attribute")
+        test_case.assertTrue(hasattr(module, "cau_cap"), "Missing cau_cap attribute")
+        test_case.assertTrue(
+            hasattr(module, "int_cau_res"), "Missing int_cau_res attribute"
+        )
+        test_case.assertTrue(
+            hasattr(module, "int_cau_cap"), "Missing int_cau_cap attribute"
+        )
+        test_case.assertTrue(
+            hasattr(module, "diff_struc"), "Missing diff_struc attribute"
+        )
+
+        # Strict non-negativity checks for Cauer network
+        test_case.assertTrue(
+            np.all(module.cau_res >= 0),
+            f"Cauer resistances contain negative values: {module.cau_res[module.cau_res < 0]}",
+        )
+        test_case.assertTrue(
+            np.all(module.cau_cap >= 0),
+            f"Cauer capacitances contain negative values: {module.cau_cap[module.cau_cap < 0]}",
+        )
+        # Result validation for structure function parts
+        test_case.assertTrue(
+            np.all(np.isfinite(module.cau_res)),
+            "Cauer resistances contain non-finite values",
+        )
+        test_case.assertTrue(
+            np.all(np.isfinite(module.cau_cap)),
+            "Cauer capacitances contain non-finite values",
+        )
 
     # Data validation
     test_case.assertTrue(len(module.time) > 0, "Time array is empty")
@@ -41,7 +56,7 @@ def standard_assertions(test_case: unittest.TestCase, module: Any) -> None:
     test_case.assertTrue(len(module.log_time) > 0, "Log time array is empty")
     test_case.assertTrue(len(module.time_spec) > 0, "Time spectrum is empty")
 
-    # Result validation
+    # Result validation (excluding structure function parts if not calculated)
     test_case.assertTrue(
         np.all(np.isfinite(module.impedance)),
         "Impedance contains non-finite values",
@@ -49,12 +64,4 @@ def standard_assertions(test_case: unittest.TestCase, module: Any) -> None:
     test_case.assertTrue(
         np.all(np.isfinite(module.time_spec)),
         "Time spectrum contains non-finite values",
-    )
-    test_case.assertTrue(
-        np.all(np.isfinite(module.cau_res)),
-        "Cauer resistances contain non-finite values",
-    )
-    test_case.assertTrue(
-        np.all(np.isfinite(module.cau_cap)),
-        "Cauer capacitances contain non-finite values",
     )
