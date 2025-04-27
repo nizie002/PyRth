@@ -67,18 +67,6 @@ class TransientOptimizer:
         self.eval_count += 1
         return np.imag(z_result) / np.pi
 
-    def time_const_to_imp(self, theo_log_time, time_const):
-        delta_t = theo_log_time[1] - theo_log_time[0]
-        theo_log_time_weight = np.arange(-7, 7 + delta_t, delta_t)
-        weight = utl.weight_z(theo_log_time_weight)
-        max_ar = np.argmax(weight)
-        imp_deriv_long = np.convolve(time_const, weight, mode="full") * delta_t
-        start = max_ar
-        fin = start + theo_log_time.size
-        imp_deriv = imp_deriv_long[start:fin]
-        imp = cumulative_trapezoid(imp_deriv, theo_log_time, initial=0.0)
-        return imp_deriv, imp
-
     def struc_params_to_func(self, number, resistances, capacities):
         N = len(resistances)
         sum_res = np.zeros(N + 1)
@@ -325,3 +313,6 @@ class TransientOptimizer:
         self.results_cap = np.reshape(np.array(self.results_cap), (-1, N))
         min_idx = np.argmin(self.results_obj)
         return self.results_res[min_idx], self.results_cap[min_idx], opt_result
+
+    def time_const_to_imp(self, theo_log_time, time_const):
+        return utl.time_const_to_imp(theo_log_time, time_const)

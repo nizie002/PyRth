@@ -4,6 +4,7 @@ import numpy.polynomial.polynomial as poly
 import logging
 import time
 import numba
+from scipy.integrate import cumulative_trapezoid
 
 logger = logging.getLogger("PyRthLogger")
 
@@ -48,7 +49,6 @@ def timer_decorator(func):
             start = time.perf_counter()
             result = func(*args, **kwargs)
             end = time.perf_counter()
-            logger.info(f"Run time: {format_time(end - start)}")
             min_time = min(min_time, end - start)
         formatted_time = format_time(min_time)
         logger.info(
@@ -77,6 +77,24 @@ def weight_z(x):
 
 def weight_z_int(x):
     return 1 - np.exp(-np.exp(x))
+
+
+def time_const_to_imp(log_time, time_const):
+    """
+    Convert a discrete time-constant distribution to time-domain impedance.
+    Returns the derivative and the integrated impedance.
+    """
+    delta_t = log_time[1] - log_time[0]
+    log_time_weight = np.arange(-7, 7 + delta_t, delta_t)
+    weight = weight_z(log_time_weight)
+
+    imp_deriv_long = np.convolve(time_const, weight, mode="full")
+    start = np.argmax(weight)
+    fin = start + log_time.size
+    imp_deriv = imp_deriv_long[start:fin]
+    imp = cumulative_trapezoid(imp_deriv, log_time, initial=0.0)
+
+    return imp_deriv, imp
 
 
 def gaussian(x):
