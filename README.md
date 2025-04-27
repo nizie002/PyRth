@@ -91,15 +91,15 @@ import PyRth
 
 ### Examples
 
-Below is a basic example to get you started with PyRth. The repository includes test data located in the tests/data directory. For this data, you can use a special conv_mode to ensure proper processing. For more detailed examples please refer to the tests directory.
+Below is a basic example to get you started with PyRth. The repository includes test data located in the tests/data directory. For this data, you can use a special input_mode to ensure proper processing. For more detailed examples please refer to the tests directory.
 
 ```python
 params = {
                 "data": data, # insert numpy array with test data here
                 "output_dir": "tests/output/basic_test",
                 "label": "MOSFET_tim_basic_sobhy",
-                "conv_mode": "volt",
-                "bayesian": True,
+                "input_mode": "volt",
+                "deconv_mode": "bayesian",
                 "bay_steps": 1000,
                 "struc_method": "sobhy",
                 "lower_fit_limit": 5e-4,
@@ -142,7 +142,7 @@ PyRth's streamlined workflow allows users to efficiently process and analyze the
 
 **Parameter Configuration and Evaluation Management**
 
-PyRth offers flexible configuration through various parameters, enabling users to tailor the evaluation process to their specific needs. Parameters are categorized into Data Processing, Input/Output, and Power Settings. For instance, `log_time_tize` controls the number of points in the impedance curve, `bayesian` toggles Bayesian deconvolution, and `struc_method` selects the method for structure function calculation. I/O parameters like `data`, `output_dir`, and `label` manage data sources and output destinations, while Power Settings such as `power_step`, `is_heating`, and `optical_power` adjust power-related measurements.
+PyRth offers flexible configuration through various parameters, enabling users to tailor the evaluation process to their specific needs. Parameters are categorized into Data Processing, Input/Output, and Power Settings. For instance, `log_time_tize` controls the number of points in the impedance curve, `deconv_mode` chooses between Fourer and Bayesian Deconvolution and identification using the Lasso, and `struc_method` selects the method for structure function calculation. I/O parameters like `data`, `output_dir`, and `label` manage data sources and output destinations, while Power Settings such as `power_step`, `is_heating`, and `optical_power` adjust power-related measurements.
 
 When conducting more complex analysis, PyRth offers the possibility to organize procedure into different evaluation, which can each be combined from different modules. In each `Evaluation` instance, PyRth handles the functionality independently through dedicated methods like `add_theoretical_module`, `add_standard_module`, `add_bootstrap_module`, and others. Within each `Evaluation` instance all results are combined into the same plot, to allow easy comparison of results if demanded. This modular approach ensures that each evaluation type operates with its specific parameters without conflict.
 
@@ -153,7 +153,7 @@ PyRth offers flexible configuration through various parameters, e.g.:
 **Data Processing Parameters:**
 
 - `log_time_size`: Number of points in impedance curve (default: 250)
-- `bayesian`: Enable Bayesian deconvolution (default: True)
+- `deconv_mode`: Enable Bayesian deconvolution (default: True)
 - `struc_method`: Method for structure function calculation (options: "sobhy", "lanczos", "boor_golub", "khatwani", "polylong")
 
 **Input/Output Parameters:**

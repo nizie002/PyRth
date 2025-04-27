@@ -114,7 +114,7 @@ By integrating data processing, numerical computation, optimization, and visuali
 
       - **Parameters**:
         - `data`
-        - `conv_mode`
+        - `input_mode`
 
     - `bootstrap_module`: Performs bootstrapping to estimate confidence intervals.
 
@@ -152,7 +152,7 @@ By integrating data processing, numerical computation, optimization, and visuali
 
     - `make_z`: Computes thermal impedance from raw data based on the conversion mode.
 
-      - Uses parameters such as `conv_mode`, `extrapolate`, `calib`, `kfac_fit_deg`, `power_step`, `optical_power`, `power_scale_factor`, and `is_heating`.
+      - Uses parameters such as `input_mode`, `extrapolate`, `calib`, `kfac_fit_deg`, `power_step`, `optical_power`, `power_scale_factor`, and `is_heating`.
 
     - `z_fit_deriv`: Calculates the derivative of impedance over logarithmic time.
 
@@ -266,7 +266,7 @@ By integrating data processing, numerical computation, optimization, and visuali
     - `filter_name`
     - `filter_range`
     - `filter_parameter`
-    - `bayesian`
+    - `deconv_mode`
     - `bay_steps`
     - `pad_factor_pre`
     - `pad_factor_after`
@@ -319,7 +319,7 @@ By integrating data processing, numerical computation, optimization, and visuali
 
   - **Procedural Settings**:
 
-    - `conv_mode`
+    - `input_mode`
     - `calc_struc`
     - `only_make_z`
     - `repetitions`
