@@ -323,6 +323,8 @@ class StructureFunction:
     def z_fit_lasso(self):
         # require at least one positive impedance
         if not np.any(self.impedance > 0):
+            logger.error("z_fit_lasso: impedance must contain positive values")
+            logger.error(f"Impedance: {self.impedance}")
             raise ValueError("z_fit_lasso: impedance must contain positive values")
 
         time = self.time.flatten()
@@ -384,16 +386,16 @@ class StructureFunction:
 
         R_th_model = np.sum(A_hat)  # Sum of A_k
 
-        if not np.any(A_hat > 0):
-            raise ValueError(
-                "z_fit_lasso: time constant spectrum is empty (no active Lasso components)"
-            )
-
         # Compare final values and print GoF metrics
         logger.info(f"Final measured resistance: {self.impedance[-1]:.4f}")
         logger.info(f"Model R_th (Sum of A_k): {R_th_model:.4f}")
         logger.info(f"RMSE: {sigma_hat:.4f}")
         logger.info(f"R-squared: {r2:.4f}")
+
+        if not np.any(A_hat > 0):
+            raise ValueError(
+                "z_fit_lasso: time constant spectrum is empty (no active Lasso components)"
+            )
 
         self.log_time_pad = np.log(tau_grid.copy())
         self.log_time_interp = self.log_time.copy()
