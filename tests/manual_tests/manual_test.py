@@ -18,7 +18,7 @@ def main():
         "data": MOSFET_TIM_DATA,
         "output_dir": "tests/output/manual_optimization_test",
         "label": "manual_optimization_test",
-        "conv_mode": "volt",
+        "input_mode": "volt",
         "opt_model_layers": 25,  # Adjust the complexity as needed
         "opt_method": "Powell",  # Or use "Powell" based on your case
         "calib": MOSFET_CALIB_DATA,

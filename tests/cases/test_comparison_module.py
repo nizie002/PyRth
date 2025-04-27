@@ -15,7 +15,7 @@ test_cases_comparison = [
             "output_dir": "tests/output/comparison_test",
             "label": "MOSFET_dry_",
             "filter_name": "hann",
-            "bayesian": False,
+            "deconv_mode": "fourier",
             "iterable_keywords": ["filter_range"],
             "filter_range": np.arange(0.1, 1.01, 0.1),
             "filter_parameter": 0.0,
