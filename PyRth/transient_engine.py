@@ -61,7 +61,7 @@ def derivative(
         log_time_size + 1,
     )[:-1]
 
-    fft_delta = (log_time[-1] - log_time[0]) / log_time_size
+    log_time_delta = (log_time[-1] - log_time[0]) / log_time_size
 
     lent = len(log_time)
     leni = len(log_time_interp)
@@ -184,8 +184,8 @@ def derivative(
         n += 1
         n_data += 1
 
-    time_start = log_time_interp[0] - (pad_number_pre) * fft_delta
-    time_stop = log_time_interp[-1] + (pad_number_after) * fft_delta
+    time_start = log_time_interp[0] - (pad_number_pre) * log_time_delta
+    time_stop = log_time_interp[-1] + (pad_number_after) * log_time_delta
 
     prologue = np.linspace(
         time_start,
@@ -194,7 +194,7 @@ def derivative(
     )[:-1]
 
     epilogue = np.linspace(
-        log_time_interp[-1] + fft_delta,
+        log_time_interp[-1] + log_time_delta,
         time_stop,
         pad_number_after,
     )
@@ -209,7 +209,7 @@ def derivative(
         log_time_interp,
         imp_smooth_full,
         log_time_pad,
-        fft_delta,
+        log_time_delta,
     )
 
 
