@@ -84,9 +84,9 @@ class Evaluation:
             raise AttributeError(
                 "Module is missing 'label' attribute. It is used to identify the results in CSV and image output."
             )
-        if not hasattr(module, "conv_mode"):
+        if not hasattr(module, "input_mode"):
             raise AttributeError(
-                "Module is missing 'conv_mode' attribute. It is used for converting input data to the correct thermal impedance."
+                "Module is missing 'input_mode' attribute. It is used for converting input data to the correct thermal impedance."
             )
 
         if module.normalize_impedance_to_previous and hasattr(self, "stored_early_zth"):
@@ -98,24 +98,31 @@ class Evaluation:
         module.data_handlers.add("impedance")
 
         if not module.only_make_z:
-            module.z_fit_deriv()
-            logger.debug("Z fit derivative completed")
-            logger.info(
-                f"Current power is {abs(module.power_step - module.optical_power):.2f} W"
-            )
 
-            if not module.bayesian:
-                logger.info("Performing Fourier transform")
-                module.fft_signal()
-                module.fft_weight()
-                module.fft_time_spec()
-                # Add FFT and time_spec handlers
-                module.data_handlers.update(["fft", "time_spec"])
-            else:
-                logger.info("Performing Bayesian deconvolution")
-                module.perform_bayesian_deconvolution()
-                # Add time_spec handler for Bayesian
+            if module.deconv_mode == "lasso":
+                logger.info("Performing Lasso deconvolution")
+
+                module.z_fit_lasso()
                 module.data_handlers.add("time_spec")
+
+            else:
+                module.z_fit_deriv()
+                logger.debug("Z fit derivative completed")
+
+                if module.deconv_mode == "fourier":
+                    logger.info("Performing Fourier transform")
+                    module.fft_signal()
+                    module.fft_weight()
+                    module.fft_time_spec()
+                    # Add FFT and time_spec handlers
+                    module.data_handlers.update(["fft", "time_spec"])
+                elif module.deconv_mode == "bayesian":
+                    logger.info("Performing Bayesian deconvolution")
+                    module.perform_bayesian_deconvolution()
+                    # Add time_spec handler for Bayesian
+                    module.data_handlers.add("time_spec")
+                else:
+                    raise ValueError("Invalid deconvolution mode specified.")
 
             module.foster_network()
 
@@ -329,7 +336,7 @@ class Evaluation:
         else:
             logger.error(f"Invalid mode for bootstrapping: {mode}")
 
-        self.parameters["conv_mode"] = "none"
+        self.parameters["input_mode"] = "none"
 
         logger.info(f"Bootstrapping: {repetitions} times")
 
@@ -647,7 +654,7 @@ class Evaluation:
 
     def theoretical_module(self, parameters: dict):
         """
-        Calculates are thermal impedance from a structure function. The structure function is calculated from a given set of resistances and capacitances.
+        Calculates a thermal impedance from a structure function. The structure function is calculated from a given set of resistances and capacitances.
         Each resistance and capacitance is associated with constant RC-transmission line section, which is concatenated to the previous.
 
         Parameters
