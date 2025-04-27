@@ -3,9 +3,9 @@ from tests.data.measurement_data import (
     MOSFET_DRY_DATA,
     MOSFET_TIM_DATA,
     MOSFET_CALIB_DATA,
+    LED_DATA,
     LED_CALIB_DATA,
     TEMP_DATA,
-    LED_DATA,
 )
 
 from parameterized import parameterized
@@ -32,6 +32,20 @@ test_cases_basic = [
         },
     },
     {
+        "name": "MOSFET_lasso",
+        "params": {
+            "data": MOSFET_TIM_DATA,
+            "output_dir": "tests/output/basic_test",
+            "label": "MOSFET_lasso",
+            "input_mode": "volt",
+            "deconv_mode": "lasso",
+            "struc_method": "lanczos",
+            "calib": MOSFET_CALIB_DATA,
+            "lower_fit_limit": 5e-4,
+            "upper_fit_limit": 1e-3,
+        },
+    },
+    {
         "name": "LED_high_bayesian",
         "params": {
             "data": LED_DATA,
@@ -39,7 +53,7 @@ test_cases_basic = [
             "label": "LED_high_bayesian",
             "input_mode": "volt",
             "deconv_mode": "bayesian",
-            "bay_steps": 1000,
+            "bay_steps": 100000,
             "log_time_size": 250,
             "struc_method": "lanczos",
             "calib": LED_CALIB_DATA,
