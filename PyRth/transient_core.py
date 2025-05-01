@@ -64,7 +64,7 @@ class StructureFunction:
         )
 
     def make_z(self):
-        valid_input_modes = ["t3ster", "temp", "volt", "none"]
+        valid_input_modes = ["t3ster", "temp", "volt", "impedance"]
 
         if self.input_mode not in valid_input_modes:
             raise ValueError(
@@ -93,14 +93,14 @@ class StructureFunction:
 
         if self.input_mode in ["volt", "t3ster"]:
             self.data_handlers.add("volt")
-        if self.input_mode != "none":
+        if self.input_mode != "impedance":
             self.data_handlers.add("temp")
 
         if self.input_mode == "t3ster":
             self.make_z_t3ster()
         elif self.input_mode in ["temp", "volt"]:
             self._process_temp_volt_data()
-        elif self.input_mode == "none":
+        elif self.input_mode == "impedance":
             self.time = self.data[:, 0]
             self.impedance = self.data[:, 1]
             logger.info("taking impedance data directly from data array")

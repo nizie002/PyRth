@@ -336,7 +336,7 @@ class Evaluation:
         else:
             logger.error(f"Invalid mode for bootstrapping: {mode}")
 
-        self.parameters["input_mode"] = "none"
+        self.parameters["input_mode"] = "impedance"
 
         logger.info(f"Bootstrapping: {repetitions} times")
 

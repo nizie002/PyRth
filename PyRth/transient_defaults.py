@@ -148,7 +148,7 @@ std_eval_defaults: dict = {
     "opt_model_layers": 10,  # number of layers for the optimization model
     #
     # Procedural settings
-    "input_mode": "none",  # used to convert the data to a different format
+    "input_mode": "impedance",  # used to convert the data to a different format
     "calc_struc": True,  # calculate the structure function
     "only_make_z": False,  # only make the impedance curve, dont calculate the time constant spectrum or structure function
     "repetitions": 1000,  # number of repetitions for bootstrapping
