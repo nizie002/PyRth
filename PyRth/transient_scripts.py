@@ -24,6 +24,16 @@ logger = logging.getLogger("PyRthLogger")
 class Evaluation:
 
     def __init__(self):
+        """
+        Initialize an Evaluation instance with default parameters.
+
+        This class manages the evaluation of thermal transient data through
+        different processing modules. It maintains a collection of modules
+        and their results, and handles saving data to CSV and figures to files.
+
+        The instance is created with default parameters that can be overridden
+        when calling individual evaluation methods.
+        """
         self.parameters: dict = {**dbase.std_eval_defaults, **dbase.std_output_defaults}
         self.modules: Dict[str, StructureFunction] = {}
         self.module_counters = {}
@@ -33,16 +43,46 @@ class Evaluation:
         logger.info("Evaluation instance initialized.")
 
     def save_as_csv(self):
+        """
+        Export all evaluation results to CSV files.
+
+        For each module stored in this Evaluation instance, saves all relevant
+        data arrays (impedance, structure functions, time spectra, etc.) to
+        separate CSV files in the configured output directories.
+        """
         self.io_manager.export_csv()
 
     def save_figures(self):
+        """
+        Generate and save figures for all evaluation results.
+
+        Creates visualizations of the data for each module stored in this
+        Evaluation instance. Generates plots for impedance curves, structure
+        functions, time constant spectra, etc., based on the output configuration.
+        """
         self.io_manager.export_figures()
 
     def save_all(self):
+        """
+        Save both CSV data files and figures for all evaluation results.
+
+        Convenience method that calls both save_as_csv() and save_figures().
+        """
         self.save_as_csv()
         self.save_figures()
 
     def _add_module_to_eval_dict(self, module):
+        """
+        Add a module to the internal storage dictionary with proper labeling.
+
+        If a module with the same label already exists, appends a counter to
+        the label to ensure uniqueness.
+
+        Parameters
+        ----------
+        module : StructureFunction
+            The module to add to the internal storage
+        """
         original_label = module.label
 
         counter = self.module_counters.get(module.label, 0)
