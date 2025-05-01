@@ -1,2 +1,2 @@
-khatwani_method
+Khatwani Method
 ====================

@@ -28,11 +28,16 @@ This section provides detailed explanations of the mathematical theory and algor
    :maxdepth: 1
    :caption: Structure Function Algorithms:
    
+   theory/structure_functions
+
    theory/algorithms/polynomial_long_division
    theory/algorithms/sobhy_method
    theory/algorithms/khatwani_method
    theory/algorithms/lanczos
    theory/algorithms/de_boor_golub
+      
+.. toctree::
+   :maxdepth: 1
+   :caption: Optimization Techniques:
    
-   theory/structure_functions
    theory/optimization_techniques

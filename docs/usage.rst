@@ -1,5 +1,10 @@
-PyRth Evaluation Modules
-==========================
+
+Examples
+==============
+
+
+Overview
+----------------
 
 PyRth offers several evaluation methods to process thermal transient data. The main functions are:
 
@@ -24,8 +29,10 @@ PyRth offers several evaluation methods to process thermal transient data. The m
 - :py:meth:`~PyRth.transient_scripts.Evaluation.temperature_prediction_module`
   Predicts temperature profiles from measured power data using computed impulse responses and convolution.
 
+
+
 Data Sources
-=================
+----------------
 
 The following examples use measurement data provided under `tests/data` in the repository, loaded via the helper module `tests/data/measurement_data.py`:
 
@@ -37,7 +44,7 @@ The following examples use measurement data provided under `tests/data` in the r
 All data are returned as NumPy arrays of shape `(n, 2)`, with columns `[time, measurement]`. In your own workflows, replace these with your own arrays (e.g., from CSV, T3ster exports, or other sources) before passing to the evaluation methods.
 
 Input Modes
-===========
+----------------
 
 PyRth supports four input modes to describe how raw measurement data is interpreted. Set the `input_mode` key in your parameter dictionary to one of the following:
 
@@ -63,8 +70,8 @@ PyRth supports four input modes to describe how raw measurement data is interpre
   - Use when working directly with T3Ster instrument exports.
 
 
-Examples
-==============
+Examples of Evaluation Modules
+-------------------------------------
 
 This section provides examples of how to use the different evaluation
 modules available in the :py:class:`~PyRth.transient_scripts.Evaluation` class.
@@ -75,7 +82,8 @@ section. Parameters can be overridden by passing them as keyword arguments
 to the module methods.
 
 Standard Analysis (:py:meth:`~PyRth.transient_scripts.Evaluation.standard_module`)
--------------------------------------------------------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Provides a basic evaluation for processing input data to compute thermal impedance and structure functions.
 
 .. code-block:: python
@@ -99,7 +107,7 @@ Provides a basic evaluation for processing input data to compute thermal impedan
 
 
 Batch Processing (:py:meth:`~PyRth.transient_scripts.Evaluation.standard_module_set`)
-----------------------------------------------------------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Enables batch processing over multiple parameter configurations. This method iterates over provided iterable keywords and generates a set of evaluation modules.
 
 .. code-block:: python
@@ -126,7 +134,7 @@ Enables batch processing over multiple parameter configurations. This method ite
 
 
 Bootstrapping (:py:meth:`~PyRth.transient_scripts.Evaluation.bootstrap_module`)
------------------------------------------------------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Applies statistical bootstrapping to estimate variability and compute confidence intervals for the calculated thermal properties.
 
 .. code-block:: python
@@ -152,7 +160,7 @@ Applies statistical bootstrapping to estimate variability and compute confidence
 
 
 Optimization (:py:meth:`~PyRth.transient_scripts.Evaluation.optimization_module`)
-------------------------------------------------------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Optimizes model parameters, refining the fit between the theoretical model and the measured data.
 
 .. code-block:: python
@@ -181,7 +189,7 @@ Optimizes model parameters, refining the fit between the theoretical model and t
 
 
 Theoretical Modeling (:py:meth:`~PyRth.transient_scripts.Evaluation.theoretical_module`)
--------------------------------------------------------------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Generates theoretical predictions based on given resistances and capacitances, computing the theoretical thermal impedance.
 
 .. code-block:: python
@@ -203,7 +211,7 @@ Generates theoretical predictions based on given resistances and capacitances, c
 
 
 Comparison (:py:meth:`~PyRth.transient_scripts.Evaluation.comparison_module`)
----------------------------------------------------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Compares evaluation results, e.g. between theoretical predictions and experimental data or between different evaluation strategies.
 
 .. code-block:: python
@@ -234,7 +242,7 @@ Compares evaluation results, e.g. between theoretical predictions and experiment
 
 
 Temperature Prediction (:py:meth:`~PyRth.transient_scripts.Evaluation.temperature_prediction_module`)
---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Predicts temperature profiles from measured power data using computed impulse responses and convolution.
 
 .. code-block:: python

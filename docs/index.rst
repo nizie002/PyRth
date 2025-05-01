@@ -12,4 +12,4 @@ PyRth is a Python package for analyzing thermal transient measurements using Net
    user_guide
    evaluation_modules_overview
    api
-   theory
+   theory   

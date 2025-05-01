@@ -10,11 +10,11 @@ Click on the links below for detailed documentation on each module:
 .. toctree::
    :maxdepth: 1
 
-   evaluation_standard
-   evaluation_set
-   evaluation_bootstrap
-   evaluation_optimization
-   evaluation_theoretical
-   evaluation_comparison
-   evaluation_prediction
+   evaluation_modules/evaluation_standard
+   evaluation_modules/evaluation_set
+   evaluation_modules/evaluation_bootstrap
+   evaluation_modules/evaluation_optimization
+   evaluation_modules/evaluation_theoretical
+   evaluation_modules/evaluation_comparison
+   evaluation_modules/evaluation_prediction
 

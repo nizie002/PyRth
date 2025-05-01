@@ -11,9 +11,15 @@ Default Configuration Parameters
 
 The following parameters define PyRth's default behavior and can be overridden by passing values in the parameter dictionary to evaluation methods.
 
-.. automodule:: PyRth.transient_defaults
-   :member-order: bysource
-   :no-undoc-members:
+Standard Evaluation Parameters
+
+.. autodata:: PyRth.transient_defaults.std_eval_defaults
+   :annotation: 
+
+Standard Output Parameters
+
+.. autodata:: PyRth.transient_defaults.std_output_defaults
+   :annotation:
 
 Evaluation Methods
 ---------------------
