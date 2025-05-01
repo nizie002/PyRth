@@ -13,13 +13,7 @@ The following parameters define PyRth's default behavior and can be overridden b
 
 Standard Evaluation Parameters
 
-.. autodata:: PyRth.transient_defaults.std_eval_defaults
-   :annotation: 
-
-Standard Output Parameters
-
-.. autodata:: PyRth.transient_defaults.std_output_defaults
-   :annotation:
+.. include:: _autogen_eval_param_table.rst
 
 Evaluation Methods
 ---------------------

@@ -4,6 +4,9 @@ pushd %~dp0
 
 REM Command file for Sphinx documentation
 
+REM Run parameter table generator before building docs
+python "%~dp0generate_eval_param_table.py"
+
 if "%SPHINXBUILD%" == "" (
 	set SPHINXBUILD=sphinx-build
 )
