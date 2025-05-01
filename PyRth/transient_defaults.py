@@ -2,6 +2,17 @@ import numpy as np
 
 import logging
 
+#: Module providing default configuration parameters for PyRth analysis.
+#:
+#: This module defines the default values for various settings used across
+#: different evaluation functions in :py:mod:`~PyRth.transient_scripts`.
+#: These defaults can be overridden by passing keyword arguments to the
+#: respective evaluation methods when instantiating or calling methods
+#: on the :py:class:`~PyRth.transient_scripts.Evaluation` class.
+#:
+#: See the :ref:`Default Configuration <default-configuration-label>` section
+#: in the documentation for a rendered view of these parameters.
+
 logger = logging.getLogger("PyRthLogger")
 
 
@@ -80,166 +91,280 @@ def validate_and_merge_defaults(params: dict, self_parameters: dict) -> dict:
 
 std_eval_defaults: dict = {
     # Numerical Settings
-    "precision": 250,  # number of points in the impedance curve
-    "log_time_size": 250,  # number of points in the logtime array
+    "precision": 250,
+    #: int: Number of points used for internal calculations involving the impedance curve.
+    "log_time_size": 250,
+    #: int: Number of points in the logarithmically spaced time array used for spectrum calculations.
     #
     # deconvolution settings
-    "filter_name": "hann",  # name of the filter to use for deconvolution, options: "fermi", "gauss", "nuttall", "blackman_nuttall", "hann", "blackman_harris", "rectangular"
-    "filter_range": 0.60,  # range of the filter for applicable during fft deconvolution
-    "filter_parameter": 0.0,  # parameter for the filter of applicable during fft deconvolution
-    "deconv_mode": "bayesian",  # whether to use bayesian deconvolution, fft, or lasso
-    "bay_steps": 1000,  # number of steps for the bayesian deconvolution
-    "pad_factor_pre": 0.01,  # padding factor for the deconvolution to append zeros to the beginning
-    "pad_factor_after": 0.01,  # padding factor for the deconvolution to append zeros to the end
+    "filter_name": "hann",
+    #: str: Name of the filter for FFT deconvolution. Options: "fermi", "gauss", "nuttall", "blackman_nuttall", "hann", "blackman_harris", "rectangular".
+    "filter_range": 0.60,
+    #: float: Range parameter for the FFT deconvolution filter (if applicable).
+    "filter_parameter": 0.0,
+    #: float: Additional parameter for the FFT deconvolution filter (if applicable).
+    "deconv_mode": "bayesian",
+    #: str: Deconvolution method. Options: 'bayesian', 'fft', 'lasso'.
+    "bay_steps": 1000,
+    #: int: Number of steps for Bayesian deconvolution.
+    "pad_factor_pre": 0.01,
+    #: float: Padding factor to prepend zeros before deconvolution.
+    "pad_factor_after": 0.01,
+    #: float: Padding factor to append zeros after deconvolution.
     #
     # Structure Function settings
-    "struc_method": "sobhy",  # method to calculate the structure function: options are "sobhy", "lanczos", "boor_golub", "khatwani", and "polylong"
-    "timespec_interpolate_factor": 1.0,  # factor to interpolate the time constant spectrum using for lanczos
-    "blockwise_sum_width": 20,  # number of rungs to combine during lanczos for smoothing
+    "struc_method": "sobhy",
+    #: str: Method for structure function calculation. Options: "sobhy", "lanczos", "boor_golub", "khatwani", "polylong".
+    "timespec_interpolate_factor": 1.0,
+    #: float: Interpolation factor for the time constant spectrum (used by Lanczos).
+    "blockwise_sum_width": 20,
+    #: int: Number of RC rungs to combine for smoothing (used by Lanczos).
     #
     # Theoretical settings
-    "theo_inverse_specs": None,  # dictionary of theoretical inverse specifications, optional to not get in conflict with the optimization parameters
-    "theo_resistances": None,  # list of resistances for the theoretical model, user should provide this
-    "theo_capacitances": None,  # list of capacitances for the theoretical model, user should provide this
-    "theo_time": [4e-8, 1e3],  # range of the time for the theoretical model in seconds
-    "theo_time_size": 30000,  # number of points in the time array for the theoretical model
-    "signal_to_noise_ratio": 100,  # signal to noise ratio for added noise in theoretical impedances
-    "theo_delta": 0.5
-    * (
-        2 * np.pi / 360
-    ),  # angle to rotate Z(s) into the complex plane to avoid singularities (smaller is better, but makes peaks sharper)
+    "theo_inverse_specs": None,
+    #: dict | None: Dictionary of theoretical inverse specifications.
+    "theo_resistances": None,
+    #: list | None: List of resistances for the theoretical Foster network model.
+    "theo_capacitances": None,
+    #: list | None: List of capacitances for the theoretical Foster network model.
+    "theo_time": [4e-8, 1e3],
+    #: list[float, float]: Time range [start, end] in seconds for theoretical model calculation.
+    "theo_time_size": 30000,
+    #: int: Number of time points for the theoretical model calculation.
+    "signal_to_noise_ratio": 100,
+    #: float: Signal-to-noise ratio for adding noise to theoretical impedance data.
+    "theo_delta": 0.5 * (2 * np.pi / 360),
+    #: float: Angle (radians) to rotate Z(s) into the complex plane for theoretical calculations to avoid singularities.
     #
     # K-factor and voltage conversion, and extrapolate settings
-    "calib": None,  # 2-d array of calibration data [temps, voltages], user should provide this
-    "kfac_fit_deg": 2,  # degree of the polynomial fit for the K-factor
-    "extrapolate": True,  # whether to extrapolate the thermal response using square root of time fit
-    "lower_fit_limit": None,  # time in seconds where to start the extrapolation fit
-    "upper_fit_limit": None,  # time in seconds where to end the extrapolation fit
-    "data_cut_lower": 0,  # index to cut data, points below this are not part of the transient
-    "data_cut_upper": float(
-        "inf"
-    ),  # index to cut data, points above this are not part of the transient
-    "temp_0_avg_range": (
-        0,
-        1,
-    ),  # range to average the temperature curve to determine the initial temperature
+    "calib": None,
+    #: np.ndarray | None: 2D array of calibration data [temps, voltages]. Required if input_mode is 'voltage'.
+    "kfac_fit_deg": 2,
+    #: int: Degree of the polynomial fit for K-factor calculation from calibration data.
+    "extrapolate": True,
+    #: bool: Whether to extrapolate the thermal response using a sqrt(time) fit at early times.
+    "lower_fit_limit": None,
+    #: float | None: Lower time limit (seconds) for the extrapolation fit range. Defaults to the start of the data if None.
+    "upper_fit_limit": None,
+    #: float | None: Upper time limit (seconds) for the extrapolation fit range. Defaults to a fraction of the total time if None.
+    "data_cut_lower": 0,
+    #: int: Index to cut data; points below this index are excluded from the transient analysis.
+    "data_cut_upper": float("inf"),
+    #: int | float: Index to cut data; points above this index are excluded from the transient analysis.
+    "temp_0_avg_range": (0, 1),
+    #: tuple[int, int]: Index range (start, end) to average the initial temperature/voltage to determine the baseline.
     #
     # Power settings
-    "power_step": 1.0,  # power step in W
-    "power_scale_factor": 1.0,  # used when analyzing multiple DUT in series and average per component properties are desired
-    "optical_power": 0.0,  # used for LED testing to substract optical power in W
-    "is_heating": False,  # whether the thermal transient is in repsonse to a negative or positive power step
-    "power_data": None,  # excitation curves for temperature prediction evaluations, should be a 2-d array with time in the first column and power in the second
-    "lin_sampling_period": 1e-6,  # sampling period for the linear interpolation of the impulse response. The sampling period should be at least twice as small as the smallest relevant time constant in your system (Nyquist criterion)
+    "power_step": 1.0,
+    #: float: Power step [W] applied during the measurement. Used for impedance calculation.
+    "power_scale_factor": 1.0,
+    #: float: Scaling factor applied to power, useful for analyzing multiple DUTs in series to get per-component properties.
+    "optical_power": 0.0,
+    #: float: Optical power [W] to subtract, relevant for LED testing.
+    "is_heating": False,
+    #: bool: True if the transient corresponds to a heating step (positive power), False for cooling (negative power step).
+    "power_data": None,
+    #: np.ndarray | None: Excitation power curve for temperature prediction. 2D array: [time, power].
+    "lin_sampling_period": 1e-6,
+    #: float: Sampling period [s] for linear interpolation of the impulse response in temperature prediction. Should satisfy Nyquist criterion for the system's time constants.
     #
     # Window and derivative settings
-    "minimum_window_length": 0.35,  # minimum window length for the derivative calculation in units of logtime
-    "maximum_window_length": 3.0,  # maximum window length for the derivative calculation in units of logtime
-    "minimum_window_size": 70,  # minimum window size for the derivative calculation
-    "window_increment": 0.1,  # +- window increment for derivative calculation in each update
-    "expected_var": 0.09,  # expected variance of the thermal transient data
-    "min_index": 3,  # minimum index for the derivative
+    "minimum_window_length": 0.35,
+    #: float: Minimum window length (in log10(time) units) for the adaptive derivative calculation.
+    "maximum_window_length": 3.0,
+    #: float: Maximum window length (in log10(time) units) for the adaptive derivative calculation.
+    "minimum_window_size": 70,
+    #: int: Minimum number of data points within the derivative calculation window.
+    "window_increment": 0.1,
+    #: float: Increment (+/-) applied to the window length during the adaptive derivative calculation update step.
+    "expected_var": 0.09,
+    #: float: Expected variance of the noise in the thermal transient data, used in derivative calculation.
+    "min_index": 3,
+    #: int: Minimum index from which to start the derivative calculation.
     #
     # Optimization settings
-    "opt_recalc_forward": False,  # whether to recalculate the forward solution during optimization (for smooth NID forward solution)
-    "opt_use_extrapolate": True,  # whether to use extrapolate the impedance curve during optimization
-    "opt_method": "Powell",  # optimization method to use
-    "struc_init_method": "optimal_fit",  # method to determine the initial structure function approximation
-    "opt_model_layers": 10,  # number of layers for the optimization model
+    "opt_recalc_forward": False,
+    #: bool: Whether to recalculate the forward solution during optimization (relevant for specific NID methods).
+    "opt_use_extrapolate": True,
+    #: bool: Whether to use the extrapolated impedance curve during optimization.
+    "opt_method": "Powell",
+    #: str: Optimization method to use (passed to scipy.optimize.minimize).
+    "struc_init_method": "optimal_fit",
+    #: str: Method to determine the initial structure function approximation for optimization.
+    "opt_model_layers": 10,
+    #: int: Number of RC layers (Foster elements) for the optimization model.
     #
     # Procedural settings
-    "input_mode": "impedance",  # used to convert the data to a different format
-    "calc_struc": True,  # calculate the structure function
-    "only_make_z": False,  # only make the impedance curve, dont calculate the time constant spectrum or structure function
-    "repetitions": 1000,  # number of repetitions for bootstrapping
-    "random_seed": None,  # random seed for bootstrapping
-    "bootstrap_mode": "from_data",  # method to generate the bootstrap samples, options are "from_theo", "from_data", "given", "given_with_opt"
+    "input_mode": "impedance",
+    #: str: Input data type. Options: 'impedance', 'temperature', 'voltage'. Determines initial processing steps.
+    "calc_struc": True,
+    #: bool: Whether to calculate the structure function after impedance calculation.
+    "only_make_z": False,
+    #: bool: If True, only calculate the impedance curve and skip spectrum/structure function steps.
+    "repetitions": 1000,
+    #: int: Number of repetitions for bootstrapping analysis.
+    "random_seed": None,
+    #: int | None: Random seed for bootstrapping to ensure reproducibility.
+    "bootstrap_mode": "from_data",
+    #: str: Method for generating bootstrap samples. Options: "from_theo", "from_data", "given", "given_with_opt".
     #
     # standard_evaluation_set settings
-    "normalize_impedance_to_previous": False,  # normalize the impedance curve to the first impedance curve in the evaluation
-    "evaluation_type": "standard",  # for standard_evaluation_set to choose the type
-    "iterable_keywords": [],  # keywords that can be iterated over in standard_evaluation_set. Each such specified keyword should be a list of values
+    "normalize_impedance_to_previous": False,
+    #: bool: In batch processing, normalize subsequent impedance curves to the first one.
+    "evaluation_type": "standard",
+    #: str: Type of evaluation module to run within `standard_module_set`.
+    "iterable_keywords": [],
+    #: list[str]: List of keyword argument names that should be iterated over in `standard_module_set`. The corresponding values should be lists.
     #
     # I/O settings
-    "data": None,  # data to be analyzed, should be a 2-d array with time in the first column and temperature or voltage in the second
-    "output_dir": "output",  # output directory for files
-    "label": "no_label",  # default label for output files, should be changed to something meaningful by the user
+    "data": None,
+    #: np.ndarray | None: Input data. 2D array: [time, measurement (temp/voltage/impedance)]. Should be provided by the user.
+    "output_dir": "output",
+    #: str: Base directory for saving output files.
+    "label": "no_label",
+    #: str: Label used for naming output files and figures. Should be set by the user.
     #
     # T3ster Interface Settings
-    "infile": None,  # input directory for data files, default is None
-    "infile_pwr": None,  # input directory for T3ster power files, default is None
-    "infile_tco": None,  # input directory for T3ster calibration files, default is None
+    "infile": None,
+    #: str | None: Input file path for T3ster data files.
+    "infile_pwr": None,
+    #: str | None: Input file path for T3ster power files.
+    "infile_tco": None,
+    #: str | None: Input file path for T3ster calibration files.
     #
-    # Image settings
+    # Image settings (Potentially related to plotting/figure generation counts)
     "total_calls": 1,
+    #: int: Counter, possibly related to the number of analysis calls.
     "fig_total_calls": 1,
+    #: int: Counter, possibly related to the number of figures generated.
 }
 
 
-# This dictionary, std_output_defaults, controls the saving and output behavior of the system.
-# Each key-value pair represents a specific operation, where a value of True enables the operation, and False disables it.
 std_output_defaults: dict = {
     "save_voltage": True,
+    #: bool: Save calculated voltage data.
     "save_temperature": True,
+    #: bool: Save calculated temperature data.
     "save_impedance": True,
+    #: bool: Save calculated thermal impedance (Zth) data.
     "save_impedance_smooth": True,
+    #: bool: Save smoothed thermal impedance data.
     "save_extrpl": True,
+    #: bool: Save extrapolated impedance data.
     "save_derivative": True,
+    #: bool: Save calculated logarithmic time derivative of Zth.
     "save_back_impedance": True,
+    #: bool: Save impedance recalculated from the time constant spectrum.
     "save_back_derivative": True,
+    #: bool: Save derivative recalculated from the time constant spectrum.
     "save_frequency": True,
+    #: bool: Save frequency domain data (if applicable).
     "save_time_spec": True,
+    #: bool: Save the calculated time constant spectrum (tau*Rth vs tau).
     "save_sum_time_spec": True,
+    #: bool: Save the cumulative sum of the time constant spectrum.
     "save_diff_struc": True,
+    #: bool: Save the differential structure function (dRth/dCth vs Cth).
     "save_cumul_struc": True,
+    #: bool: Save the cumulative structure function (Rth vs Cth).
     "save_local_resist_struc": True,
+    #: bool: Save local resistance structure function data.
     "save_theo_struc": True,
+    #: bool: Save theoretical structure function data.
     "save_theo_diff_struc": True,
+    #: bool: Save theoretical differential structure function data.
     "save_theo_time_const": True,
+    #: bool: Save theoretical time constant spectrum data.
     "save_theo_imp_deriv": True,
+    #: bool: Save theoretical impedance derivative data.
     "save_theo_impedance": True,
+    #: bool: Save theoretical impedance data.
     "save_time_const_comparison": True,
+    #: bool: Save data comparing time constant spectra (e.g., measured vs theoretical).
     "save_struc_comparison": True,
+    #: bool: Save data comparing structure functions.
     "save_total_resist_comparison": True,
+    #: bool: Save data comparing total thermal resistances.
     "save_boot_impedance": True,
+    #: bool: Save bootstrapped impedance results.
     "save_boot_deriv": True,
+    #: bool: Save bootstrapped derivative results.
     "save_boot_time_spec": True,
+    #: bool: Save bootstrapped time constant spectrum results.
     "save_boot_sum_time_spec": True,
+    #: bool: Save bootstrapped cumulative time constant spectrum results.
     "save_boot_cumul_struc": True,
+    #: bool: Save bootstrapped cumulative structure function results.
     "save_prediction": True,
+    #: bool: Save temperature prediction results.
     "save_residual": True,
+    #: bool: Save residual data (e.g., difference between prediction and measurement).
     "look_at_raw_data": True,
+    #: bool: Generate plot of raw input data.
     "look_at_extrpl": True,
+    #: bool: Generate plot showing extrapolation fit.
     "look_at_temp": True,
+    #: bool: Generate plot of temperature vs time.
     "look_at_voltage": True,
+    #: bool: Generate plot of voltage vs time.
     "look_at_impedance": True,
+    #: bool: Generate plot of thermal impedance vs time.
     "look_at_deriv": True,
+    #: bool: Generate plot of logarithmic time derivative vs time.
     "look_at_fft": True,
+    #: bool: Generate plot related to FFT processing (if used).
     "look_at_time_spec": True,
+    #: bool: Generate plot of the time constant spectrum.
     "look_at_cumul_struc": True,
+    #: bool: Generate plot of the cumulative structure function.
     "look_at_diff_struc": True,
+    #: bool: Generate plot of the differential structure function.
     "look_at_local_resist": True,
+    #: bool: Generate plot of the local resistance structure function.
     "look_at_local_gradient": True,
+    #: bool: Generate plot of the local gradient structure function.
     "look_at_theo_cstruc": True,
+    #: bool: Generate plot of the theoretical cumulative structure function.
     "look_at_theo_diff_struc": True,
+    #: bool: Generate plot of the theoretical differential structure function.
     "look_at_theo_time_const": True,
+    #: bool: Generate plot of the theoretical time constant spectrum.
     "look_at_theo_sum_time_const": True,
+    #: bool: Generate plot of the theoretical cumulative time constant spectrum.
     "look_at_theo_imp_deriv": True,
+    #: bool: Generate plot of the theoretical impedance derivative.
     "look_at_theo_impedance": True,
+    #: bool: Generate plot of the theoretical impedance.
     "look_at_theo_backwards_impedance": True,
+    #: bool: Generate plot of impedance recalculated from theoretical spectrum.
     "look_at_backwards_imp_deriv": True,
+    #: bool: Generate plot of derivative recalculated from measured spectrum.
     "look_at_backwards_impedance": True,
+    #: bool: Generate plot of impedance recalculated from measured spectrum.
     "look_at_sum_time_spec": True,
+    #: bool: Generate plot of the cumulative time constant spectrum.
     "look_at_optimize_struc": True,
+    #: bool: Generate plot related to optimization results (structure function).
     "look_at_time_const_comparison": True,
+    #: bool: Generate plot comparing time constant spectra.
     "look_at_struc_comparison": True,
+    #: bool: Generate plot comparing structure functions.
     "look_at_total_resist_comparison": True,
+    #: bool: Generate plot comparing total thermal resistances.
     "look_at_boot_impedance": True,
+    #: bool: Generate plot of bootstrapped impedance results (e.g., with confidence intervals).
     "look_at_boot_deriv": True,
+    #: bool: Generate plot of bootstrapped derivative results.
     "look_at_boot_time_spec": True,
+    #: bool: Generate plot of bootstrapped time constant spectrum results.
     "look_at_boot_sum_time_spec": True,
+    #: bool: Generate plot of bootstrapped cumulative time constant spectrum results.
     "look_at_boot_cumul_struc": True,
+    #: bool: Generate plot of bootstrapped cumulative structure function results.
     "look_at_prediction": True,
+    #: bool: Generate plot comparing predicted temperature with measured data.
     "look_at_prediction_figure": True,
+    #: bool: Generate a specific figure related to temperature prediction.
     "look_at_residual": True,
+    #: bool: Generate plot of the residuals from temperature prediction.
 }

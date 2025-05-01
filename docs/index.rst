@@ -7,12 +7,5 @@ PyRth documentation
 
    installation
    usage
+   evaluation_modules_overview
    api
-   modules
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

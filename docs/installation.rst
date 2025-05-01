@@ -1,8 +1,8 @@
 Installation
-===========
+============
 
 From PyPI
---------
+---------
 
 Install PyRth with pip:
 
