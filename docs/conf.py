@@ -12,6 +12,8 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
+    "sphinxcontrib.pseudocode",
+    "sphinx_proof",
 ]
 
 templates_path = ["_templates"]

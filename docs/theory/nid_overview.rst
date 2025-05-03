@@ -91,9 +91,12 @@ Its *logarithmic time-constant spectrum*
 
 collects the resistances as Dirac peaks.
 
-.. image:: /_static/foster_network.png
+.. figure:: /_static/foster_network.png
    :alt: Foster network
    :width: 600px
+   :align: center
+
+   Foster network with parallel RC branches.
 
 On the logarithmic axis the step response becomes
 
@@ -139,9 +142,12 @@ From spectrum to RC network
    The cumulative heat capacitance versus cumulative thermal resistance
    obtained from the Cauer ladder is the *structure function*.
 
-.. image:: /_static/cauer_network.png
+.. figure:: /_static/cauer_network.png
     :alt: Cauer network
     :width: 600px
+    :align: center
+
+    Foster network with series RC branches.
 
 .. _nid_alternative_route:
 
