@@ -12,12 +12,14 @@ The conversion is an exercise in **network synthesis**: rewrite the Foster
 impedance
 
 .. math::
+   :label: eq:foster_impedance
 
    Z(s)=\sum_{i=1}^{n}\frac{R_i}{1+sR_iC_i}
 
 as the Stieltjes continued fraction
 
 .. math::
+   :label: eq:stieltjes_fraction
 
    Z(s)=
    \cfrac{1}{
@@ -56,6 +58,7 @@ For each iteration :math:`k = n, n-1, \ldots, 1`:
 #. **Divide**
 
    .. math::
+      :label: eq:division_step
 
       \frac{q_k(s)}{p_k(s)}
       \;=\;
@@ -64,6 +67,7 @@ For each iteration :math:`k = n, n-1, \ldots, 1`:
    The quotient coefficients give immediately  
 
    .. math::
+      :label: eq:cauer_elements
 
       C'_k=\text{(coefficient of }s),
       \qquad
@@ -73,6 +77,7 @@ For each iteration :math:`k = n, n-1, \ldots, 1`:
 
    .. math::
       :nowrap:
+      :label: eq:new_impedance
 
       \begin{aligned}
       p_{k-1}(s)&=-\,R'_k\,r_k(s),\\
@@ -84,7 +89,7 @@ For each iteration :math:`k = n, n-1, \ldots, 1`:
 
 **Why the division always works**
 
-Because each branch in the Foster sum adds one real **pole** but no new
+Because each branch in the Foster sum :eq:`eq:foster_impedance` adds one real **pole** but no new
 zeros, deg :math:`q_k` is *exactly* one higher than deg :math:`p_k`
 (see the pole–zero discussion in the previous section).  
 Hence the quotient of polynomials always reduces to a *linear* term plus a

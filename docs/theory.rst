@@ -31,10 +31,11 @@ This section provides detailed explanations of the mathematical theory and algor
 
    theory/algorithms/foster_network
    theory/algorithms/polynomial_long_division
-   theory/algorithms/sobhy_method
+   theory/algorithms/J-fraction
    theory/algorithms/khatwani_method
-   theory/algorithms/lanczos
+   theory/algorithms/sobhy_method
    theory/algorithms/de_boor_golub
+   theory/algorithms/lanczos
       
 .. toctree::
    :maxdepth: 1
