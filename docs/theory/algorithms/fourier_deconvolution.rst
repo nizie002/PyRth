@@ -1,111 +1,146 @@
 Fourier Deconvolution
-======================
+============================
 
-Fourier Deconvolution is one of the key methods in PyRth for calculating the time constant spectrum from thermal impedance measurements.
+.. _nid_fft_deconv:
 
-Algorithm Description
------------------------------------
-
-The Fourier deconvolution approach uses the frequency domain to solve the convolution integral that relates the time constant spectrum to the thermal impedance derivative. Key steps include:
-
-1. Transform the impedance derivative to the frequency domain using FFT
-2. Divide by the transfer function in the frequency domain
-3. Apply a spectral filter to reduce noise amplification
-4. Transform back to the time domain to obtain the time constant spectrum
-
-Mathematical Formulation
---------------------------------------
-
-The thermal impedance can be expressed as a convolution of the time constant spectrum :math:`R(\tau)` with a weight function :math:`w(t, \tau)`:
+Problem description
+---------------------
+The convolution that links the **impulse response** :math:`h(z)` to the
+*logarithmic time-constant spectrum* :math:`R(\zeta)`
 
 .. math::
 
-    Z_{th}(t) = \int_{0}^{\infty} R(\tau) \cdot w(t, \tau) d\tau
+   h(z)\;=\;\bigl(R \;\ast\; w_z\bigr)(z)
+        \;=\;\int_{-\infty}^{\infty}
+               R(\zeta)\,
+               e^{\,z-\zeta-\exp(z-\zeta)}
+               \,\mathrm{d}\zeta           
 
-The derivative with respect to logarithmic time is:
-
-.. math::
-
-    \frac{dZ_{th}}{d\ln(t)} = \int_{0}^{\infty} R(\tau) \cdot \frac{\partial w(t, \tau)}{\partial \ln(t)} d\tau
-
-In the frequency domain, this becomes:
+turns into a **simple product** in the Fourier domain:
 
 .. math::
 
-    \mathcal{F}\left\{\frac{dZ_{th}}{d\ln(t)}\right\} = \mathcal{F}\{R(\tau)\} \cdot \mathcal{F}\left\{\frac{\partial w(t, \tau)}{\partial \ln(t)}\right\}
+   \mathcal{F}\{h\}(\Phi)
+   \;=\;
+   V(\Phi)\,W(\Phi),
 
-Thus, we can isolate the time constant spectrum:
+where
+
+* :math:`\mathcal{F}\{f\}` denotes the Fourier transform of function :math:`f`,
+* :math:`V(\Phi) = \mathcal{F}\{R\}(\Phi)`, is the Fourier transform of the
+  *logarithmic time-constant spectrum* :math:`R(\zeta)`,
+* :math:`W(\Phi) = \mathcal{F}\{w_z\}(\Phi)`, is the Fourier transform of the
+  kernel :math:`w_z(z)`.
+
+With measured data the recorded signal contains noise,
 
 .. math::
 
-    \mathcal{F}\{R(\tau)\} = \frac{\mathcal{F}\left\{\frac{dZ_{th}}{d\ln(t)}\right\}}{\mathcal{F}\left\{\frac{\partial w(t, \tau)}{\partial \ln(t)}\right\}} \cdot \mathcal{F}\{Filter\}
+   m(z)=h(z)+n(z) \;\Longrightarrow\;
+   M(\Phi)=H(\Phi)+N(\Phi).
 
-Then, we apply the inverse Fourier transform:
+Division by :math:`W(\Phi)` therefore yields
 
 .. math::
 
-    R(\tau) = \mathcal{F}^{-1}\left\{\mathcal{F}\{R(\tau)\}\right\}
+   V'(\Phi)
+     \;=\;
+   \frac{M(\Phi)}{W(\Phi)}
+     \;=\;
+   V(\Phi)
+   \;+\;
+   \frac{N(\Phi)}{W(\Phi)}.
 
-Implementation Details
------------------------------------
+Whenever :math:`|W(\Phi)|` approaches zero the noise term explodes; **high-
+frequency whitening** is unavoidable.  Practical NID hence applies a
+frequency-domain *window* that suppresses harmful bands before the inverse
+FFT reconstructs :math:`R(\zeta)`.
 
-In PyRth, the FFT deconvolution is implemented through these steps:
+**Padding**
 
-1. Calculate the FFT of the impedance derivative
-2. Calculate the FFT of the weight function
-3. Divide the FFT of the derivative by the FFT of the weight function
-4. Apply a filter (e.g., Hann, Gauss, Fermi) to suppress high-frequency noise
-5. Calculate the inverse FFT to obtain the time constant spectrum
+Because the FFT assumes circular convolution, the impulse response is
+normally **zero-padded** to at least twice its original length.  Padding
+helps to avoid wrap-around artefacts and to match the length demanded by
+the chosen window function.
 
-The implementation is divided across several functions in the `transient_core.py` file:
+.. _nid_freq_windows:
 
-- `fft_signal`: Calculates the Fourier transform of the impedance derivative
-- `fft_weight`: Calculates the Fourier transform of the weight function
-- `fft_time_spec`: Performs the deconvolution and applies the selected filter
+Frequency-domain windows
+------------------------
+Let the filtered spectrum be
 
-Filter Options
-----------------------------
+.. math::
 
-PyRth provides several filter types for Fourier deconvolution:
+   V_\text{filtered}(\Phi)
+     \;=\;
+   V'(\Phi)\,F(\Phi),
 
-- **Rectangular**: Simple rectangular window (no filtering)
-- **Hann**: Standard Hann window, good general-purpose filter
-- **Blackman-Harris**: Provides excellent sidelobe suppression
-- **Nuttall**: Similar to Blackman-Harris with different coefficients
-- **Gaussian**: Gaussian shaped filter with adjustable width
-- **Fermi**: Fermi function filter with adjustable transition width
+with the window
 
-Code Example
---------------------------
+.. math::
 
-.. code-block:: python
+   F(\Phi)=
+   \begin{cases}
+     0,                       & |\Phi|>\Phi_c,\\
+     F_\text{window}(\Phi),   & |\Phi|\le\Phi_c,
+   \end{cases}
 
-    # Calculate FFT of impedance derivative
-    self.fft_idi = fftpack.fft(self.imp_deriv_interp)
-    
-    # Calculate FFT of weight function
-    self.fft_wgt = fftpack.fft(self.trans_weight) * self.log_time_delta
-    
-    # Get filter based on selected type
-    self.current_filter = flt.give_current_filter(
-        self.filter_name, self.fft_freq, self.filter_range, self.filter_parameter
-    )
-    
-    # Perform deconvolution and apply filter
-    self.deconv_t = (self.fft_idi / self.fft_wgt) * self.current_filter
-    
-    # Transform back to time domain
-    self.time_spec = np.real(fftpack.ifft(self.deconv_t))
+where :math:`\Phi_c` is the cut-off.  Below are the most common window
+profiles (index :math:`n=0\dots N_W` spans the non-zero part).
 
-Advantages and Limitations
-----------------------------------------
+* **Rectangular**
 
-**Advantages:**
-- Fast computation through FFT algorithms
-- Flexibility in filter selection to adjust noise sensitivity
-- Simple interpretation in frequency domain
+  .. math::
 
-**Limitations:**
-- Sensitive to noise at high frequencies
-- Filter selection can significantly impact results
-- May introduce artifacts if filter parameters are improperly chosen
+     F_\text{Rect}[n]=1.
+
+* **Hann**
+
+  .. math::
+
+     F_\text{Hann}[n]
+       \;=\;
+     \sin^2\!\Bigl(\pi n/N_W\Bigr).
+
+* **Gaussian** – width controlled by :math:`\sigma\le0.5`
+
+  .. math::
+
+     F_\text{Gauss}[n]
+       \;=\;
+     \exp\!\Bigl[
+       -\tfrac12
+       \bigl(\tfrac{n-N_W/2}{\sigma\,N_W/2}\bigr)^2
+     \Bigr].
+
+* **Nuttall** – four-term cosine series
+
+  .. math::
+
+     F_\text{Nuttall}[n] =
+        0.355768
+      \;-\;0.487396\cos\Bigl(\tfrac{2\pi n}{N_W}\Bigr)
+      \;+\;0.144232\cos\Bigl(\tfrac{4\pi n}{N_W}\Bigr)
+      \;-\;0.012604\cos\Bigl(\tfrac{6\pi n}{N_W}\Bigr).
+
+* **Fermi–Dirac** (no finite :math:`\Phi_c`)
+
+  .. math::
+
+     F_\text{Fermi}(\Phi)
+       \;=\;
+     \frac{1}{
+       \exp\!\bigl(\tfrac{|\Phi|-\mu}{\beta}\bigr)+1
+     }
+     \;=\;
+     \frac{
+       \exp\!\bigl[-(|\Phi|-\mu)/\beta\bigr]
+     }{
+       1+\exp\!\bigl[-(|\Phi|-\mu)/\beta\bigr]
+     }.
+
+  Parameters
+
+  * :math:`\mu`  – half-width of the transition band,
+  * :math:`\beta` – slope (small :math:`\beta` ⇒ sharper edge).
+

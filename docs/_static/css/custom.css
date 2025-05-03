@@ -1,0 +1,26 @@
+/* Remove all borders and backgrounds from tables marked “borderless” */
+table.borderless,
+table.borderless th,
+table.borderless td {
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Optional: collapse any remaining cell spacing */
+table.borderless {
+  border-collapse: collapse;
+}
+
+/* force the math block to be left-aligned */
+div.math {
+  text-align: left !important;
+}
+/* float the auto-number to the right */
+span.eqno {
+  float: right !important;
+}
+/* re-position the headerlink so it stays clickable */
+span.eqno a.headerlink {
+  position: relative;
+  z-index: 1;
+}

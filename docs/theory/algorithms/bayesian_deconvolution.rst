@@ -1,114 +1,104 @@
+.. _nid_bayes_deconv:
+
 Bayesian Deconvolution
-=======================
+----------------------
+Besides FFT filtering, the **Bayesian** or **maximum-likelihood**
+deconvolution introduced by Kennett *et al.* (1978) offers a robust,
+non-negative route to recover the logarithmic time-constant spectrum
+:math:`R(\zeta)`.
 
-Bayesian Deconvolution is an iterative method in PyRth for calculating the time constant spectrum that is particularly robust to noise.
+**Idea in a nutshell**
 
-Algorithm Description
------------------------
+*   Treat the convolution
 
-Bayesian deconvolution uses an iterative approach to solve the ill-posed deconvolution problem by updating the time constant spectrum estimate at each step. The method is based on Bayes' theorem and provides a regularized solution that is less sensitive to noise than direct Fourier deconvolution.
+    .. math::
 
-Mathematical Formulation
----------------------------
+       h(z)=\left(R\ast w_z\right)(z)
 
-The relationship between the impedance derivative and time constant spectrum can be expressed as:
+    as the **generation of observations** :math:`h` by a *source*
+    distribution :math:`R` through a *blurring kernel* :math:`w_z`.
+*   Apply **Bayes’ theorem** iteratively: update the current guess of
+    :math:`R` by comparing the synthetic response produced through
+    :math:`w_z` with the actually measured :math:`h`.
+
+**Discretisation**
+
+Bayesian deconvolution requires an *evenly spaced* logarithmic grid
+(:math:`z`-axis).  The continuous integral becomes a sum
 
 .. math::
 
-    \frac{dZ_{th}}{d\ln(t)} = \int_{0}^{\infty} R(\tau) \cdot k(t, \tau) d\tau
+   h[z] \;=\; \sum_{\zeta} w_z[z-\zeta]\;R[\zeta].
 
-Where :math:`k(t, \tau)` is the kernel function.
-
-The Bayesian deconvolution algorithm iteratively updates the estimate of :math:`R(\tau)` using:
+With square-bracket indices the kernel is a **Toeplitz matrix**
+(:math:`W_{kj}=w_z[k-j]`):
 
 .. math::
 
-    R^{(n+1)}(\tau) = R^{(n)}(\tau) \cdot \frac{\int k(t, \tau) \cdot \frac{dZ_{th}(t)}{d\ln(t)} / \int k(t, \tau') \cdot R^{(n)}(\tau') d\tau' dt}{\int k(t, \tau) dt}
+   h_k \;=\; W_{kj}\,R_j.
 
-This can be simplified in the discrete case to the matrix form implemented in PyRth.
+**Applying Bayes’ theorem**
 
-Implementation Details
--------------------------
+For vectors Bayes’ rule reads
 
-In PyRth, Bayesian deconvolution is implemented in the `bayesian_deconvolution` function in `transient_engine.py`:
+.. math::
 
-The main steps are:
+   P(R_i\!\mid h_k)
+     \;=\;
+   \frac{
+     P(h_k\!\mid R_i)\,P(R_i)
+   }{
+     \sum_j P(h_k\!\mid R_j)\,P(R_j)
+   }.
 
-1. Create a response matrix representing the kernel function
-2. Initialize the time constant spectrum (often with a uniform distribution)
-3. Iteratively update the spectrum using the Bayesian update formula
-4. Normalize the result after a specified number of iterations
+Identify
 
-The implementation is optimized using Numba for significant performance improvements.
+* likelihood :math:`P(h_k\!\mid R_j)=W_{kj}`,
+* prior on *data* :math:`P(h_k)=h_k`.
 
-Code Example
-----------------
+Choosing a **flat prior** on :math:`R` (initialised with :math:`h_k`)
+and enforcing probability conservation gives the classic
+*Richardson–Lucy* (RL) iteration specialised to NID:
 
-.. code-block:: python
+.. math::
 
-    @njit(cache=True)
-    def bayesian_deconvolution(
-        re_mat=np.array([[]]), imp_deriv_interp=np.array([]), N=float(1.0)
-    ):
-        true = imp_deriv_interp.copy().reshape(-1, 1)
+   R_i^{(n+1)}
+     \;=\;
+   R_i^{(n)}
+   \sum_{k}
+   \frac{h_k\,W_{ki}}
+        {\sum_{j}W_{kj}\,R_j^{(n)}}.
 
-        for step in range(N):
-            denom = np.dot(re_mat, true).reshape(-1)
-            denom[denom == 0.0] = np.inf
-            q_vec = np.divide(imp_deriv_interp, denom).reshape(1, -1)
-            k_sum = np.dot(q_vec, re_mat).reshape(-1, 1)
-            true = np.multiply(k_sum, true)
+**Key properties**
+  
+* **Energy (area) preserving**  
+  Because :math:`\int w_z\,\mathrm{d}z=1`, the cumulative thermal
+  resistance after deconvolution equals the original steady-state value.
+* **Non-negativity**  
+  All terms are positive; negative artefacts cannot occur.
+* **No explicit regulariser needed** – early stopping of the iterations
+  itself controls over-fitting to noise.
 
-        return true.flatten()
+**Practical guidelines**
 
-Response Matrix Generation
-----------------------------
+* **Initial guess** Set :math:`R^{(0)}=h` or any smooth positive
+  approximation.  Convergence is monotonic but slow.
+* **Even spacing** Resample the measured impulse response to a uniform
+  :math:`\Delta z`; the LOWESS/SURE filter (see
+  :ref:`nid_lowess`) can supply both smoothing and resampling.
+* **Stopping criterion** Iterate until the synthetic step response
 
-The response matrix is a critical component that represents how each time constant contributes to the impedance at each time point. It's generated using the `response_matrix` function:
+  .. math::
 
-.. code-block:: python
+     h^{(n)} = W\,R^{(n)}
 
-    @njit(cache=True)
-    def response_matrix(domain=np.array([]), x_len=float(1.0)):
-        response = np.zeros((x_len, x_len))
-        norm = np.sum(np.exp(domain - np.exp(domain)))
-        
-        for it_line in range(x_len):
-            for it_row in range(x_len):
-                response[it_line, it_row] = domain[it_line] - domain[it_row]
-        response = np.exp(response - np.exp(response))
-        
-        response /= norm
-        
-        return response
-
-Advantages and Limitations
------------------------------
-
-**Advantages:**
-- More robust to noise than Fourier deconvolution
-- No need for explicit filter selection
-- Naturally enforces non-negativity of the time constant spectrum
-- Often produces smoother, more physically realistic spectra
-
-**Limitations:**
-- Computationally more intensive than Fourier methods
-- Results may depend on the number of iterations
-- May converge slowly for some problems
-- Can potentially obscure fine details in the spectrum
-
-Usage in PyRth
-----------------
-
-The Bayesian deconvolution method can be selected by setting the appropriate parameter in the configuration:
-
-.. code-block:: python
-
-    params = {
-        "deconv_mode": "bayesian",  # Use Bayesian deconvolution
-        "bay_steps": 1000,          # Number of iterations
-        # Other parameters...
-    }
-    
-    # Create analysis instance with these parameters
-    analysis = StructureFunction(params)
+  matches the measured one within the estimated noise level (e.g.
+  :math:`\chi^2` test) or until a fixed iteration count (1000 – 5000) is
+  reached.
+* **Zero handling** If the denominator
+  :math:`\sum_j W_{kj} R_j^{(n)}` vanishes for wide spectra, skip the
+  affected :math:`k` or add a tiny :math:`\varepsilon` to avoid division
+  by zero.
+* **Underflow** Late iterations may drive negligible bins below floating-
+  point precision.  Mask them out to save computation without affecting
+  the result.

@@ -73,5 +73,5 @@ After mastering the basics, explore more advanced features:
 
 - Learn about :doc:`data preparation </user_guide/data_preparation>` for different input types
 - Configure the analysis with :ref:`default-configuration-label`
-- Try different deconvolution methods (fourier, bayesian, lasso)
+- Try different deconvolution methods (fourier, bayesian, LASSO)
 - Explore bootstrapping for statistical analysis

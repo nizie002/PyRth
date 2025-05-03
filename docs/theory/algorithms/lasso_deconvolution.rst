@@ -1,132 +1,90 @@
-Lasso Deconvolution
+LASSO Deconvolution
 ======================
 
-Lasso Deconvolution is a regularization-based approach in PyRth for calculating the time constant spectrum that promotes sparsity in the solution.
+LASSO (Least-Absolute-Shrinkage-and-Selection-Operator) Deconvolution is a regularization-based approach in PyRth for calculating the time constant spectrum that promotes sparsity in the solution.
 
-Algorithm Description
-------------------------
+While FFT and Bayesian techniques work directly on the
+*impulse* response, **LASSO deconvolution**
+solves the problem **in the impedance domain**.  
+It casts the recovery of the time-constant spectrum as an
+:math:`\ell_1`-regularised *least-squares* optimisation that
+naturally favours *sparse* spectra – ideal when only a handful of distinct
+thermal paths are present.
 
-The Lasso (Least Absolute Shrinkage and Selection Operator) deconvolution method treats the deconvolution problem as a regularized least squares optimization with L1 penalty. This approach is particularly effective when the underlying thermal system has a discrete set of time constants, as it naturally produces sparse solutions.
+**Motivation**
+
+Traditional methods require differentiation of the step response, amplifying
+noise and forcing a bias–variance trade-off, while FFT filtering spreads energy
+across neighbouring bins and Bayesian deconvolution can converge to broad distributions under noisy data.
+
+LASSO deconvolution works directly in the impedance domain without numerical
+differentiation, thus avoiding noise amplification and derivative bias. It also
+explicitly drives small coefficients to **exactly zero**, isolating dominant
+peaks and yielding a compact Foster network.
 
 Mathematical Formulation
 ----------------------------
 
-The Lasso method poses the deconvolution problem as:
+**Formulation**
+
+Choose a fixed grid of trial time-constants
+:math:`\tau_j` (logarithmically spaced is typical).
+The predicted step response built from a
+discrete spectrum :math:`R(\tau_j)` is
 
 .. math::
 
-    \min_{R(\tau)} \frac{1}{2} \sum_{i} \left( Z_{th}(t_i) - \sum_{j} R(\tau_j) \cdot (1 - e^{-t_i/\tau_j}) \right)^2 + \alpha \sum_{j} |R(\tau_j)|
+   Z_\text{model}(t_i)
+      \;=\;
+   \sum_{j} R(\tau_j)\,\bigl(1-e^{-t_i/\tau_j}\bigr).
 
-Where:
-- The first term is the sum of squared errors between measured and reconstructed thermal impedance
-- The second term is the L1 penalty that encourages sparsity
-- :math:`\alpha` is the regularization parameter that controls the trade-off between fitting the data and promoting sparsity
+LASSO finds :math:`R(\tau_j)` by minimising
 
-Implementation Details
-------------------------
+.. math::
 
-In PyRth, the Lasso deconvolution is implemented using scikit-learn's `LassoCV` class, which automatically selects the optimal regularization parameter through cross-validation:
+   \frac12
+   \sum_{i}
+   \Bigl[
+     Z_\text{meas}(t_i)
+     -
+     Z_\text{model}(t_i)
+   \Bigr]^2
+   \;+\;
+   \alpha\sum_{j}\lvert R(\tau_j)\rvert,
 
-The main steps are:
+subject to :math:`R(\tau_j)\ge 0`.  
+Here
 
-1. Define a grid of time constants (tau values)
-2. Construct a design matrix where each column represents the contribution of a specific time constant
-3. Solve the Lasso regression problem with non-negativity constraints
-4. Extract the coefficients, which directly represent the time constant spectrum
+* the first term enforces fidelity to the measured impedance,
+* the :math:`\ell_1` penalty (weight :math:`\alpha`) promotes sparsity.
 
-Code Example
----------------
 
-.. code-block:: python
+Comments
+----------------------------
 
-    def z_fit_lasso(self):
-        # Choose a tau grid (log-spacing)
-        tau_min = 2 * np.diff(self.time).min()
-        tau_max = 1 * self.time.max()
-        K = self.log_time_size
-        tau_grid = np.logspace(np.log10(tau_min), np.log10(tau_max), K)
-        
-        # Design matrix Φ (n × K)
-        phi_unnormalized = 1.0 - np.exp(-self.time[:, None] / tau_grid[None, :])
-        
-        # Calculate norms of the original columns
-        phi_norms = np.linalg.norm(phi_unnormalized, axis=0, keepdims=True)
-        phi_norms[phi_norms == 0] = 1.0
-        
-        # Normalize columns for numeric stability
-        phi = phi_unnormalized / phi_norms
-        
-        # Fit a non-negative sparse model (Lasso, positive=True)
-        lasso = LassoCV(
-            alphas=np.logspace(-5, -2, 100),
-            cv=5,
-            positive=True,  # Enforces non-negativity
-            fit_intercept=False,
-            max_iter=10_000,
-            n_jobs=-1,
-            verbose=False,
-        )
-        
-        lasso.fit(phi, self.impedance.ravel())
-        
-        # Get coefficients and rescale
-        A_hat_normalized = lasso.coef_
-        A_hat = A_hat_normalized / phi_norms.flatten()
-        
-        # Store results
-        self.log_time_pad = np.log(tau_grid.copy())
-        self.time_spec = A_hat.flatten()
-        self.sum_time_spec = np.cumsum(self.time_spec)
+**Implementation Details**
 
-Cross-Validation
--------------------
+In PyRth, the LASSO deconvolution is implemented using scikit-learn's `LassoCV`
+class, which automatically selects the optimal regularization parameter through
+cross-validation. The process involves defining a grid of time constants (:math:`\tau`),
+constructing a design matrix where each column represents the contribution of a specific
+time constant, solving the LASSO regression problem with non-negativity constraints, and
+finally extracting the coefficients which directly represent the time constant spectrum.
 
-The Lasso method in PyRth uses cross-validation to automatically determine the optimal regularization parameter `alpha`. This process:
+**Cross-Validation**
 
-1. Divides the data into training and validation sets
-2. Fits models with different `alpha` values on the training sets
-3. Evaluates their performance on the validation sets
-4. Selects the `alpha` that gives the best average performance
+The LASSO method in PyRth utilizes cross-validation to automatically determine the
+optimal regularization parameter :math:`\alpha`. This involves dividing the data
+into training and validation sets, fitting models with different :math:`\alpha`
+values on the training data, evaluating their performance on the validation sets,
+and selecting the :math:`\alpha` that yields the best average performance. This
+automated approach eliminates the need for manual parameter tuning.
 
-This automated approach eliminates the need for manual parameter tuning.
+**Practical Considerations**
 
-Advantages and Limitations
--------------------------------
-
-**Advantages:**
-- Produces sparse solutions with clearly identifiable peaks
-- Directly optimizes the impedance fit rather than working with derivatives
-- Naturally enforces non-negativity
-- Automatic selection of regularization parameter via cross-validation
-- Often better for systems with discrete thermal time constants
-
-**Limitations:**
-- Computationally intensive for large datasets
-- May not capture continuous distributions of time constants well
-- Sensitive to initial time constant grid selection
-- Can miss small contributions if alpha is too large
-
-Usage in PyRth
--------------------
-
-The Lasso deconvolution method can be selected by setting the appropriate parameter in the configuration:
-
-.. code-block:: python
-
-    params = {
-        "deconv_mode": "lasso",  # Use Lasso deconvolution
-        # Other parameters...
-    }
-    
-    # Create analysis instance with these parameters
-    analysis = StructureFunction(params)
-
-Practical Considerations
------------------------------
-
-When using Lasso deconvolution:
-
-1. The time constant grid resolution affects the final spectrum resolution
-2. Using too many time constants can slow down computation considerably
-3. The method works best when there are truly distinct thermal pathways
-4. Cross-validation helps prevent overfitting but increases computation time
+When applying LASSO deconvolution, consider that the resolution of the
+time constant grid directly impacts the final spectrum resolution. Using
+an excessive number of time constants can significantly slow down computation.
+The method performs best when the system exhibits truly distinct thermal pathways.
+While cross-validation helps prevent overfitting, it does add to the
+overall computation time.

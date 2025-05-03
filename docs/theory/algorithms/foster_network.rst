@@ -1,161 +1,121 @@
-Foster Network Construction
+.. _nid_foster_network:
+
+From Spectrum to Foster Network
 ===============================
+Once the logarithmic time-constant spectrum :math:`R(\zeta)`
+is known (via Fourier, Bayesian or LASSO deconvolution) the *first* physical
+network we construct is the **Foster ladder**.  
 
-Foster Network Construction is the process of building a thermal equivalent circuit from the time constant spectrum, which serves as an intermediate representation before deriving structure functions.
+**Discrete Foster elements**
 
-Algorithm Description
---------------------------------------
-
-After obtaining the time constant spectrum through deconvolution, PyRth constructs a Foster thermal network, which consists of parallel RC elements. Each element in this network corresponds to a specific point in the time constant spectrum, where:
-
-- The resistance value comes directly from the spectrum amplitude at that point
-- The capacitance is calculated from the time constant and resistance
-
-Mathematical Formulation
---------------------------------------
-
-The Foster network is represented mathematically as a sum of first-order exponential terms:
+Discretise the spectrum into bins of width :math:`\Delta\zeta_i`
+centred at :math:`\zeta_i=\ln\tau_i` (see
+:ref:`nid_spectrum_to_rc`).  
+For each bin
 
 .. math::
 
-    Z_{th}(s) = \sum_{i=1}^{n} \frac{R_i}{1 + s \tau_i} = \sum_{i=1}^{n} \frac{R_i}{1 + s R_i C_i}
+   R_i = R(\zeta_i)\,\Delta\zeta_i,
+   
+.. math::
 
-Where:
-- :math:`Z_{th}(s)` is the thermal impedance in the Laplace domain
-- :math:`R_i` are the thermal resistances from the time constant spectrum
-- :math:`\tau_i` are the time constants
-- :math:`C_i` are the thermal capacitances, calculated as :math:`C_i = \tau_i / R_i`
-- :math:`s` is the Laplace variable
+   C_i = \frac{e^{\zeta_i}}{R(\zeta_i)\,\Delta\zeta_i},
 
-Implementation Details
------------------------------------
 
-In PyRth, the Foster network construction is implemented in several steps:
+exactly the formulas used in network identification by deconvolution.
+Every tuple :math:`(R_i,C_i)` corresponds to **one parallel RC branch** whose
+time-constant is :math:`\tau_i=R_iC_i`.
 
-1. The time constant spectrum is obtained through deconvolution (Fourier, Bayesian, or Lasso)
-2. Resistance values (:math:`R_i`) are taken directly from the spectrum amplitudes
-3. Time constant values (:math:`\tau_i`) are the x-coordinates of the spectrum
-4. Capacitance values are calculated as :math:`C_i = \tau_i / R_i`
-5. The network elements are sorted in ascending order of time constants
+**Piece-wise construction of the impedance**
 
-Code Example
---------------------------
+.. list-table::
+   :widths: 50 50
+   :header-rows: 0
+   :class: borderless
 
-.. code-block:: python
+   * - .. figure:: /_static/parallel_rc_element.png
+        :alt: Parallel RC element
+        :width: 200px
+        :align: center
 
-    def calculate_foster_elements(self):
-        """
-        Calculate Foster network elements from the time constant spectrum.
-        """
-        # Get time constants (tau) and resistances (R) from the spectrum
-        tau = np.exp(self.log_time_pad)
-        resistance = self.time_spec
-        
-        # Filter out insignificant or negative components
-        valid_indices = (resistance > self.min_r_threshold) & (resistance >= 0)
-        tau_filtered = tau[valid_indices]
-        resistance_filtered = resistance[valid_indices]
-        
-        # Sort by time constants (for numerical stability in later stages)
-        sort_indices = np.argsort(tau_filtered)
-        self.therm_resist_fost = resistance_filtered[sort_indices]
-        self.therm_capa_fost = tau_filtered[sort_indices] / self.therm_resist_fost
-        
-        # Store for potential export or further processing
-        self.foster_tau = tau_filtered[sort_indices]
-        self.foster_r = self.therm_resist_fost
-        self.foster_c = self.therm_capa_fost
+        *Parallel RC element*
 
-Multiple Precision Handling
------------------------------------------
+     - .. figure:: /_static/two_parallel_rc_elements.png
+        :alt: Two parallel RC elements connected in series
+        :width: 600px
+        :align: center
 
-For certain structure function algorithms (like Polynomial Long Division and de Boor-Golub), the Foster network elements require arbitrary precision mathematics. PyRth handles this through a multi-precision conversion step:
+        *Two parallel RC elements connected in series*
 
-.. code-block:: python
-
-    def convert_to_mp(self):
-        """
-        Convert Foster elements to arbitrary precision format.
-        """
-        # Create multi-precision arrays
-        self.mpfr_resist_fost = np.array([mpfr(str(r)) for r in self.therm_resist_fost])
-        self.mpfr_capa_fost = np.array([mpfr(str(c)) for c in self.therm_capa_fost])
-        
-        # Create transfer function coefficients in multi-precision
-        self.create_mpfr_tf_coeffs()
-
-Transfer Function Coefficient Generation
------------------------------------------------------
-
-The Foster network is also represented as a ratio of polynomials in the Laplace domain:
+A single parallel RC branch driven in series has
 
 .. math::
 
-    Z_{th}(s) = \frac{b_0 + b_1 s + b_2 s^2 + \ldots + b_n s^n}{a_0 + a_1 s + a_2 s^2 + \ldots + a_n s^n}
+   Z_i(s)=\frac{R_i}{1+R_iC_i s}.
 
-These coefficients are calculated in PyRth using a recursive algorithm:
+Because the branches are stacked **in series**, the input impedance of the
+Foster ladder is the *sum* of the individual impedances:
 
-.. code-block:: python
+.. math::
+   :label: foster_sum
 
-    def create_mpfr_tf_coeffs(self):
-        """
-        Calculate transfer function coefficients from Foster elements.
-        """
-        # Get the number of RC elements
-        n = len(self.mpfr_resist_fost)
-        
-        # Pre-allocate coefficient arrays
-        self.mpfr_z_num = np.array([mpfr("0.0")] * n)
-        self.mpfr_z_denom = np.array([mpfr("0.0")] * (n + 1))
-        self.mpfr_z_denom[0] = mpfr("1.0")
-        
-        # Calculate coefficients using recursive formulation
-        for i in range(n):
-            # Current RC element's time constant
-            tau_i = self.mpfr_resist_fost[i] * self.mpfr_capa_fost[i]
-            
-            # Update numerator coefficients
-            for j in range(i, -1, -1):
-                if j == 0:
-                    self.mpfr_z_num[j] += self.mpfr_resist_fost[i]
-                else:
-                    self.mpfr_z_num[j] += self.mpfr_resist_fost[i] * self.mpfr_z_denom[j]
-            
-            # Update denominator coefficients
-            for j in range(i + 1, 0, -1):
-                self.mpfr_z_denom[j] = self.mpfr_z_denom[j - 1] + tau_i * self.mpfr_z_denom[j]
+   Z(s)=\sum_{i=1}^{n}\frac{R_i}{1+R_iC_i s}.
 
-Advantages and Limitations
-----------------------------------------
+Equation :eq:`foster_sum` is simply the partial-fraction form produced by
+the pole–zero representation (§“Lumped element RC lines”).  Building
+:math:`Z(s)` “piece by piece” is therefore trivial:
 
-**Advantages:**
-- Direct correspondence with the time constant spectrum
-- Simple mathematical representation
-- Efficient implementation
-- Straightforward computation of impedance response
+#. start with :math:`Z^{(1)}(s)=Z_1(s)`;
+#. for *k* = 2 … *n*: :math:`Z^{(k)}(s)=Z^{(k-1)}(s)+Z_k(s)`.
 
-**Limitations:**
-- Does not directly represent the physical heat flow path
-- Cannot be used directly for spatial thermal interpretation
-- Requires further transformation (to Cauer form) for structure function analysis
 
-Usage in PyRth
-----------------------------
+**Pole–zero representation**
 
-The Foster network construction is an automatic step in the standard analysis workflow. After deconvolution, PyRth builds the Foster network and then transforms it into a Cauer network for structure function calculation:
+After summing the parallel branches (Equation :eq:`foster_sum`) the overall
+impedance can also be written in *pole–zero* form
 
-.. code-block:: python
+.. math::
 
-    # Create analysis with default parameters
-    params = {
-        "data": measurement_data,
-        "input_mode": "impedance"
-    }
-    
-    # Run analysis, which will internally construct Foster network
-    analysis = Evaluation().standard_module(params)
-    
-    # Foster network elements are accessible via:
-    foster_r = analysis.foster_r  # Resistances
-    foster_c = analysis.foster_c  # Capacitances
-    foster_tau = analysis.foster_tau  # Time constants
+   Z(s)
+   \;=\;
+   R_{\infty}\;
+   \frac{\bigl(1+s/\sigma_{z,1}\bigr)
+         \bigl(1+s/\sigma_{z,2}\bigr)\dotsm
+         \bigl(1+s/\sigma_{z,n-1}\bigr)}
+        {\bigl(1+s/\sigma_{p,1}\bigr)
+         \bigl(1+s/\sigma_{p,2}\bigr)\dotsm
+         \bigl(1+s/\sigma_{p,n}\bigr)},
+   \qquad
+   R_{\infty}=\sum_{i=1}^{n}R_i.
+
+* **Poles**  
+  Each Foster branch contributes a real pole
+
+  .. math::
+
+     \sigma_{p,i}=\frac{1}{\tau_i}
+                 =\frac{1}{R_iC_i},
+
+  located on the negative real axis.
+
+* **Zeros**  
+  The finite zeros :math:`\sigma_{z,k}` fall *between* adjacent poles; they
+  arise automatically from the summation of terms in
+  Equation :eq:`foster_sum`.  Pole–zero interlacing guarantees that
+  :math:`Z(s)` is a **positive-real** function, hence physically admissible
+  for a passive one-port.
+
+* **Low- and high-frequency limits**
+
+  .. math::
+
+     Z(0)=R_{\infty},
+     \qquad
+     Z(\infty)=0,
+
+  matching the expected behaviour of a purely diffusive thermal path.
+
+The pole–zero picture provides an immediate diagnostic:
+widely separated poles imply well-resolved thermal layers,
+while closely spaced poles hint at a continuous-diffusion region that may be
+better represented by a non-uniform RC line.

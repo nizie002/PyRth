@@ -11,13 +11,22 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.mathjax",
 ]
 
 templates_path = ["_templates"]
 exclude_patterns = []
 
 html_theme = "sphinx_rtd_theme"
-# html_static_path = ["_static"]  # Commented out to fix warning
+html_static_path = ["_static"]
+html_css_files = [
+    "css/custom.css",
+]
+
+math_number_all = True
+mathjax3_config = {
+    "tex": {"tags": "ams"}  # only AMS environments (i.e. labeled math) get numbered
+}
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
