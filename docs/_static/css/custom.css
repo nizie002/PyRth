@@ -1,4 +1,4 @@
-/* Remove all borders and backgrounds from tables marked “borderless” */
+/* Remove all borders and backgrounds from tables marked "borderless" */
 table.borderless,
 table.borderless th,
 table.borderless td {
@@ -23,4 +23,88 @@ span.eqno {
 span.eqno a.headerlink {
   position: relative;
   z-index: 1;
+}
+
+/* Right sidebar table of contents styling */
+@media screen and (min-width: 1100px) {
+  /* Restore normal document width */
+  .wy-nav-content {
+    max-width: 800px; /* Standard width for the main content */
+  }
+
+  /* Remove the padding that was squeezing content */
+  .rst-content .document {
+    position: relative;
+    padding-right: 0; /* Remove the padding that was squeezing content */
+    max-width: 100%; /* Allow content to use full width */
+  }
+
+  /* Position the local TOC on the right - fixed position outside the content flow */
+  .rst-content .toc-wrap {
+    position: fixed;
+    top: 90px; /* Align with top navigation */
+    right: 20px;
+    width: 320px; /* Increased from 280px for a wider TOC */
+    max-height: 85vh; /* Increased from 80vh for a higher TOC */
+    overflow-y: auto;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #e1e4e5;
+    border-radius: 4px;
+    font-size: 0.9em;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    z-index: 10; /* Ensure it's above other content */
+  }
+
+  /* Add a subtle scrollbar for the TOC */
+  .rst-content .toc-wrap::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .rst-content .toc-wrap::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  .rst-content .toc-wrap::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+  }
+
+  .rst-content .toc-wrap::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  /* Ensure local TOC doesn't interfere with regular document links */
+  .rst-content .toc-wrap a {
+    color: #2980b9;
+  }
+
+  /* Style the TOC header */
+  .rst-content .toc-wrap p.caption {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #404040;
+    border-bottom: 1px solid #e1e4e5;
+    padding-bottom: 3px;
+  }
+
+  /* Improve TOC list formatting */
+  .rst-content .toc-wrap ul {
+    margin-bottom: 0;
+  }
+
+  .rst-content .toc-wrap li {
+    margin-bottom: 4px;
+    line-height: 1.2;
+  }
+
+  /* Adjust TOC size when screen gets narrower */
+  @media screen and (max-width: 1400px) {
+    .rst-content .toc-wrap {
+      width: 280px; /* Increased from 250px for wider TOC on narrower screens */
+    }
+  }
 }

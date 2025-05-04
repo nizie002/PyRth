@@ -1,4 +1,4 @@
-Algorithm Theory
+Theory
 ================
 
 This section provides detailed explanations of the mathematical theory and algorithms used in PyRth.

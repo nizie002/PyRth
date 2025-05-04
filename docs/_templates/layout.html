@@ -1,0 +1,37 @@
+{% extends "!layout.html" %}
+
+{% block extrahead %}
+{{ super() }}
+<script>
+  // This function improves the handling of the local table of contents
+  document.addEventListener('DOMContentLoaded', function() {
+    // Select the local TOC (not the main navigation TOC)
+    var localToc = document.querySelector('.contents.local.topic, div[role="navigation"].toc-wrapper');
+    
+    if (localToc) {
+      // Create our right sidebar container
+      var sidebarToc = document.createElement('div');
+      sidebarToc.className = 'toc-wrap';
+      
+      // Add a title for the sidebar
+      var tocTitle = document.createElement('p');
+      tocTitle.className = 'caption';
+      tocTitle.textContent = 'Page Contents';
+      sidebarToc.appendChild(tocTitle);
+      
+      // Clone the TOC for the sidebar
+      var tocContent = localToc.cloneNode(true);
+      sidebarToc.appendChild(tocContent);
+      
+      // Add the sidebar to the document - insert at the beginning to ensure proper CSS positioning
+      var docElement = document.querySelector('.rst-content .document');
+      if (docElement) {
+        docElement.insertBefore(sidebarToc, docElement.firstChild);
+        
+        // Hide the original TOC to prevent duplication
+        localToc.style.display = 'none';
+      }
+    }
+  });
+</script>
+{% endblock %}

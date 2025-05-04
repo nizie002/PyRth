@@ -13,6 +13,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
     "sphinx_proof",
+    "myst_parser",  # For parsing markdown files
 ]
 
 templates_path = ["_templates"]
@@ -22,6 +23,22 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 html_css_files = [
     "css/custom.css",
+]
+html_js_files = [
+    "js/right-toc.js",
+]
+
+# These paths are either relative to html_static_path
+# or fully qualified paths (eg. https://...)
+html_theme_options = {
+    "navigation_depth": 4,
+    "collapse_navigation": False,
+    "sticky_navigation": True,
+}
+
+# MyST-Parser configuration
+myst_enable_extensions = [
+    "colon_fence",
 ]
 
 math_number_all = True

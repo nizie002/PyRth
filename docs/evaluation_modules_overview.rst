@@ -1,4 +1,4 @@
-Evaluation Modules Overview
+Evaluation Modules
 ===========================
 
 PyRth provides several specialized modules within the :py:class:`~PyRth.transient_scripts.Evaluation` class to perform different types of thermal transient analysis. Each module accepts a dictionary of parameters to control its behavior. Default parameters are defined in :py:mod:`~PyRth.transient_defaults` and can be overridden by including them in the dictionary passed to the module method.
