@@ -37,11 +37,11 @@ PyRth requires Python 3.11 or higher and depends on several scientific computing
 
 These libraries are required for the core functionality of PyRth and will be automatically installed when using pip:
 
-* numpy (≥1.26.0)
-* scipy (≥1.11.0)
-* matplotlib (≥3.8.0)
-* numba (≥0.59.0)
-* gmpy2 (≥2.1.2)
+* numpy
+* scipy
+* matplotlib
+* numba
+* gmpy2
 * scikit-learn
 
 **Development Dependencies**
