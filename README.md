@@ -24,6 +24,7 @@
   - [Basic Documentation](#basic-documentation)
 - [Publications](#-publications)
 - [Evaluation Methods](#-evaluation-methods)
+- [Changelog](#-changelog)
 - [Contributing](#-contributing)
 - [License](#-license)
 - [Contact](#-contact)
@@ -207,6 +208,10 @@ PyRth offers a suite of evaluation modules for comprehensive thermal analysis:
 7. **Temperature Prediction Module**
    - Predicts temperature profiles based on evaluated properties.
    - Essential for thermal management and design optimization.
+
+## 📝 Changelog
+
+See the [CHANGELOG.md](CHANGELOG.md) file for details on version history and recent changes.
 
 ## 🛠️ Contributing
 
