@@ -1,10 +1,15 @@
 Installation
-==============
+============
 
-PyRth is a Python package for analyzing thermal transient measurements using Network Identification by Deconvolution (NID) methods. It's compatible with Windows, macOS, and Linux systems.
+PyRth is a Python package for analyzing thermal transient measurements using
+:doc:`Network Identification by Deconvolution (NID) methods <theory/nid_overview>`.
+It's compatible with Windows, macOS, and Linux systems.
+
+.. hint::
+   Not familiar with NID? See the :doc:`theory overview <theory/nid_overview>`.
 
 Standard Installation
-------------------------
+---------------------
 
 Install PyRth with pip directly from PyPI:
 
@@ -12,10 +17,12 @@ Install PyRth with pip directly from PyPI:
 
    pip install PyRth
 
-This is the recommended method for most users who want to use PyRth for thermal analysis.
+This command also works if you are using a Conda environment by using ``pip`` from within the Conda environment.
+
+This is the recommended method for most users who want to use PyRth for thermal analysis. See :doc:`usage` for a first walkthrough.
 
 Development Installation
----------------------------
+------------------------
 
 If you want to contribute to PyRth or modify the code, install it in editable mode:
 
@@ -27,51 +34,60 @@ If you want to contribute to PyRth or modify the code, install it in editable mo
 
 This installation method allows you to make changes to the source code and have them immediately reflected without reinstalling the package.
 
+To explore available modules, see the :doc:`API reference <api>`.
+
 Requirements
----------------
+------------
 
 PyRth requires Python 3.11 or higher and depends on several scientific computing libraries.
 
-**Core Dependencies**
+Core Dependencies
+-----------------
 
+The following Python packages are installed automatically with PyRth. Each plays a specific role in the thermal transient analysis pipeline:
 
-These libraries are required for the core functionality of PyRth and will be automatically installed when using pip:
+* :external+numpy:mod:`numpy` – for efficient array and matrix operations used throughout PyRth's data structures and numerical routines.
+* :external+scipy:mod:`scipy` – provides certain algorithms needed during the analysis.
+* :external+matplotlib:mod:`matplotlib` – used to visualize RC networks, temperature curves, evaluation results, and structure functions.
+* :numba-doc:`numba <>` – accelerates core numerical loops (e.g., differentiation, deconvolution) with just-in-time (JIT) compilation.
+* :gmpy2-doc:`gmpy2 <>` – allows PyRth to perform arbitrary-precision arithmetic for some Foster-to-Cauer transformations.
+* :external+scikit-learn:mod:`sklearn` – used for sparse regression techniques such as :class:`sklearn.linear_model.LassoCV` to extract reduced models.
 
-* numpy
-* scipy
-* matplotlib
-* numba
-* gmpy2
-* scikit-learn
+These are installed automatically when running ``pip install PyRth``.
+
 
 **Development Dependencies**
 
-These libraries are needed for development, testing, and contributing to PyRth:
+For testing and contributing:
 
-* parameterized - for parameterized testing
+* :mod:`parameterized` — for parameterized testing
 
 **Documentation Dependencies**
 
-These libraries are needed for building and maintaining the documentation:
+To build the documentation locally:
 
-* sphinx - documentation generator
-* sphinx_rtd_theme - Read the Docs theme for Sphinx
-* sphinx_proof - for mathematical proofs in documentation
-* sphinx.ext.autodoc - for API documentation generation
-* sphinx.ext.napoleon - for NumPy/Google style docstrings
-* sphinx.ext.intersphinx - for cross-referencing external documentation
-* sphinx.ext.mathjax - for rendering mathematical equations
+* :mod:`sphinx`
+* :mod:`sphinx_rtd_theme`
+* :mod:`sphinx_proof`
+* :mod:`sphinx.ext.autodoc`
+* :mod:`sphinx.ext.napoleon`
+* :mod:`sphinx.ext.intersphinx`
+* :mod:`sphinx.ext.mathjax`
 
-When installing via pip, the core dependencies will be automatically installed if not already present in your Python environment. Development and documentation dependencies may need to be installed separately if you plan to contribute to the project.
+You can install all of these with:
+
+.. code-block:: bash
+
+   pip install .[dev,docs]
 
 Verifying Installation
---------------------------
+----------------------
 
-After installation, you can verify that PyRth is correctly installed by importing it in Python:
+After installation, verify that PyRth is correctly installed:
 
 .. code-block:: python
 
    import PyRth
-   
-   # If no errors occur, the installation was successful
    print("PyRth successfully installed!")
+
+To run a test evaluation, see the :doc:`Getting Started Guide <user_guide/getting_started>`.

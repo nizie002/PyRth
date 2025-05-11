@@ -12,6 +12,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
+    "sphinx.ext.extlinks",
     "sphinx_proof",
     "myst_parser",  # For parsing markdown files
 ]
@@ -51,7 +52,17 @@ intersphinx_mapping = {
     "numpy": ("https://numpy.org/doc/stable/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "matplotlib": ("https://matplotlib.org/stable/", None),
+    "scikit-learn": ("https://scikit-learn.org/stable/", None),
+    "numba": ("https://numba.readthedocs.io/en/stable/", None),
+    "gmpy2": ("https://gmpy2.readthedocs.io/en/latest/", None),
 }
+
+# in conf.py
+extlinks = {
+    "numba-doc": ("https://numba.readthedocs.io/en/stable/%s", "Numba: "),
+    "gmpy2-doc": ("https://gmpy2.readthedocs.io/en/latest/%s", "GMPY2: "),
+}
+
 
 # Add autodoc configuration
 autodoc_default_options = {
