@@ -9,8 +9,11 @@ build:
 # Build documentation with Sphinx
 sphinx:
   configuration: docs/conf.py
+  fail_on_warning: true
 
 # Python dependencies required for building docs
 python:
   install:
-    - requirements: docs/requirements.txt
+    - method: pip
+      path: .
+      extras: "docs"
