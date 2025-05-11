@@ -7,9 +7,17 @@ name = "PyRth"
 version = "1.1"
 description = "A tool for thermal transient analysis"
 readme = "README.md"
+requires-python = ">=3.11"
 authors = [
     { name = "Nils J. Ziegeler", email = "ziegeler.nilsjonas@fh-swf.de" }
 ]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
+]
+
+
 dependencies = [
     "numpy>=1.26.4,<2.0.0",
     "scipy>=1.14.1,<2.0.0",
@@ -29,13 +37,6 @@ dev = [
     "pytest>=7.0.0",
     "parameterized>=0.9.0",
 ]
-
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent"
-]
-requires-python = ">=3.11"
 
 [project.urls]
 Homepage = "https://github.com/nizie002/PyRth"
