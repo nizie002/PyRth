@@ -9,23 +9,11 @@ This section provides detailed explanations of the mathematical theory and algor
 
    theory/nid_overview
    
-.. toctree::
-   :maxdepth: 1
-   :caption: Deconvolution Methods:
    
    theory/algorithms/differentiation
    theory/algorithms/fourier_deconvolution
    theory/algorithms/bayesian_deconvolution
    theory/algorithms/lasso_deconvolution
-   
-.. toctree::
-   :maxdepth: 1
-   :caption: Network Construction:
-   
-   
-.. toctree::
-   :maxdepth: 1
-   :caption: Structure Function Algorithms:
    
    theory/structure_functions
 
@@ -37,8 +25,4 @@ This section provides detailed explanations of the mathematical theory and algor
    theory/algorithms/de_boor_golub
    theory/algorithms/lanczos
       
-.. toctree::
-   :maxdepth: 1
-   :caption: Optimization Techniques:
-   
    theory/optimization_techniques

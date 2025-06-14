@@ -65,13 +65,3 @@ Here's a minimal example to process thermal transient data:
    
    # Access computed data
    print(f"Total thermal resistance: {result.int_cau_res[-1]:.2f} K/W")
-
-Next Steps
-------------
-
-After mastering the basics, explore more advanced features:
-
-- Learn about :doc:`data preparation </user_guide/data_preparation>` for different input types
-- Configure the analysis with :ref:`default-configuration-label`
-- Try different deconvolution methods (fourier, bayesian, LASSO)
-- Explore bootstrapping for statistical analysis

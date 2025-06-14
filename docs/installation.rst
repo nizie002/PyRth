@@ -19,7 +19,7 @@ Install PyRth with pip directly from PyPI:
 
 This command also works if you are using a Conda environment by using ``pip`` from within the Conda environment.
 
-This is the recommended method for most users who want to use PyRth for thermal analysis. See :doc:`usage` for a first walkthrough.
+This is the recommended method for most users who want to use PyRth for thermal analysis. See :doc:`user_guide/usage` for a first walkthrough.
 
 Development Installation
 ------------------------
