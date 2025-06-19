@@ -2,6 +2,7 @@
 
 <img src="assets/images/logo.png" alt="PyRth Logo" width="400"/>
 
+[![DeepWiki](https://img.shields.io/badge/wiki-deepwiki-blue)](https://deepwiki.com/nizie002/PyRth)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
 [![Documentation Status](https://readthedocs.org/projects/pyrth/badge/?version=latest)](https://pyrth.readthedocs.io/en/latest/?badge=latest)
@@ -35,6 +36,8 @@
 **PyRth** is an open-source Python package designed for evaluating thermal transient measurement data, such as those obtained from devices like the T3ster. It processes thermal transient data using specialized algorithms to extract detailed thermal characteristics, including the thermal structure function.
 
 PyRth serves as a modern and flexible alternative to proprietary evaluation software provided with thermal transient measurement equipment. It optionally outputs results as images and CSV files, facilitating comprehensive analysis and visualization.
+
+For more in-depth documentation, see the [official documentation on ReadTheDocs](https://pyrth.readthedocs.io/en/latest/) and the [PyRth DeepWiki](https://deepwiki.com/nizie002/PyRth).
 
 ## ❓ Why PyRth?
 
