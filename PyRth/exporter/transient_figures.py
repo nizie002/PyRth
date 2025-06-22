@@ -249,7 +249,7 @@ class DiffStrucFigure(StructureFigure):
             self.ax.set_title("Differential structure function")
             self.ax.set_xlabel(r"thermal resistance, $R$, in K$\cdot$ W$^{-1}$")
             self.ax.set_ylabel(
-                r"thermal capacity, $C$, in s$\cdot$ W$^2$ \cdot K$^{-2}$"
+                r"thermal capacity, $C$, in s$\cdot$ W$^2$ $\cdot$ K$^{-2}$"
             )
             self._axis_initialized = True
 
