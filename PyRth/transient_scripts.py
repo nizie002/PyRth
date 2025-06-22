@@ -877,6 +877,7 @@ class Evaluation:
             self.parameters["data"] = np.column_stack(
                 (np.exp(theo_module.theo_log_time), theo_module.theo_impedance)
             )
+
         else:
             logger.info("Bootstrapping comparison")
             self.parameters["bootstrap_mode"] = "from_theo"
@@ -886,6 +887,9 @@ class Evaluation:
             int_cau_cap_name = "boot_struc_cap_av"
 
         comp_modules = self._standard_module_set()
+
+        for module in comp_modules:
+            self._add_module_to_eval_dict(module)
 
         # Set up arrays to store computed values.
         results_module.time_const_comparison = np.empty(self.set_length)
