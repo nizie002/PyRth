@@ -65,7 +65,12 @@ class TransientOptimizer:
             )
             last_z = z_result
         self.eval_count += 1
-        return np.imag(z_result) / np.pi
+
+        unscaled_time_const = np.imag(z_result) / np.pi
+
+        time_const = unscaled_time_const * (theo_log_time[1] - theo_log_time[0])
+
+        return time_const
 
     def struc_params_to_func(self, number, resistances, capacities):
         N = len(resistances)
