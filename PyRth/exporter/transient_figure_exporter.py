@@ -128,8 +128,8 @@ class FigureExporter(BaseExporter):
 
                 fig_obj.add_legend()  # Add legend just before saving
                 fig_obj.fig.savefig(
-                    filename, bbox_inches="tight"
-                )  # Use bbox_inches='tight'
+                    filename, bbox_inches="tight", dpi=300
+                )  # Use bbox_inches='tight' and increased dpi
                 fig_obj.close()  # Close the figure object
                 logger.debug(f"Figure '{plot_key}' saved successfully to {filename}.")
 
