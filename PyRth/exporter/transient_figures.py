@@ -499,7 +499,7 @@ class BackwardsImpFigure(StructureFigure):
             np.exp(module.log_time_pad),
             module.back_imp,
             linewidth=0.0,
-            marker="o",
+            marker="x",
             markersize=2.0,
             label="backwards imp. " + module.label,
             color=self.next_color(),
