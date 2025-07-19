@@ -68,11 +68,11 @@ test_cases_basic = [
         },
     },
     {
-        "name": "LED_lasso",
+        "name": "TEMP_lasso",
         "params": {
             "data": TEMP_DATA,
             "output_dir": "tests/output/basic_test",
-            "label": "LED_lasso",
+            "label": "TEMP_lasso",
             "input_mode": "temp",
             "extrapolate": False,
             "deconv_mode": "lasso",
