@@ -6,12 +6,31 @@ from matplotlib.lines import Line2D
 from .transient_base_fig import StructureFigure
 
 
+class VoltageFigure(StructureFigure):
+    def plot_module_data(self, module):
+        if not self._axis_initialized:
+            self.ax.set_title("Voltage response")
+            self.ax.set_xlabel(r"time, $t$, in s")
+            self.ax.set_ylabel(r"voltage, $U$, in V")
+            self._axis_initialized = True
+
+        self.ax.semilogx(
+            module.time_raw,
+            module.voltage,
+            label=module.label,
+            linewidth=0.0,
+            markersize=1.5,
+            marker="o",
+            color=self.next_color(),
+        )
+
+
 class RawDataFigure(StructureFigure):
     def plot_module_data(self, module):
         if not self._axis_initialized:
-            self.ax.set_title("Raw data")
+            self.ax.set_title("Raw Temperature Response")
             self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"temperature $T$, in $^\circ\!$C")
+            self.ax.set_ylabel(r"temperature, $T$, in $^\circ\!$C")
             self._axis_initialized = True
 
         self.ax.semilogx(module.time_raw, module.temp_raw, "x", label="raw data")
@@ -19,7 +38,7 @@ class RawDataFigure(StructureFigure):
 
 class ExtrapolationFigure(StructureFigure):
     def plot_module_data(self, module):
-        self.ax.set_title("Extrapolation")
+        self.ax.set_title("Square root extrapolation")
         self.ax.set_xlabel(r"square root of time, $\sqrt{s}$, in s$^{1/2}$")
         self.ax.set_ylabel(r"temperature, $T$, in $^\circ\!$C")
 
@@ -52,29 +71,10 @@ class ExtrapolationFigure(StructureFigure):
         )
 
 
-class VoltageFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Raw data")
-            self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"voltage, $U$, in V")
-            self._axis_initialized = True
-
-        self.ax.semilogx(
-            module.time_raw,
-            module.voltage,
-            label=module.label,
-            linewidth=0.0,
-            markersize=1.5,
-            marker="o",
-            color=self.next_color(),
-        )
-
-
 class TempFigure(StructureFigure):
     def plot_module_data(self, module):
         if not self._axis_initialized:
-            self.ax.set_title("Temperature")
+            self.ax.set_title("Cleaned Temperature Response")
             self.ax.set_xlabel(r"time, $t$, in s")
             self.ax.set_ylabel(r"temperature, $T$, in $^\circ\!$C")
             self._axis_initialized = True
@@ -142,7 +142,7 @@ class FFTFigure(StructureFigure):
             self.ax.set_xlim(0, 7)
             self.ax.set_ylim(1e-6, 1e3)
             self.ax.set_title("Fourier transform")
-            self.ax.set_xlabel(r"angular frequency, $\omega$,  in rad/s")
+            self.ax.set_xlabel(r"angular frequency, $\omega$, in rad/s")
             self.ax.set_ylabel(r"power density, $|H|^2$, in (K $\cdot$ s W$^{-1})^2$")
             self._axis_initialized = True
 
@@ -790,10 +790,10 @@ class ResidualFigure(StructureFigure):
         self.ax.scatter(module.bins, module.hist, label="bins")
         self.ax.plot(
             module.bins,
-            module.gaus_curve,
+            module.gauss_curve,
             linewidth=1.5,
             markersize=0.0,
-            label="gauss fit" + module.label,
+            label="Gaussian fit" + module.label,
             color="blue",
         )
 

@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib
+import logging
 
 matplotlib.use("Agg")  # Non-interactive backend
 import matplotlib.pyplot as plt
@@ -8,6 +9,8 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 plt.rcParams.update({"font.size": 13})
 plt.rcParams["legend.fontsize"] = "small"
+
+logger = logging.getLogger("PyRthLogger")
 
 
 class StructureFigure:
@@ -90,8 +93,13 @@ class StructureFigure:
         raise NotImplementedError("Subclasses must implement plot_module_data")
 
     def close(self):
-        self.fig.clf()  # Clear the figure
-        plt.close(self.fig)  # Ensure the figure is closed
+        try:
+            self.fig.clf()  # Clear the figure
+            plt.close(self.fig)  # Ensure the figure is closed
+        except Exception as e:
+            # If there's any issue closing, try to close all matplotlib figures
+            plt.close('all')
+            logger.warning(f"Issue closing figure: {e}, closed all figures as fallback")
 
     def next_color(self):
         """Cycles through the color list."""

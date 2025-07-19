@@ -41,7 +41,23 @@ class TransientTestBase(unittest.TestCase):
     def setUpClass(cls):
         output_dir = "tests/output"
         if os.path.exists(output_dir):
-            shutil.rmtree(output_dir)
+            try:
+                shutil.rmtree(output_dir)
+            except PermissionError as e:
+                # On Windows, files might still be locked. Try to handle gracefully
+                import time
+                import gc
+                
+                # Force garbage collection to close any remaining file handles
+                gc.collect()
+                time.sleep(0.1)  # Brief pause
+                
+                try:
+                    shutil.rmtree(output_dir)
+                except PermissionError:
+                    logger.warning(f"Could not remove {output_dir} due to permission error: {e}")
+                    logger.warning("Continuing with existing directory...")
+        
         os.makedirs(output_dir, exist_ok=True)
 
     def _run_evaluation_test(

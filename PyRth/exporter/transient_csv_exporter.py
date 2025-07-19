@@ -25,9 +25,9 @@ class CSVExporter(BaseExporter):
             logger.debug(f"Skipping saving CSV file: {filename}")
 
     def construct_filename(self, module, name):
-        output_dir = os.path.join(module.output_dir, module.label)
-        os.makedirs(output_dir, exist_ok=True)
-        return os.path.join(output_dir, name)
+        csv_output_dir = os.path.join(module.output_dir, module.label, "csv")
+        os.makedirs(csv_output_dir, exist_ok=True)
+        return os.path.join(csv_output_dir, name)
 
     def extrapol_data_handler(self, module):
         logger.debug("extrapol_data_handler called")
@@ -271,7 +271,7 @@ class CSVExporter(BaseExporter):
                 True,
                 self.construct_filename(module, "residual_fit"),
                 module.bins,
-                module.gaus_curve,
+                module.gauss_curve,
             )
 
     def boot_data_handler(self, module):
