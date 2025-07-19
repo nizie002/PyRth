@@ -370,7 +370,7 @@ class Evaluation:
                 utl.generalized_gaussian, module.bins, module.hist, p0=(500, 0.1, 0.01)
             )
 
-            module.gaus_curve = utl.generalized_gaussian(module.bins, *popt)
+            module.gauss_curve = utl.generalized_gaussian(module.bins, *popt)
 
             module.data_handlers.add("residual")
         else:
