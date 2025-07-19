@@ -50,57 +50,61 @@ class FigureExporter(BaseExporter):
 
     type = "figure"
 
-    # Figure registry remains the same
+    # Combined figure registry with prefixes for ordering
+    # Format: key: (prefix, condition_attribute, figure_class)
+    # Ordered from basic input data (00) to advanced results (highest numbers)
     figure_registry = {
-        "raw": ("look_at_raw_data", RawDataFigure),
-        "voltage": ("look_at_voltage", VoltageFigure),
-        "temp": ("look_at_temp", TempFigure),
-        "extrpl": ("look_at_extrpl", ExtrapolationFigure),
-        "impedance": ("look_at_impedance", ZCurveFigure),
-        "deriv": ("look_at_deriv", DerivFigure),
-        "fft": ("look_at_fft", FFTFigure),
-        "time_spec": ("look_at_time_spec", TimeSpecFigure),
-        "sum_time_spec": ("look_at_sum_time_spec", SumTimeSpecFigure),
-        "back_imp": ("look_at_backwards_impedance", BackwardsImpFigure),
-        "back_deriv": ("look_at_backwards_imp_deriv", BackwardsImpDerivFigure),
-        "cumul_struc": ("look_at_cumul_struc", CumulStrucFigure),
-        "diff_struc": ("look_at_diff_struc", DiffStrucFigure),
-        "local_resist": ("look_at_local_resist", LocalResistFigure),
-        "local_gradient": ("look_at_local_gradient", LocalGradientFigure),
-        "theo_cstruc": ("look_at_theo_cstruc", TheoCStrucFigure),
-        "theo_diff_struc": ("look_at_theo_diff_struc", TheoDiffStrucFigure),
-        "theo_time_const": ("look_at_theo_time_const", TheoTimeConstFigure),
-        "theo_sum_time_const": (
-            "look_at_theo_sum_time_const",
-            TheoSumTimeConstFigure,
-        ),
-        "theo_imp_deriv": ("look_at_theo_imp_deriv", TheoImpDerivFigure),
-        "theo_impedance": ("look_at_theo_impedance", TheoImpFigure),
-        "theo_back_imp": (
-            "look_at_theo_backwards_impedance",
-            TheoBackwardsImpFigure,
-        ),
-        "optimize_struc": ("look_at_optimize_struc", OptimizeStrucFigure),
-        "time_const_comparison": (
-            "look_at_time_const_comparison",
-            TimeConstComparisonFigure,
-        ),
-        "struc_comparison": ("look_at_struc_comparison", StrucComparisonFigure),
-        "total_resist_comparison": (
-            "look_at_total_resist_comparison",
-            TotalResistComparisonFigure,
-        ),
-        "prediction": ("look_at_prediction", PredictionFigure),
-        "prediction_imp": (
-            "look_at_prediction_figure",  # Check if this flag exists, might be look_at_prediction_impulse_used
-            PredictionImpulseUsedFigure,
-        ),
-        "residual": ("look_at_residual", ResidualFigure),
-        "boot_impedance": ("look_at_boot_impedance", BootZCurveFigure),
-        "boot_deriv": ("look_at_boot_deriv", BootDerivFigure),
-        "boot_time_spec": ("look_at_boot_time_spec", BootTimeSpecFigure),
-        "boot_sum_time_spec": ("look_at_boot_sum_time_spec", BootSumTimeSpecFigure),
-        "boot_cumul_struc": ("look_at_boot_cumul_struc", BootCumulStrucFigure),
+        # Raw input data
+        "raw": ("00", "look_at_raw_data", RawDataFigure),
+        "voltage": ("01", "look_at_voltage", VoltageFigure), 
+        "temp": ("02", "look_at_temp", TempFigure),
+        "extrpl": ("03", "look_at_extrpl", ExtrapolationFigure),
+        
+        # Basic processing
+        "impedance": ("10", "look_at_impedance", ZCurveFigure),
+        "deriv": ("11", "look_at_deriv", DerivFigure),
+        "fft": ("12", "look_at_fft", FFTFigure),
+        
+        # Time spectra and backwards processing  
+        "time_spec": ("20", "look_at_time_spec", TimeSpecFigure),
+        "sum_time_spec": ("21", "look_at_sum_time_spec", SumTimeSpecFigure),
+        "back_imp": ("22", "look_at_backwards_impedance", BackwardsImpFigure),
+        "back_deriv": ("23", "look_at_backwards_imp_deriv", BackwardsImpDerivFigure),
+        
+        # Structure functions
+        "cumul_struc": ("30", "look_at_cumul_struc", CumulStrucFigure),
+        "diff_struc": ("31", "look_at_diff_struc", DiffStrucFigure), 
+        "local_resist": ("32", "look_at_local_resist", LocalResistFigure),
+        "local_gradient": ("33", "look_at_local_gradient", LocalGradientFigure),
+        
+        # Theoretical results
+        "theo_cstruc": ("40", "look_at_theo_cstruc", TheoCStrucFigure),
+        "theo_diff_struc": ("41", "look_at_theo_diff_struc", TheoDiffStrucFigure),
+        "theo_time_const": ("42", "look_at_theo_time_const", TheoTimeConstFigure),
+        "theo_sum_time_const": ("43", "look_at_theo_sum_time_const", TheoSumTimeConstFigure),
+        "theo_imp_deriv": ("44", "look_at_theo_imp_deriv", TheoImpDerivFigure),
+        "theo_impedance": ("45", "look_at_theo_impedance", TheoImpFigure),
+        "theo_back_imp": ("46", "look_at_theo_backwards_impedance", TheoBackwardsImpFigure),
+        
+        # Optimization 
+        "optimize_struc": ("50", "look_at_optimize_struc", OptimizeStrucFigure),
+        
+        # Comparisons
+        "time_const_comparison": ("60", "look_at_time_const_comparison", TimeConstComparisonFigure),
+        "struc_comparison": ("61", "look_at_struc_comparison", StrucComparisonFigure), 
+        "total_resist_comparison": ("62", "look_at_total_resist_comparison", TotalResistComparisonFigure),
+        
+        # Prediction and residuals
+        "prediction": ("70", "look_at_prediction", PredictionFigure),
+        "prediction_imp": ("71", "look_at_prediction_figure", PredictionImpulseUsedFigure),
+        "residual": ("72", "look_at_residual", ResidualFigure),
+        
+        # Bootstrap (most advanced)
+        "boot_impedance": ("80", "look_at_boot_impedance", BootZCurveFigure),
+        "boot_deriv": ("81", "look_at_boot_deriv", BootDerivFigure),
+        "boot_time_spec": ("82", "look_at_boot_time_spec", BootTimeSpecFigure), 
+        "boot_sum_time_spec": ("83", "look_at_boot_sum_time_spec", BootSumTimeSpecFigure),
+        "boot_cumul_struc": ("84", "look_at_boot_cumul_struc", BootCumulStrucFigure),
     }
 
     def __init__(self, figures):
@@ -122,9 +126,13 @@ class FigureExporter(BaseExporter):
                 # Ensure the base output directory exists
                 os.makedirs(output_dir, exist_ok=True)
 
-                # Filename based on plot type (e.g., "impedance.png")
-                # Saving directly into the main output_dir, not label-specific subdirs
-                filename = os.path.join(output_dir, f"{plot_key}.png")
+                # Get prefix for ordering, default to "99" if not found
+                prefix = "99"  # default fallback
+                if plot_key in self.figure_registry:
+                    prefix = self.figure_registry[plot_key][0]  # First element is the prefix
+                
+                # Filename with prefix for sorting (e.g., "00_raw.png", "10_impedance.png")
+                filename = os.path.join(output_dir, f"{prefix}_{plot_key}.png")
 
                 fig_obj.add_legend()  # Add legend just before saving
                 fig_obj.fig.savefig(
@@ -142,7 +150,7 @@ class FigureExporter(BaseExporter):
         """Get or create figure object for key and plot module data."""
         for key in keys:
             if key in self.figure_registry:
-                cond_attr, figure_class = self.figure_registry[key]
+                prefix, cond_attr, figure_class = self.figure_registry[key]  # Unpack 3-element tuple
                 # Check if the module instance has the condition attribute and it's True
                 condition = getattr(module, cond_attr, False)
                 if condition:
