@@ -76,7 +76,7 @@ test_cases_basic = [
             "input_mode": "temp",
             "extrapolate": False,
             "deconv_mode": "lasso",
-            "struc_method": "lanczos",
+            "struc_method": "sobhy",
             "data_cut_lower": 242,
             "data_cut_upper": float("inf"),
             "temp_0_avg_range": (230, 241),

@@ -13,7 +13,7 @@ test_cases_comparison = [
         "name": "filter_range_comparison",
         "params": {
             "output_dir": "tests/output/comparison_test",
-            "label": "MOSFET_dry_",
+            "label": "filter_range_comparison",
             "filter_name": "hann",
             "deconv_mode": "fourier",
             "iterable_keywords": ["filter_range"],
@@ -21,6 +21,25 @@ test_cases_comparison = [
             "filter_parameter": 0.0,
             "pad_factor_pre": 0.15,
             "pad_factor_after": 0.15,
+            "evaluation_type": "standard",
+            "theo_inverse_specs": {
+                "theo_time": [3e-7, 200],
+                "theo_time_size": 30000,
+                "theo_delta": 0.5 * (2 * np.pi / 360),
+                "theo_resistances": [10, 10, 10, 10, 10],
+                "theo_capacitances": [1e-4, 1e-1, 1e-4, 1e-3, 1e0],
+            },
+        },
+    },
+    {
+        "name": "lasso_parameter_comparison",
+        "params": {
+            "output_dir": "tests/output/comparison_test",
+            "label": "lasso_parameter_comparison",
+            "iterable_keywords": ["lasso_cv_folds"],
+            "deconv_mode": "lasso",
+            "struc_method": "lanczos",
+            "lasso_cv_folds": range(2, 10),
             "evaluation_type": "standard",
             "theo_inverse_specs": {
                 "theo_time": [3e-7, 200],

@@ -6,7 +6,7 @@ import numpy.polynomial.polynomial as poly
 import scipy.integrate as sin
 import scipy.interpolate as interp
 
-from sklearn.linear_model import LassoCV  # automatic α via CV
+from sklearn.linear_model import Lasso, LassoCV  # automatic α via CV
 from sklearn.metrics import r2_score  # Import R2 score
 
 import logging
@@ -334,8 +334,6 @@ class StructureFunction:
         # --------------------------------------------------------
         tau_min = 2 * np.diff(time).min()
         tau_max = 1 * time.max()
-        # pts_per_dec = 25
-        # K = int(np.ceil(np.log10(tau_max / tau_min) * pts_per_dec))
         K = self.log_time_size
         tau_grid = np.logspace(np.log10(tau_min), np.log10(tau_max), K)
 
@@ -356,16 +354,37 @@ class StructureFunction:
         # 3.  Fit a non-negative sparse model (Lasso, positive=True)
         # --------------------------------------------------------
 
-        # Choose 100 logarithmically spaced alphas and 5-fold CV
-        lasso = LassoCV(
-            alphas=np.logspace(-5, -2, 100),  # you can widen/narrow this range
-            cv=5,
-            positive=True,  # <<< ENFORCES  A_k ≥ 0
-            fit_intercept=False,
-            max_iter=10_000,
-            n_jobs=-1,  # use all cores
-            verbose=False,
-        )
+        # Use LassoCV if cv_folds is specified and > 1, otherwise use Lasso with a fixed alpha
+        if hasattr(self, "lasso_cv_folds") and self.lasso_cv_folds > 1:
+            logger.info(
+                f"Performing Lasso with Cross-Validation (folds={self.lasso_cv_folds})..."
+            )
+            lasso = LassoCV(
+                alphas=self.lasso_alpha,  # you can widen/narrow this range
+                cv=self.lasso_cv_folds,  # number of folds for cross-validation
+                positive=True,  # <<< ENFORCES  A_k ≥ 0
+                fit_intercept=False,
+                max_iter=self.lasso_max_iter,  # max iterations for convergence
+                tol=self.lasso_tol,  # tolerance for convergence
+                n_jobs=-1,  # use all cores
+                verbose=False,
+                selection=self.lasso_selection,
+            )
+        else:
+            # Expects self.lasso_alpha to be a single float value when not using CV
+            if not isinstance(self.lasso_alpha, (int, float)):
+                raise TypeError(
+                    f"When not using CV, lasso_alpha must be a number, but got {type(self.lasso_alpha)}"
+                )
+            logger.info(f"Performing Lasso with fixed alpha={self.lasso_alpha}...")
+            lasso = Lasso(
+                alpha=self.lasso_alpha,
+                positive=True,  # <<< ENFORCES  A_k ≥ 0
+                fit_intercept=False,
+                max_iter=self.lasso_max_iter,  # max iterations for convergence
+                tol=self.lasso_tol,  # tolerance for convergence
+                selection=self.lasso_selection,
+            )
 
         lasso.fit(phi, self.impedance.ravel())  # y must be 1-D
 
@@ -391,6 +410,7 @@ class StructureFunction:
         logger.info(f"Model R_th (Sum of A_k): {R_th_model:.4f}")
         logger.info(f"RMSE: {sigma_hat:.4f}")
         logger.info(f"R-squared: {r2:.4f}")
+        logger.info(f"Number of active components: {np.count_nonzero(A_hat > 0)}")
 
         if not np.any(A_hat > 0):
             raise ValueError(
