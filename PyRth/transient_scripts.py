@@ -888,7 +888,7 @@ class Evaluation:
         else:
             logger.info("Bootstrapping comparison")
             self.parameters["bootstrap_mode"] = "from_theo"
-            time_name = "boot_imp_time"
+            time_name = "boot_deriv_time"
             time_const_name = "boot_time_spec_av"
             int_cau_res_name = "boot_struc_res_fine"
             int_cau_cap_name = "boot_struc_cap_av"
