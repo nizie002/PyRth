@@ -115,7 +115,7 @@ std_eval_defaults: dict = {
     #: array-like or float: Regularization parameter(s) for Lasso deconvolution. If ``lasso_cv_folds`` > 1, this should be an array-like object of alpha values to test. If ``lasso_cv_folds`` is 1, this must be a single float value.
     "lasso_max_iter": 10000,
     #: int: Maximum number of iterations for Lasso deconvolution.
-    "lasso_tol": 1e-4,
+    "lasso_tol": 1e-6,
     #: float: Tolerance for convergence in Lasso deconvolution.
     "lasso_cv_folds": 1,
     #: int: Number of cross-validation folds for Lasso deconvolution. If > 1, ``LassoCV`` is used to find the best alpha from the ``lasso_alpha`` array. If 1, standard ``Lasso`` is used with a single ``lasso_alpha`` value.
