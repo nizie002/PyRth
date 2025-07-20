@@ -36,11 +36,13 @@ test_cases_comparison = [
         "params": {
             "output_dir": "tests/output/comparison_test",
             "label": "lasso_parameter_comparison",
-            "iterable_keywords": ["lasso_cv_folds"],
             "deconv_mode": "lasso",
-            "struc_method": "lanczos",
-            "lasso_cv_folds": range(2, 10),
-            "evaluation_type": "standard",
+            "struc_method": "sobhy",
+            "repetitions": 50,
+            "iterable_keywords": ["signal_to_noise_ratio"],
+            "evaluation_type": "bootstrap_standard",
+            "signal_to_noise_ratio": [25, 50, 75, 100, 125, 150, 175, 200, 225, 250],
+            "lasso_selection": "cyclic",
             "theo_inverse_specs": {
                 "theo_time": [3e-7, 200],
                 "theo_time_size": 30000,
