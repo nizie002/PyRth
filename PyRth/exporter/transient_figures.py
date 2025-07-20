@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.polynomial.polynomial as poly
 import scipy.integrate as sin
-from matplotlib.lines import Line2D
+import scipy.interpolate as interp
 
 from .transient_base_fig import StructureFigure
 
@@ -455,63 +455,64 @@ class TheoImpFigure(StructureFigure):
 class BackwardsImpDerivFigure(StructureFigure):
     def plot_module_data(self, module):
         if not self._axis_initialized:
-            self.ax.set_title("Backwards impulse response")
+            self.ax.set_title("Backwards impulse response differences")
             self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"impulse response, $h$, in K$\cdot$ W$^{-1}$")
+            self.ax.set_ylabel(
+                r"impulse response difference, $\Delta h$, in K$\cdot$ W$^{-1}$"
+            )
             self._axis_initialized = True
+
+        # Calculate the difference between backwards and original derivative
+        difference = module.back_imp_deriv - module.imp_deriv_interp
 
         self.ax.semilogx(
             np.exp(module.log_time_pad),
-            module.imp_deriv_interp,
+            difference,
             linewidth=0.75,
-            label="orig. deriv. " + module.label,
+            marker="o",
+            label="diff. (back - orig) " + module.label,
             markersize=1.5,
             color=self.next_color(),
         )
-        self.ax.semilogx(
-            np.exp(module.log_time_pad),
-            module.back_imp_deriv,
-            linewidth=0.0,
-            marker="o",
-            label="backwards deriv. " + module.label,
-            markersize=1.5,
-            color=self.same_color(),
-        )
+
+        # Add a zero reference line
+        self.ax.axhline(y=0, color="black", linestyle="--", alpha=0.5, linewidth=0.5)
 
 
 class BackwardsImpFigure(StructureFigure):
     def plot_module_data(self, module):
         if not self._axis_initialized:
-            self.ax.set_title("Backwards thermal impedance")
+            self.ax.set_title("Backwards thermal impedance differences")
             self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"thermal impedance, $Z_{\rm th}$, in K$\cdot$ W$^{-1}$")
+            self.ax.set_ylabel(
+                r"thermal impedance difference, $\Delta Z_{\rm th}$, in K$\cdot$ W$^{-1}$"
+            )
             self._axis_initialized = True
 
-        self.ax.semilogx(
+        # Interpolate original impedance to the padded time grid
+        impedance_interp = interp.interp1d(
             np.exp(module.log_time),
             module.impedance,
-            linewidth=0.0,
-            marker="o",
-            markersize=1.0,
-            label="orig. imp. " + module.label,
-        )
+            kind="linear",
+            bounds_error=False,
+            fill_value="extrapolate",
+        )(np.exp(module.log_time_pad))
+
+        # Calculate the difference
+        difference = module.back_imp - impedance_interp
+
         self.ax.semilogx(
             np.exp(module.log_time_pad),
-            module.back_imp,
-            linewidth=0.0,
+            difference,
+            linewidth=0.75,
             marker="x",
             markersize=2.0,
-            label="backwards imp. " + module.label,
+            label="diff. (back - orig) " + module.label,
             color=self.next_color(),
         )
-        self.ax.semilogx(
-            np.exp(module.log_time_interp),
-            module.imp_smooth,
-            linewidth=0.75,
-            markersize=0.0,
-            label="loc. av." + module.label,
-            color=self.same_color(),
-        )
+
+        # Add a zero reference line
+        self.ax.axhline(y=0, color="black", linestyle="--", alpha=0.5, linewidth=0.5)
 
 
 class TheoBackwardsImpFigure(StructureFigure):
