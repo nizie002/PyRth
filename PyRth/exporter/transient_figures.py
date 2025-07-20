@@ -455,64 +455,131 @@ class TheoImpFigure(StructureFigure):
 class BackwardsImpDerivFigure(StructureFigure):
     def plot_module_data(self, module):
         if not self._axis_initialized:
-            self.ax.set_title("Backwards impulse response differences")
+            self.ax.set_title("Backwards impulse response comparison")
             self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(
-                r"impulse response difference, $\Delta h$, in K$\cdot$ W$^{-1}$"
-            )
+            self.ax.set_ylabel(r"impulse response, $h$, in K$\cdot$ W$^{-1}$", color='blue')
             self._axis_initialized = True
 
-        # Calculate the difference between backwards and original derivative
-        difference = module.back_imp_deriv - module.imp_deriv_interp
-
+        # Plot original curves on left y-axis
         self.ax.semilogx(
+            np.exp(module.log_time_pad),
+            module.imp_deriv_interp,
+            linewidth=1.0,
+            label="orig. deriv. " + module.label,
+            markersize=0.0,
+            color='blue',
+        )
+        self.ax.semilogx(
+            np.exp(module.log_time_pad),
+            module.back_imp_deriv,
+            linewidth=0.0,
+            marker="o",
+            label="backwards deriv. " + module.label,
+            markersize=1.5,
+            color='lightblue',
+        )
+        self.ax.tick_params(axis='y', labelcolor='blue')
+
+        # Create secondary y-axis for differences
+        ax2 = self.ax.twinx()
+        ax2.set_ylabel(r"difference, $\Delta h$, in K$\cdot$ W$^{-1}$", color='red')
+        
+        # Calculate and plot the difference on right y-axis
+        difference = module.back_imp_deriv - module.imp_deriv_interp
+        ax2.semilogx(
             np.exp(module.log_time_pad),
             difference,
             linewidth=0.75,
-            marker="o",
+            marker="x",
             label="diff. (back - orig) " + module.label,
             markersize=1.5,
-            color=self.next_color(),
+            color='red',
         )
-
-        # Add a zero reference line
-        self.ax.axhline(y=0, color="black", linestyle="--", alpha=0.5, linewidth=0.5)
+        ax2.tick_params(axis='y', labelcolor='red')
+        
+        # Add a zero reference line for differences
+        ax2.axhline(y=0, color='red', linestyle='--', alpha=0.3, linewidth=0.5)
 
 
 class BackwardsImpFigure(StructureFigure):
     def plot_module_data(self, module):
         if not self._axis_initialized:
-            self.ax.set_title("Backwards thermal impedance differences")
+            self.ax.set_title("Backwards thermal impedance comparison")
             self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(
-                r"thermal impedance difference, $\Delta Z_{\rm th}$, in K$\cdot$ W$^{-1}$"
-            )
+            self.ax.set_ylabel(r"thermal impedance, $Z_{\rm th}$, in K$\cdot$ W$^{-1}$", color='blue')
             self._axis_initialized = True
 
-        # Interpolate original impedance to the padded time grid
-        impedance_interp = interp.interp1d(
-            np.exp(module.log_time),
-            module.impedance,
-            kind="linear",
-            bounds_error=False,
-            fill_value="extrapolate",
-        )(np.exp(module.log_time_pad))
+        # Get time arrays
+        time_orig = np.exp(module.log_time)
+        time_pad = np.exp(module.log_time_pad)
 
-        # Calculate the difference
-        difference = module.back_imp - impedance_interp
-
+        # Plot original curves on left y-axis
         self.ax.semilogx(
-            np.exp(module.log_time_pad),
-            difference,
-            linewidth=0.75,
+            time_orig,
+            module.impedance,
+            linewidth=0.0,
+            marker="o",
+            markersize=1.0,
+            label="orig. imp. " + module.label,
+            color='blue',
+        )
+        self.ax.semilogx(
+            time_pad,
+            module.back_imp,
+            linewidth=0.0,
             marker="x",
             markersize=2.0,
-            label="diff. (back - orig) " + module.label,
-            color=self.next_color(),
+            label="backwards imp. " + module.label,
+            color='lightblue',
         )
+        self.ax.tick_params(axis='y', labelcolor='blue')
 
-        # Add a zero reference line
-        self.ax.axhline(y=0, color="black", linestyle="--", alpha=0.5, linewidth=0.5)
+        # Create secondary y-axis for differences
+        ax2 = self.ax.twinx()
+        ax2.set_ylabel(r"difference, $\Delta Z_{\rm th}$, in K$\cdot$ W$^{-1}$", color='red')
+
+        # Find the actual overlap region between both arrays
+        overlap_min = max(time_orig.min(), time_pad.min())
+        overlap_max = min(time_orig.max(), time_pad.max())
+
+        # Create masks for the overlap region in both arrays
+        orig_overlap_mask = (time_orig >= overlap_min) & (time_orig <= overlap_max)
+        pad_overlap_mask = (time_pad >= overlap_min) & (time_pad <= overlap_max)
+
+        # Only proceed if there's actual overlap
+        if (
+            overlap_min < overlap_max
+            and np.any(orig_overlap_mask)
+            and np.any(pad_overlap_mask)
+        ):
+            # Interpolate original impedance to padded time points within overlap
+            impedance_interp = interp.interp1d(
+                time_orig[orig_overlap_mask],
+                module.impedance[orig_overlap_mask],
+                kind="linear",
+                bounds_error=False,
+                fill_value=np.nan,
+            )(time_pad[pad_overlap_mask])
+
+            # Calculate difference for overlap region
+            back_imp_overlap = module.back_imp[pad_overlap_mask]
+            difference_overlap = back_imp_overlap - impedance_interp
+
+            # Plot differences on right y-axis
+            ax2.semilogx(
+                time_pad[pad_overlap_mask],
+                difference_overlap,
+                linewidth=0.75,
+                marker="s",
+                markersize=1.5,
+                label="diff. (back - orig) " + module.label,
+                color='red',
+            )
+
+        ax2.tick_params(axis='y', labelcolor='red')
+        
+        # Add a zero reference line for differences
+        ax2.axhline(y=0, color='red', linestyle='--', alpha=0.3, linewidth=0.5)
 
 
 class TheoBackwardsImpFigure(StructureFigure):
