@@ -121,6 +121,8 @@ std_eval_defaults: dict = {
     #: int: Number of cross-validation folds for Lasso deconvolution. If > 1, ``LassoCV`` is used to find the best alpha from the ``lasso_alpha`` array. If 1, standard ``Lasso`` is used with a single ``lasso_alpha`` value.
     "lasso_selection": "cyclic",
     #: str: Selection method for Lasso deconvolution. Options: "cyclic", "random".
+    "lasso_precompute": True,
+    #: bool: Whether to precompute the Gram matrix for Lasso deconvolution. This can speed up the process, especially for large datasets.
     #
     # Structure Function settings
     "struc_method": "sobhy",

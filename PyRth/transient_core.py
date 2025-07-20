@@ -369,6 +369,7 @@ class StructureFunction:
                 n_jobs=-1,  # use all cores
                 verbose=False,
                 selection=self.lasso_selection,
+                precompute=self.lasso_precompute,  # precompute Gram matrix for speed
             )
         else:
             # Expects self.lasso_alpha to be a single float value when not using CV
@@ -384,6 +385,7 @@ class StructureFunction:
                 max_iter=self.lasso_max_iter,  # max iterations for convergence
                 tol=self.lasso_tol,  # tolerance for convergence
                 selection=self.lasso_selection,
+                precompute=self.lasso_precompute,  # precompute Gram matrix for speed
             )
 
         lasso.fit(phi, self.impedance.ravel())  # y must be 1-D
@@ -405,9 +407,18 @@ class StructureFunction:
 
         R_th_model = np.sum(A_hat)  # Sum of A_k
 
+        # Get the actually used alpha value
+        if hasattr(lasso, "alpha_"):
+            # LassoCV case - alpha_ contains the selected optimal value
+            used_alpha = lasso.alpha_
+        else:
+            # Regular Lasso case - alpha contains the set value
+            used_alpha = lasso.alpha
+
         # Compare final values and print GoF metrics
         logger.info(f"Final measured resistance: {self.impedance[-1]:.4f}")
         logger.info(f"Model R_th (Sum of A_k): {R_th_model:.4f}")
+        logger.info(f"Used alpha: {used_alpha:.2e}")
         logger.info(f"RMSE: {sigma_hat:.4f}")
         logger.info(f"R-squared: {r2:.4f}")
         logger.info(f"Number of active components: {np.count_nonzero(A_hat > 0)}")
