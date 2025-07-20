@@ -329,30 +329,22 @@ class StructureFunction:
 
         time = self.time.flatten()
 
-        # --------------------------------------------------------
-        # 1.  Choose a τ-grid (log-spacing)
-        # --------------------------------------------------------
-        tau_min = 2 * np.diff(time).min()
-        tau_max = 1 * time.max()
-        K = self.log_time_size
-        tau_grid = np.logspace(np.log10(tau_min), np.log10(tau_max), K)
+        if self.deconv_mode == "lasso":
+            tau_min = 2 * np.diff(time).min()
+            tau_max = 1 * time.max()
+            K = self.log_time_size
+            tau_grid = np.logspace(np.log10(tau_min), np.log10(tau_max), K)
 
-        # --------------------------------------------------------
-        # 2.  Design matrix Φ   (n × K)
-        # --------------------------------------------------------
+        elif self.deconv_mode == "hybrid":
+            tau_grid = np.exp(self.log_time_pad.flatten())
+
+        warm_start = True if self.deconv_mode == "hybrid" else False
+
         phi_unnormalized = 1.0 - np.exp(-time[:, None] / tau_grid[None, :])
 
-        # Calculate norms of the original columns
         phi_norms = np.linalg.norm(phi_unnormalized, axis=0, keepdims=True)
-        # Avoid division by zero if a column is all zeros (unlikely but possible)
         phi_norms[phi_norms == 0] = 1.0
-
-        # Optional: normalise columns for numeric stability
         phi = phi_unnormalized / phi_norms
-
-        # --------------------------------------------------------
-        # 3.  Fit a non-negative sparse model (Lasso, positive=True)
-        # --------------------------------------------------------
 
         # Use LassoCV if cv_folds is specified and > 1, otherwise use Lasso with a fixed alpha
         if hasattr(self, "lasso_cv_folds") and self.lasso_cv_folds > 1:
@@ -370,6 +362,7 @@ class StructureFunction:
                 verbose=False,
                 selection=self.lasso_selection,
                 precompute=self.lasso_precompute,  # precompute Gram matrix for speed
+                warm_start=warm_start,  # reuse bayesian time const solution
             )
         else:
             # Expects self.lasso_alpha to be a single float value when not using CV
@@ -386,7 +379,11 @@ class StructureFunction:
                 tol=self.lasso_tol,  # tolerance for convergence
                 selection=self.lasso_selection,
                 precompute=self.lasso_precompute,  # precompute Gram matrix for speed
+                warm_start=warm_start,  # reuse bayesian time const solution
             )
+
+        if self.deconv_mode == "hybrid":
+            lasso.coef_ = self.time_spec.copy()
 
         lasso.fit(phi, self.impedance.ravel())  # y must be 1-D
 
@@ -402,17 +399,13 @@ class StructureFunction:
             ((self.impedance.ravel() - y_fit_unnormalized) ** 2).mean()
         )  # RMS resid based on original scale
 
-        # Calculate R-squared
         r2 = r2_score(self.impedance.ravel(), y_fit_unnormalized)
 
         R_th_model = np.sum(A_hat)  # Sum of A_k
 
-        # Get the actually used alpha value
         if hasattr(lasso, "alpha_"):
-            # LassoCV case - alpha_ contains the selected optimal value
             used_alpha = lasso.alpha_
         else:
-            # Regular Lasso case - alpha contains the set value
             used_alpha = lasso.alpha
 
         # Compare final values and print GoF metrics
@@ -428,17 +421,19 @@ class StructureFunction:
                 "z_fit_lasso: time constant spectrum is empty (no active Lasso components)"
             )
 
-        self.log_time_pad = np.log(tau_grid.copy())
-        self.log_time_interp = self.log_time.copy()
         self.time_spec = A_hat.flatten()
         self.sum_time_spec = np.cumsum(self.time_spec)
-        self.pad_time_size = np.size(self.log_time_pad)
-        self.imp_smooth = y_fit_unnormalized.flatten()
-        self.imp_smooth_full = y_fit_unnormalized.flatten()
 
-        self.imp_deriv_interp, back_imp = utl.time_const_to_imp(
-            self.log_time_pad, A_hat
-        )
+        if self.deconv_mode == "lasso":
+            self.log_time_pad = np.log(tau_grid.copy())
+            self.log_time_interp = self.log_time.copy()
+            self.imp_smooth = y_fit_unnormalized.flatten()
+            self.imp_smooth_full = y_fit_unnormalized.flatten()
+            self.pad_time_size = np.size(self.log_time_pad)
+
+            self.imp_deriv_interp, back_imp = utl.time_const_to_imp(
+                self.log_time_pad, A_hat
+            )
 
     def fft_signal(self):
         # calculates the fourier transform and power periodogram
