@@ -17,10 +17,32 @@ class CSVExporter(BaseExporter):
         if save_flag:
             filename = f"{filename}.csv"
             logger.debug(f"Saving CSV file: {filename}")
-            np.savetxt(
-                filename,
-                np.transpose([data1, data2]),
-            )
+
+            # Check if either array contains non-numeric data (strings)
+            data1_array = np.asarray(data1)
+            data2_array = np.asarray(data2)
+
+            # Check if arrays contain string data
+            has_strings = data1_array.dtype.kind in [
+                "U",
+                "S",
+                "O",
+            ] or data2_array.dtype.kind in ["U", "S", "O"]
+
+            if has_strings:
+                # Use string format for mixed or string data
+                np.savetxt(
+                    filename,
+                    np.transpose([data1, data2]),
+                    fmt="%s %s",
+                    delimiter=" ",
+                )
+            else:
+                # Use default numerical format for numeric data
+                np.savetxt(
+                    filename,
+                    np.transpose([data1, data2]),
+                )
         else:
             logger.debug(f"Skipping saving CSV file: {filename}")
 
