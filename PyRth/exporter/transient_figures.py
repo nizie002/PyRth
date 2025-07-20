@@ -463,7 +463,7 @@ class BackwardsImpDerivFigure(StructureFigure):
         self.ax.semilogx(
             np.exp(module.log_time_pad),
             module.imp_deriv_interp,
-            linewidth=1.5,
+            linewidth=0.75,
             label="orig. deriv. " + module.label,
             markersize=1.5,
             color=self.next_color(),
@@ -507,7 +507,7 @@ class BackwardsImpFigure(StructureFigure):
         self.ax.semilogx(
             np.exp(module.log_time_interp),
             module.imp_smooth,
-            linewidth=1.5,
+            linewidth=0.75,
             markersize=0.0,
             label="loc. av." + module.label,
             color=self.same_color(),
