@@ -330,7 +330,7 @@ class StructureFunction:
         time = self.time.flatten()
 
         if self.deconv_mode == "lasso":
-            tau_min = 2 * np.diff(time).min()
+            tau_min = 0.5 * np.diff(time).min()
             tau_max = 1 * time.max()
             K = self.log_time_size
             tau_grid = np.logspace(np.log10(tau_min), np.log10(tau_max), K)
@@ -343,8 +343,32 @@ class StructureFunction:
         phi_unnormalized = 1.0 - np.exp(-time[:, None] / tau_grid[None, :])
 
         phi_norms = np.linalg.norm(phi_unnormalized, axis=0, keepdims=True)
+
+        logger.info(
+            f"Condition number of unnormalized phi: {np.linalg.cond(phi_unnormalized):.4e}"
+        )
+
         phi_norms[phi_norms == 0] = 1.0
         phi = phi_unnormalized / phi_norms
+
+        logger.info(f"Condition number of phi: {np.linalg.cond(phi):.4e}")
+
+        # Handle weighted Lasso for hybrid mode
+        if self.deconv_mode == "hybrid":
+            # Define weights based on Bayesian solution (inverse weighting for adaptive Lasso)
+            # Small time_spec values get large weights (more penalty), large values get small weights (less penalty)
+            epsilon = 1e-6  # Small constant to avoid division by zero
+            gamma = 0.8
+            weights = 1.0 / (np.abs(self.time_spec) + epsilon) ** gamma
+
+            # keep weights within 1/20 … 20 to preserve conditioning
+            weights = np.clip(weights, 0.05, 20.0)
+
+            # Scale the design matrix columns by weights (weighted Lasso trick)
+            phi = phi / weights[None, :]  # Scale each column by its weight
+
+            # check condition number of phi
+            logger.info(f"Condition number of weighted phi: {np.linalg.cond(phi):.4e}")
 
         # Use LassoCV if cv_folds is specified and > 1, otherwise use Lasso with a fixed alpha
         if hasattr(self, "lasso_cv_folds") and self.lasso_cv_folds > 1:
@@ -362,7 +386,6 @@ class StructureFunction:
                 verbose=False,
                 selection=self.lasso_selection,
                 precompute=self.lasso_precompute,  # precompute Gram matrix for speed
-                warm_start=warm_start,  # reuse bayesian time const solution
             )
         else:
             # Expects self.lasso_alpha to be a single float value when not using CV
@@ -382,7 +405,7 @@ class StructureFunction:
                 warm_start=warm_start,  # reuse bayesian time const solution
             )
 
-        if self.deconv_mode == "hybrid":
+        if self.deconv_mode == "hybrid" and self.lasso_cv_folds > 1:
             lasso.coef_ = self.time_spec.copy()
 
         lasso.fit(phi, self.impedance.ravel())  # y must be 1-D
@@ -391,7 +414,10 @@ class StructureFunction:
         A_hat_normalized = lasso.coef_
 
         # Rescale coefficients to match the *unnormalized* phi
-        A_hat = A_hat_normalized / phi_norms.flatten()  # Divide by the stored norms
+        if self.deconv_mode == "hybrid":
+            A_hat = A_hat_normalized / (phi_norms.flatten() * weights)
+        else:
+            A_hat = A_hat_normalized / phi_norms.flatten()
 
         # Recalculate sigma_hat using the unnormalized phi and rescaled A_hat for consistency
         y_fit_unnormalized = (phi_unnormalized @ A_hat).ravel()
