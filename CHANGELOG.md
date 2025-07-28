@@ -14,13 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CHANGELOG and CONTRIBUTING documentation files
 - Right sidebar table of contents for improved documentation navigation
 - DeepWiki badge to README
-- Support for hybrid deconvolution mode in Evaluation class
+- Support for adaptive deconvolution mode in Evaluation class
 - Cross-validation support for Lasso deconvolution with `lasso_cv_folds` parameter
 - Enhanced Lasso deconvolution parameters: alpha, max iterations, tolerance, and cross-validation settings
 - Support for saving non-numeric data in CSV format via CSVExporter
 - Scikit-learn and numba to intersphinx mapping in documentation
 - Secondary y-axis for differences in BackwardsImp figures
-- Weighted Lasso support in hybrid mode processing
+- Weighted Lasso support in adaptive mode processing
 
 ### Changed
 
@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved overlap handling in data plotting
 - Enhanced error handling in tests with better directory cleanup for permission errors
 - Updated deconvolution parameters and methods for MOSFET tests
-- Refined alpha range and hybrid mode bay_steps for improved performance
+- Refined alpha range and adaptive mode bay_steps for improved performance
 - Updated time constant calculation in TransientOptimizer to scale with theoretical log time
 - Lasso deconvolution tolerance adjusted from 1e-4 to 1e-5 for improved convergence
 

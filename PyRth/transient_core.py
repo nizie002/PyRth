@@ -335,10 +335,10 @@ class StructureFunction:
             K = self.log_time_size
             tau_grid = np.logspace(np.log10(tau_min), np.log10(tau_max), K)
 
-        elif self.deconv_mode == "hybrid":
+        elif self.deconv_mode == "adaptive":
             tau_grid = np.exp(self.log_time_pad.flatten())
 
-        warm_start = True if self.deconv_mode == "hybrid" else False
+        warm_start = True if self.deconv_mode == "adaptive" else False
 
         phi_unnormalized = 1.0 - np.exp(-time[:, None] / tau_grid[None, :])
 
@@ -353,8 +353,8 @@ class StructureFunction:
 
         logger.info(f"Condition number of phi: {np.linalg.cond(phi):.4e}")
 
-        # Handle weighted Lasso for hybrid mode
-        if self.deconv_mode == "hybrid":
+        # Handle weighted Lasso for adaptive mode
+        if self.deconv_mode == "adaptive":
             # Define weights based on Bayesian solution (inverse weighting for adaptive Lasso)
             # Small time_spec values get large weights (more penalty), large values get small weights (less penalty)
             epsilon = 1e-6  # Small constant to avoid division by zero
@@ -405,7 +405,7 @@ class StructureFunction:
                 warm_start=warm_start,  # reuse bayesian time const solution
             )
 
-        if self.deconv_mode == "hybrid" and self.lasso_cv_folds > 1:
+        if self.deconv_mode == "adaptive" and self.lasso_cv_folds > 1:
             lasso.coef_ = self.time_spec.copy()
 
         lasso.fit(phi, self.impedance.ravel())  # y must be 1-D
@@ -414,7 +414,7 @@ class StructureFunction:
         A_hat_normalized = lasso.coef_
 
         # Rescale coefficients to match the *unnormalized* phi
-        if self.deconv_mode == "hybrid":
+        if self.deconv_mode == "adaptive":
             A_hat = A_hat_normalized / (phi_norms.flatten() * weights)
         else:
             A_hat = A_hat_normalized / phi_norms.flatten()
@@ -493,6 +493,7 @@ class StructureFunction:
 
         self.sum_time_spec = np.cumsum(self.time_spec)
 
+    @utl.timer_decorator
     def perform_bayesian_deconvolution(self):
         # calculates the bayesian deconvolution
 

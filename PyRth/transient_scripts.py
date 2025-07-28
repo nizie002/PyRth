@@ -161,11 +161,11 @@ class Evaluation:
                     module.perform_bayesian_deconvolution()
                     # Add time_spec handler for Bayesian
                     module.data_handlers.add("time_spec")
-                elif module.deconv_mode == "hybrid":
-                    logger.info("Performing Hybrid deconvolution")
+                elif module.deconv_mode == "adaptive":
+                    logger.info("Performing adaptive deconvolution")
                     module.perform_bayesian_deconvolution()
                     module.z_fit_lasso()
-                    # Add time_spec handler for Hybrid
+                    # Add time_spec handler for adaptive
                     module.data_handlers.add("time_spec")
 
                 else:
