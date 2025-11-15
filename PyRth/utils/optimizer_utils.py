@@ -1,20 +1,31 @@
+"""Utility helpers for optimizer objective calculations."""
+
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
 
 
 def ext_weighted_diff(x_vals, y_1, y_2, weight):
+    """Compute weighted L2 distance using trapezoidal integration."""
+
     return np.sqrt(np.trapz(((y_1 - y_2) * weight) ** 2, x=x_vals))
 
 
 def weighted_diff_sum(x_vals, y_1, y_2, weight):
+    """Compute weighted Euclidean difference without integration."""
+
+    del x_vals  # kept for signature compatibility
     return np.sqrt(np.sum(((y_1 - y_2) * weight) ** 2))
 
 
 def weighted_diff(x_vals, y_1, y_2):
+    """Measure L2 difference between two curves over shared x-axis."""
+
     return np.sqrt(np.trapz((y_1 - y_2) ** 2, x=x_vals))
 
 
 def log_log_weighted_diff(x_vals, y_1, y_2):
+    """Compute L2 difference in log-domain, skipping non-positive values."""
+
     safe = (y_1 > 0) & (y_2 > 0)
     y1_filt = y_1[safe]
     y2_filt = y_2[safe]
@@ -23,10 +34,14 @@ def log_log_weighted_diff(x_vals, y_1, y_2):
 
 
 def weighted_relativ_diff(x_vals, y_1, y_2):
+    """Relative difference penalizing proportionate deviations between curves."""
+
     return np.sqrt(np.trapz(((y_1 - y_2) / (y_1 + y_2)) ** 2, x=x_vals))
 
 
 def l2_norm_time_const(theo_x, theo_y, compare_x, compare_y, sum_given=False):
+    """Compare accumulated time constants via trapezoidal integrals."""
+
     sum_theo_y = cumulative_trapezoid(theo_y, x=theo_x, initial=0.0)
     if not sum_given:
         sum_compare_y = cumulative_trapezoid(compare_y, x=compare_x, initial=0.0)
@@ -42,11 +57,13 @@ def l2_norm_time_const(theo_x, theo_y, compare_x, compare_y, sum_given=False):
 
 
 def norm_structure(theo_x, theo_y, compare_x, compare_y):
+    """Score structure functions by integrating absolute log-differences."""
+
     theo_x = theo_x[1:]
     theo_y = theo_y[1:]
     min_res = theo_x[0]
     max_res = compare_x[-1]
-    compare_y_capped = np.clip(compare_y, None, 1e6) # Cap to avoid punushing the divergence overly
+    compare_y_capped = np.clip(compare_y, None, 1e6)  # Cap to avoid punishing divergence
     res_fine = np.linspace(min_res, max_res, int(1e6))
     theo_y_fine = np.interp(res_fine, theo_x, theo_y)
     compare_y_fine = np.interp(res_fine, compare_x, compare_y_capped)
