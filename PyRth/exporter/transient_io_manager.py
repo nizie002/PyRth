@@ -1,6 +1,6 @@
-import numpy as np
+"""Central dispatcher coordinating CSV and figure exporters."""
+
 import logging
-import os
 
 from .transient_csv_exporter import CSVExporter
 from .transient_figure_exporter import FigureExporter
@@ -10,6 +10,7 @@ logger = logging.getLogger("PyRthLogger")
 
 
 class IOManager:
+    """Orchestrate which exporter handles which module artefacts."""
 
     handlers = {
         "volt": "voltage_data_handler",
@@ -37,38 +38,36 @@ class IOManager:
         self.figure_exporter = FigureExporter(self.figures)
 
     def exporter_output(self, exporter: BaseExporter):
-        """Process output data for all modules based on their capabilities."""
+        """Run each module through the handlers supported by ``exporter``."""
         logger.info("Saving output data")
 
-        for key, module in self.modules.items():
+        for module in self.modules.values():
             logger.debug(
                 f"Processing {exporter.type} output for Module {module.label} capabilities: {module.data_handlers}"
             )
 
-            # Get module's capabilities (defined in module class)
             capabilities = getattr(module, "data_handlers", [])
 
-            # Call each available handler
             for capability in capabilities:
                 if capability in self.handlers:
                     logger.debug(f"Executing {capability} data handler")
                     try:
                         getattr(exporter, self.handlers[capability])(module)
-                    except Exception as e:
+                    except (AttributeError, ValueError, RuntimeError) as e:
                         logger.error(f"Error in {capability} data handler: {str(e)}")
                 else:
                     logger.error(f"Handler {capability} not found")
 
     def export_csv(self):
-        """Export data for all modules."""
+        """Trigger CSV exporter for every module."""
         self.exporter_output(self.csv_exporter)
 
     def export_figures(self):
-        """Export figures for all modules."""
+        """Trigger figure exporter for every module and flush to disk."""
         self.exporter_output(self.figure_exporter)
         self.figure_exporter.save_all_figures()
 
     def export_all(self):
-        """Export all data and figures for all modules."""
+        """Run CSV and figure exporters sequentially."""
         self.export_csv()
         self.export_figures()
