@@ -1,11 +1,31 @@
+"""MPFR-backed helpers for Foster→Cauer polynomial algebra.
+
+This module wraps the GNU MPFR primitives exposed by gmpy2 so PyRth can run
+all Foster/Cauer conversions at arbitrary precision.  MPFR in gmpy2 is a
+multiple-precision floating-point type backed by the GNU MPFR (Multiple
+Precision Floating-Point Reliable) library.  In other words: it is like
+Python's ``float``—but with arbitrary precision and well-defined rounding, so
+you can do numerics with far more than 53 bits of mantissa and with controlled
+behavior.
+"""
+
+from typing import Any, cast
+
 import gmpy2 as gp
 from gmpy2 import mpfr
 import numpy as np
 
+gp = cast(Any, gp)
+
 
 def make_z_s(r_fos, c_fos):
+    """Assemble the Foster ladder into a rational Z(s) with MPFR precision.
 
-    # calculates the rational function for the foster-cauer transformation
+    Takes matching resistance/capacitance arrays from the Foster spectrum and
+    returns the numerator/denominator polynomials of the driving-point
+    impedance.  This is the common entry point for all MPFR-based
+    Foster→Cauer conversions.
+    """
 
     denom_list = []
     num_list = []
@@ -39,8 +59,7 @@ def make_z_s(r_fos, c_fos):
 
 
 def add_rationals(chain, numn, denom):
-
-    # helper function for make_z_s()
+    """Combine two rational functions expressed as (num, denom) pairs."""
 
     temp_num_1 = mpfr_pol_mul(chain[0], denom)
     temp_num_2 = mpfr_pol_mul(numn, chain[1])
@@ -52,6 +71,7 @@ def add_rationals(chain, numn, denom):
 
 
 def mpfr_pol_mul(mul_1, mul_2):
+    """Multiply two MPFR polynomials (dense coefficient arrays)."""
 
     ord_1 = len(mul_1) - 1
     ord_2 = len(mul_2) - 1
@@ -66,6 +86,11 @@ def mpfr_pol_mul(mul_1, mul_2):
 
 
 def mpfr_neg_pol_mul(mul_1, mul_2, maxorder=None):
+    """Multiply two polynomials but accumulate the negative product.
+
+    ``maxorder`` caps the resulting polynomial degree so Newton-doubling steps
+    in the J-fraction helpers can truncate intermediate results safely.
+    """
 
     ord_1 = len(mul_1) - 1
     ord_2 = len(mul_2) - 1
@@ -88,6 +113,7 @@ def mpfr_neg_pol_mul(mul_1, mul_2, maxorder=None):
 
 
 def mpfr_pol_add(add_1, add_2):
+    """Add two polynomials, padding the shorter list in-place."""
 
     ord_1 = len(add_1) - 1
     ord_2 = len(add_2) - 1
@@ -108,6 +134,7 @@ def mpfr_pol_add(add_1, add_2):
 
 
 def mpfr_weighted_inner_product(poles, p1, p2, weights):
+    """Weighted inner product used by the Boor–Golub algorithm."""
     prod = mpfr("0.0")
     N = len(poles)
 
@@ -120,6 +147,7 @@ def mpfr_weighted_inner_product(poles, p1, p2, weights):
 
 
 def mpfr_weighted_self_product(poles, p1, weights):
+    """Weighted self product counterpart to ``mpfr_weighted_inner_product``."""
 
     prod = mpfr("0.0")
     N = len(poles)
@@ -132,6 +160,7 @@ def mpfr_weighted_self_product(poles, p1, weights):
 
 
 def mpfr_horner_poly_eval(val, poly):
+    """Evaluate a polynomial with Horner's rule using MPFR arithmetic."""
 
     N = len(poly)
 
@@ -143,75 +172,18 @@ def mpfr_horner_poly_eval(val, poly):
     return res + poly[0]
 
 
-def mpfr_bisection(poly, lowr_brak, upr_brak):
-
-    n = 1
-
-    lowr_brak_val = mpfr_horner_poly_eval(lowr_brak, poly)
-    if gp.sign(lowr_brak_val) > 0:
-        pos = lowr_brak
-        neg = upr_brak
-    else:
-        neg = lowr_brak
-        pos = upr_brak
-    npsum = neg + pos
-    new_x = (npsum) / mpfr("2.0")
-
-    acr = gp.sign(npsum) * npsum * mpfr("1e-80")
-    new_val = mpfr("1.0")
-
-    while ((gp.sign(new_val) * new_val) > acr) and (n < 50000):
-
-        n += 1
-        new_x = (neg + pos) / mpfr("2.0")
-
-        new_val = mpfr_horner_poly_eval(new_x, poly)
-
-        if gp.sign(new_val) > 0:
-            pos = new_x
-        if gp.sign(new_val) < 0:
-            neg = new_x
-
-    return (neg + pos) / mpfr("2.0")
-
-
-def division_step(numerator, denominator):
-
-    # helper function for foster_to_cauer()
-
-    len_n = len(numerator)
-    len_d = len(denominator)
-
-    if len_n + 1 == len_d:
-
-        # num and denom are exchanged because we are interested dividing 1/Z, but num and denom are named in reference to Z
-        quotient, remainder = np.polynomial.polynomial.polydiv(denominator, numerator)
-        if len(quotient) == 2:
-            cap = quotient[1]
-            res_inv = quotient[0]
-        else:
-            raise ValueError("Quotient does not have length 2")
-
-        res = 1.0 / res_inv
-        num_new = -res * remainder
-        denom_new = np.polynomial.polynomial.polyadd(res_inv * numerator, remainder)
-
-    else:
-        raise ValueError(
-            "Rational function has no proper Form -- num: "
-            + str(len_n)
-            + " denom: "
-            + str(len_d)
-        )
-
-    return num_new, denom_new, cap, res
-
-
 def precision_step(numerator, denominator):
+    """Single Euclidean division step for Foster→Cauer conversion.
 
-    # helper function for foster_to_cauer()
+    Parameters are deliberately passed as ``(numerator, denominator)`` but fed
+    into ``precision_polydiv`` as ``(denominator, numerator)`` because the
+    current MPFR implementation expects the higher-degree polynomial first.
+    This ordering triggers pylint's "positional arguments appear to be out
+    of order" warning; the swap is intentional and mirrors the classic Cauer
+    derivation where we repeatedly divide the denominator by the numerator.
+    """
 
-    quotient, remainder = precision_polydiv(denominator, numerator)
+    quotient, remainder = precision_polydiv(denominator, numerator)  # pylint: disable=arguments-out-of-order
     res_inv = quotient[0]
     cap = quotient[1]
 
@@ -226,6 +198,7 @@ def precision_step(numerator, denominator):
 
 
 def precision_polydiv(numerator, denominator):
+    """Long-division helper that works on MPFR coefficient arrays."""
 
     nl = len(numerator) - 1
     dl = len(denominator) - 1
