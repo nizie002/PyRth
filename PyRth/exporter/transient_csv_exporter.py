@@ -1,8 +1,11 @@
+"""CSV exporter utilities shared across evaluation pipelines."""
+
+import logging
+import os
+
 import numpy as np
 import numpy.polynomial.polynomial as poly
 import scipy.integrate as sin
-import os
-import logging
 
 from .transient_base_exporter import BaseExporter
 
@@ -10,6 +13,7 @@ logger = logging.getLogger("PyRthLogger")
 
 
 class CSVExporter(BaseExporter):
+    """Persist module outputs as CSV files grouped by handler."""
 
     type = "DataExporter"
 
