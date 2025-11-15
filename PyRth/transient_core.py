@@ -1,35 +1,59 @@
+"""Core implementation of PyRth's structure-function pipeline.
+
+This module hosts the glue that turns raw temperature/voltage/impedance
+measurements into structure functions and equivalent Foster/Cauer ladders.
+It orchestrates ingest, deconvolution, spectrum conditioning, and the
+conversion algorithms described throughout the theory docs.
+"""
+import logging
+from typing import Any, Mapping
 import gmpy2 as gp
 from gmpy2 import mpfr
 import numpy as np
 import numpy.fft as fftpack
 import numpy.polynomial.polynomial as poly
-import scipy.integrate as sin
 import scipy.interpolate as interp
 
 from sklearn.linear_model import Lasso, LassoCV  # automatic α via CV
 from sklearn.metrics import r2_score  # Import R2 score
 
-import logging
-
-
 from . import transient_filter_functions as flt
 from .utils import transient_utils as utl
 from . import transient_mpfr_utils as mpu
 from . import transient_engine as eng
+from . import transient_defaults as dbase
 
 logger = logging.getLogger("PyRthLogger")
 
 
-# figures and data handling are split in transient_output
-class StructureFunction:
+class StructureFunction(dbase.StructureParameters):
+    """Orchestrates the end-to-end structure-function identification flow.
 
-    def __init__(self, params):
+    The instance holds the merged evaluation parameters, ingests measurements,
+    runs the selected deconvolution method, and emits the Foster/Cauer ladders
+    that power PyRth's exporters.  Each method advances the pipeline by one
+    conceptual stage.
+    """
+
+    def __init__(self, params: dbase.StructureParameters | Mapping[str, Any]):
+        """Copy/validate parameters and program the MPFR precision context.
+
+        Parameters can be provided as a ``StructureParameters`` dataclass (copied
+        to keep the caller immutable) or as a plain mapping that is merged with
+        defaults via ``validate_and_merge_defaults``.  After the configuration is
+        frozen, the constructor validates ``precision`` and sets gmpy2's MPFR
+        context so that all downstream arbitrary-precision algorithms share the
+        same numerical budget.
+        """
+
+        if isinstance(params, dbase.StructureParameters):
+            param_instance = dbase.copy_parameters(params)
+        else:
+            param_instance = dbase.validate_and_merge_defaults(params, None)
+
+        super().__init__(**dbase.parameters_to_dict(param_instance))
 
         self.io_manager = None
-
-        # Set attributes
-        for key, value in params.items():
-            setattr(self, key, value)
 
         self.data_handlers = set()
 
@@ -42,6 +66,17 @@ class StructureFunction:
         gp.get_context().precision = self.precision
 
     def read_t3ster(self, f):
+        """Read the three T3Ster companion files and derive instrument meta-data.
+
+        The raw files contain digitized temperatures, power calibration, and
+        thermo-coefficient (TCO) tables.  This helper parses all of them,
+        computes the LSB/UREF conversion constants, and prepares the polynomial
+        TCO fit so that ``make_z_t3ster`` can immediately convert samples to
+        absolute temperatures.
+        The newer T3Ster SI series uses a proprietary file format and is
+        no longer ingestible by PyRth, so this path only works with older
+        instruments that still export the legacy companion files.
+        """
         self.data_header = [np.array(line.strip().split(" ")) for line in f]
         self.data = np.loadtxt(self.infile, delimiter=" ", skiprows=7)
         self.data_pwr = [
@@ -64,6 +99,15 @@ class StructureFunction:
         )
 
     def make_z(self):
+        """Front-end dispatcher that converts the chosen input into Zth.
+
+        Depending on ``input_mode`` this method routes to the appropriate
+        ingestion helper (T3Ster, raw temperature, voltage+calibration, or
+        direct impedance).  It enforces basic shape/length checks, flags which
+        exporters should run, and ends by populating ``self.time``,
+        ``self.impedance``, and the logarithmic time axis shared by every
+        downstream deconvolution algorithm.
+        """
         valid_input_modes = ["t3ster", "temp", "volt", "impedance"]
 
         if self.input_mode not in valid_input_modes:
@@ -112,7 +156,14 @@ class StructureFunction:
             self.impedance *= self.stored_early_zth / f(np.log(1e-4))
 
     def _process_temp_volt_data(self):
-        """Process temperature or voltage data with optional extrapolation"""
+        """Convert raw temperature/voltage traces into an impedance step.
+
+        This path is used for lab data that already comes as temperature or
+        voltage samples.  It optionally extrapolates the pre-heating tail,
+        applies user-requested data cuts, estimates the reference temperature
+        ``t_null``, and calls ``tmp_to_z`` so later stages see the same Zth
+        representation produced by the T3Ster flow.
+        """
         if self.input_mode == "volt" and self.calib is None:
             raise ValueError("Calibration data is required for voltage conversion")
 
@@ -178,6 +229,13 @@ class StructureFunction:
         )
 
     def make_z_t3ster(self):
+        """Convert a T3Ster recording to temperature, then to Zth.
+
+        Uses ``read_t3ster`` outputs plus the calibrated k-factor polynomial to
+        reconstruct temperature from digitized voltages, determines the fit
+        window for extrapolation, and produces the impedance step response that
+        drives deconvolution.
+        """
 
         with open(self.infile) as f:
             self.read_t3ster(f)
@@ -205,7 +263,7 @@ class StructureFunction:
         self.lower_fit_index = np.searchsorted(self.time_raw, self.lower_fit_limit)
         self.upper_fit_index = np.searchsorted(self.time_raw, self.upper_fit_limit)
 
-        if self.extrapolate == True:
+        if self.extrapolate:
             self.data_handlers.add("extrpl")
             self.time, self.temperature, self.expl_ft_prm, t_null = (
                 utl.extrapolate_temperature(
@@ -225,7 +283,9 @@ class StructureFunction:
             )
 
         else:
-            t_null = np.average(self.temp_raw[self.av_range[0] : self.av_range[1]])
+            self.lower_fit_index = np.searchsorted(self.time_raw, self.lower_fit_limit)
+            self.upper_fit_index = np.searchsorted(self.time_raw, self.upper_fit_limit)
+            t_null = np.average(self.temp_raw[self.lower_fit_index : self.upper_fit_index])
             self.impedance = utl.tmp_to_z(
                 self.temp_raw,
                 t_null,
@@ -235,19 +295,12 @@ class StructureFunction:
                 is_heating=self.is_heating,
             )
 
-    def make_z_temp(self):
-        self.temperature = self.data[1:, 1]
-        self.impedance = utl.tmp_to_z(
-            self.temperature,
-            self.data[0, 1],
-            self.power_step,
-            self.optical_power,
-            self.power_scale_factor,
-            is_heating=self.is_heating,
-        )
-        self.time = self.data[1:, 0] - self.data[0, 0]
-
     def make_z_volt(self):
+        """Convert voltage-only datasets into Zth using the stored calibration.
+
+        This predates the modern ``make_z`` dispatcher but remains useful for
+        quick experiments where voltages are already loaded into ``self.data``.
+        """
 
         if self.calib is None:
             raise ValueError(
@@ -267,29 +320,15 @@ class StructureFunction:
         )
         self.time = self.data[1:, 0] - self.data[0, 0]
 
-    def make_z_volt_no_extr(self):
-
-        if self.calib is None:
-            raise ValueError(
-                "Calibration data is missing. Calibration file is needed for the conversion from voltage to temperature."
-            )
-
-        self.time = self.data[1:, 0] - self.data[0, 0]
-        self.time = self.time[self.lower_fit_limit :]
-        self.time_raw = self.data[1:, 0]
-        self.voltage = self.data[1:, 1]
-        self.temp_raw = utl.volt_to_temp(self.voltage, self.calib, self.kfac_fit_deg)
-        self.temperature = self.temp_raw[self.lower_fit_limit :]
-        self.impedance = utl.tmp_to_z(
-            self.temperature,
-            self.temperature[0],
-            self.power_step,
-            self.optical_power,
-            self.power_scale_factor,
-            is_heating=self.is_heating,
-        )
-
     def z_fit_deriv(self):
+        """Smooth the impedance step and compute its logarithmic derivative.
+
+        This wraps ``eng.derivative`` which performs adaptive windowed
+        smoothing, padding, and interpolation to obtain a stable derivative
+        over logarithmic time.  The derivative is the common starting point
+        for FFT and Bayesian deconvolution, so a failure here usually means
+        the heating/cooling direction was swapped or the data is degenerate.
+        """
 
         (
             self.imp_smooth,
@@ -321,6 +360,15 @@ class StructureFunction:
 
     @utl.timer_decorator
     def z_fit_lasso(self):
+        """Recover the time-constant spectrum via non-negative LASSO.
+
+        Unlike FFT/Bayesian paths this method works directly in the impedance
+        domain.  It constructs a design matrix of exponential responses, then
+        solves an L1-regularised least-squares problem (with optional
+        cross-validation or adaptive Bayesian weights) to produce a sparse
+        spectrum.  The resulting ``time_spec`` feeds the same Foster/Cauer
+        converters as every other deconvolution strategy.
+        """
         # require at least one positive impedance
         if not np.any(self.impedance > 0):
             logger.error("z_fit_lasso: impedance must contain positive values")
@@ -337,6 +385,10 @@ class StructureFunction:
 
         elif self.deconv_mode == "adaptive":
             tau_grid = np.exp(self.log_time_pad.flatten())
+        else:
+            raise ValueError(
+                f"z_fit_lasso: deconv_mode '{self.deconv_mode}' not recognised"
+            )
 
         warm_start = True if self.deconv_mode == "adaptive" else False
 
@@ -353,42 +405,34 @@ class StructureFunction:
 
         logger.info(f"Condition number of phi: {np.linalg.cond(phi):.4e}")
 
-        # Handle weighted Lasso for adaptive mode
         if self.deconv_mode == "adaptive":
-            # Define weights based on Bayesian solution (inverse weighting for adaptive Lasso)
-            # Small time_spec values get large weights (more penalty), large values get small weights (less penalty)
-            epsilon = 1e-6  # Small constant to avoid division by zero
+            epsilon = 1e-6 
             gamma = 0.8
             weights = 1.0 / (np.abs(self.time_spec) + epsilon) ** gamma
 
-            # keep weights within 1/20 … 20 to preserve conditioning
             weights = np.clip(weights, 0.05, 20.0)
 
-            # Scale the design matrix columns by weights (weighted Lasso trick)
-            phi = phi / weights[None, :]  # Scale each column by its weight
+            phi = phi / weights[None, :]
 
-            # check condition number of phi
             logger.info(f"Condition number of weighted phi: {np.linalg.cond(phi):.4e}")
 
-        # Use LassoCV if cv_folds is specified and > 1, otherwise use Lasso with a fixed alpha
         if hasattr(self, "lasso_cv_folds") and self.lasso_cv_folds > 1:
             logger.info(
                 f"Performing Lasso with Cross-Validation (folds={self.lasso_cv_folds})..."
             )
             lasso = LassoCV(
-                alphas=self.lasso_alpha,  # you can widen/narrow this range
-                cv=self.lasso_cv_folds,  # number of folds for cross-validation
-                positive=True,  # <<< ENFORCES  A_k ≥ 0
+                alphas=self.lasso_alpha, 
+                cv=self.lasso_cv_folds,  
+                positive=True, 
                 fit_intercept=False,
-                max_iter=self.lasso_max_iter,  # max iterations for convergence
-                tol=self.lasso_tol,  # tolerance for convergence
-                n_jobs=-1,  # use all cores
+                max_iter=self.lasso_max_iter, 
+                tol=self.lasso_tol, 
+                n_jobs=-1,  
                 verbose=False,
                 selection=self.lasso_selection,
-                precompute=self.lasso_precompute,  # precompute Gram matrix for speed
+                precompute=self.lasso_precompute, 
             )
         else:
-            # Expects self.lasso_alpha to be a single float value when not using CV
             if not isinstance(self.lasso_alpha, (int, float)):
                 raise TypeError(
                     f"When not using CV, lasso_alpha must be a number, but got {type(self.lasso_alpha)}"
@@ -396,58 +440,53 @@ class StructureFunction:
             logger.info(f"Performing Lasso with fixed alpha={self.lasso_alpha}...")
             lasso = Lasso(
                 alpha=self.lasso_alpha,
-                positive=True,  # <<< ENFORCES  A_k ≥ 0
+                positive=True, 
                 fit_intercept=False,
-                max_iter=self.lasso_max_iter,  # max iterations for convergence
-                tol=self.lasso_tol,  # tolerance for convergence
+                max_iter=self.lasso_max_iter,  
+                tol=self.lasso_tol,  
                 selection=self.lasso_selection,
-                precompute=self.lasso_precompute,  # precompute Gram matrix for speed
-                warm_start=warm_start,  # reuse bayesian time const solution
+                precompute=self.lasso_precompute, 
+                warm_start=warm_start,  
             )
 
         if self.deconv_mode == "adaptive" and self.lasso_cv_folds > 1:
             lasso.coef_ = self.time_spec.copy()
 
-        lasso.fit(phi, self.impedance.ravel())  # y must be 1-D
+        lasso.fit(phi, self.impedance.ravel())  
+        a_hat_normalized = lasso.coef_
 
-        # Get coefficients corresponding to the *normalized* phi
-        A_hat_normalized = lasso.coef_
-
-        # Rescale coefficients to match the *unnormalized* phi
         if self.deconv_mode == "adaptive":
-            A_hat = A_hat_normalized / (phi_norms.flatten() * weights)
+            a_hat = a_hat_normalized / (phi_norms.flatten() * weights)
         else:
-            A_hat = A_hat_normalized / phi_norms.flatten()
+            a_hat = a_hat_normalized / phi_norms.flatten()
 
-        # Recalculate sigma_hat using the unnormalized phi and rescaled A_hat for consistency
-        y_fit_unnormalized = (phi_unnormalized @ A_hat).ravel()
+        y_fit_unnormalized = (phi_unnormalized @ a_hat).ravel()
         sigma_hat = np.sqrt(
             ((self.impedance.ravel() - y_fit_unnormalized) ** 2).mean()
-        )  # RMS resid based on original scale
+        )  
 
         r2 = r2_score(self.impedance.ravel(), y_fit_unnormalized)
 
-        R_th_model = np.sum(A_hat)  # Sum of A_k
+        R_th_model = np.sum(a_hat)  
 
         if hasattr(lasso, "alpha_"):
             used_alpha = lasso.alpha_
         else:
             used_alpha = lasso.alpha
 
-        # Compare final values and print GoF metrics
         logger.info(f"Final measured resistance: {self.impedance[-1]:.4f}")
         logger.info(f"Model R_th (Sum of A_k): {R_th_model:.4f}")
         logger.info(f"Used alpha: {used_alpha:.2e}")
         logger.info(f"RMSE: {sigma_hat:.4f}")
         logger.info(f"R-squared: {r2:.4f}")
-        logger.info(f"Number of active components: {np.count_nonzero(A_hat > 0)}")
+        logger.info(f"Number of active components: {np.count_nonzero(a_hat > 0)}")
 
-        if not np.any(A_hat > 0):
+        if not np.any(a_hat > 0):
             raise ValueError(
                 "z_fit_lasso: time constant spectrum is empty (no active Lasso components)"
             )
 
-        self.time_spec = A_hat.flatten()
+        self.time_spec = a_hat.flatten()
         self.sum_time_spec = np.cumsum(self.time_spec)
 
         if self.deconv_mode == "lasso":
@@ -458,17 +497,28 @@ class StructureFunction:
             self.pad_time_size = np.size(self.log_time_pad)
 
             self.imp_deriv_interp, back_imp = utl.time_const_to_imp(
-                self.log_time_pad, A_hat
+                self.log_time_pad, a_hat
             )
 
     def fft_signal(self):
-        # calculates the fourier transform and power periodogram
+        """Transform the impedance derivative into the frequency domain.
+
+        Computes the FFT of ``imp_deriv_interp`` (the smoothed derivative) and
+        stores the periodogram and frequency grid so that ``fft_time_spec`` can
+        perform a frequency-domain deconvolution with the selected window.
+        """
         self.fft_idi = fftpack.fft(self.imp_deriv_interp)
         self.fft_idi_pegrm = np.abs(self.fft_idi * self.log_time_delta) ** 2
 
         self.fft_freq = fftpack.fftfreq(self.pad_time_size, self.log_time_delta)
 
     def fft_weight(self):
+        """FFT of the weighting kernel with alignment to the derivative grid.
+
+        Rolls the analytical weight function so that zero time aligns with the
+        FFT origin; this keeps ``fft_idi`` and ``fft_wgt`` on the same frequency
+        grid before division and windowing.
+        """
         # calculates the fourier transform of the weight function
         null_index = np.searchsorted(self.log_time_pad, 0.0)
 
@@ -480,6 +530,13 @@ class StructureFunction:
             raise ValueError("Frequency ranges do not match up, check fouriertransform")
 
     def fft_time_spec(self):
+        """Divide spectrum by the kernel and apply the requested filter.
+
+        After the derivative and kernel are in the frequency domain this step
+        performs the actual deconvolution, multiplies by the chosen window, and
+        inverse-transforms back to logarithmic time to obtain ``time_spec`` and
+        its cumulative sum.
+        """
 
         # calculates the deconvolution and returns the time constant spectrum with the selected filter
 
@@ -495,11 +552,17 @@ class StructureFunction:
 
     @utl.timer_decorator
     def perform_bayesian_deconvolution(self):
-        # calculates the bayesian deconvolution
+        """Run the iterative Bayesian solver described in the theory chapter.
+
+        Builds the dense response matrix for the padded log-time axis and
+        delegates to ``eng.bayesian_deconvolution`` which alternates between
+        residual back-projection and spectrum updates.  The output spectrum is
+        scaled to account for padding and then integrated so the later network
+        synthesis code can treat it identically to FFT/LASSO results.
+        """
 
         re_mat = eng.response_matrix(self.log_time_pad, self.pad_time_size)
 
-        # # # Bayesian iteration core
         self.time_spec = eng.bayesian_deconvolution(
             re_mat, self.imp_deriv_interp, self.bay_steps
         )
@@ -508,18 +571,19 @@ class StructureFunction:
 
         self.sum_time_spec = np.cumsum(self.time_spec)
 
-        # self.sum_time_spec = sin.cumulative_trapezoid(
-        #     self.time_spec, x=self.log_time_pad, initial=0.0
-        # )
 
     def foster_network(self):
-        # derives the foster thermal equivalent network, lumped from the time constant spectrum
-        # remove all the zeros we padded to avoid bad numerics
+        """Convert the time-constant spectrum into parallel Foster branches.
+
+        Removes padded zeros, optionally oversamples the spectrum, culls tiny
+        entries, and creates the resistance/capacitance arrays that represent
+        each Foster branch.  These values are the shared starting point for the
+        MPFR-based rational reconstruction and every Foster→Cauer converter.
+        """
 
         factor = int(self.timespec_interpolate_factor)
 
         if factor > 1:
-            # f = interpolate.interp1d(self.crop_log_time, self.crop_time_spec)
             f = interp.InterpolatedUnivariateSpline(self.log_time_pad, self.time_spec)
             int_log_time = np.linspace(
                 self.log_time_pad.min(),
@@ -542,6 +606,14 @@ class StructureFunction:
         self.therm_capa_fost = np.exp(self.crop_log_time) / self.therm_resist_fost
 
     def mpfr_foster_impedance(self):
+        """Lift the Foster ladder into arbitrary precision and build Z(s).
+
+        Stores MPFR copies of the Foster elements and calls
+        ``transient_mpfr_utils.make_z_s`` to obtain the numerator/denominator
+        polynomials of the driving-point impedance.  The MPFR representation
+        keeps the subsequent Euclidean conversions numerically stable even for
+        ladders with dozens of elements.
+        """
         # use gmp2 for arbitrary precision floating point arithmetic
         self.mpfr_resist_fost = [
             mpfr(num) for num in self.therm_resist_fost
@@ -555,7 +627,7 @@ class StructureFunction:
         )
 
     def poly_long_div(self):
-        # transforms the foster to the cauer thermal equivalent network
+        """Classical Euclidean Foster→Cauer conversion with MPFR arithmetic."""
 
         ar_len = len(self.mpfr_z_denom) - 1
 
@@ -573,7 +645,7 @@ class StructureFunction:
             self.cau_res[self.cau_cap < 0.0]
         ):
             logger.error(
-                "\n negative values in structure function encountered using N =",
+                "\n negative values in structure function encountered using N = %d",
                 len(self.cau_cap),
             )
 
@@ -589,6 +661,7 @@ class StructureFunction:
                 )
 
     def boor_golub(self):
+        """Execute the Boor–Golub continued-fraction algorithm in MPFR space."""
 
         poles = []
 
@@ -676,7 +749,7 @@ class StructureFunction:
             self.cau_res[self.cau_cap < 0.0]
         ):
             logger.error(
-                "\n negative values in structure function encountered using N =",
+                "\n negative values in structure function encountered using N = %d",
                 len(self.cau_cap),
             )
 
@@ -692,7 +765,13 @@ class StructureFunction:
                 )
 
     def j_fraction_methods(self):
-        # use gmp2 for arbitrary precision floating point arithmetic
+        """Select between the Khatwani or Sobhy J-fraction routes to Cauer.
+
+        Uses MPFR copies of the rational impedance, then either builds Markov
+        parameters (Khatwani) or interlaced A/B tables (Sobhy) to obtain the
+        intermediate H–h fraction.  ``conti_frac_convers`` subsequently turns
+        that J-fraction into the desired Cauer S-fraction.
+        """
 
         inv = gp.div(mpfr("1.0"), self.mpfr_z_denom[-1])
 
@@ -716,6 +795,13 @@ class StructureFunction:
         self.conti_frac_convers(N, large_h, small_h)
 
     def generate_markov_params(self, N):
+        """Produce the first ``2N`` Markov parameters via Newton doubling.
+
+        Implements the inversion strategy discussed in the Khatwani notes:
+        repeatedly doubles the accuracy of the inverse of the denominator
+        polynomial and multiplies it with the numerator to obtain the Markov
+        (Maclaurin) coefficients required by the triangular table.
+        """
         order = int(np.ceil(np.log2(N)) + 1)
 
         L = 1
@@ -746,6 +832,13 @@ class StructureFunction:
         return markov_parameters
 
     def khatwani_method(self, N, markov_parameters):
+        """Build the triangular table that yields the H–h coefficients.
+
+        Populates the recurrence from the Markov parameters, mimicking the
+        algorithm documented in ``docs/theory/algorithms/khatwani_method.rst``.
+        The first two entries of each row provide ``H_i``/``h_i`` pairs that
+        later become the J-fraction coefficients.
+        """
         a_matrix = [[None] * (2 * N) for i in range(N + 1)]
         a_matrix[0] = [mpfr("0.0")] * (2 * N)
         a_matrix[0][0] = mpfr("1.0")
@@ -775,6 +868,12 @@ class StructureFunction:
         return large_h, small_h
 
     def sobhy_method(self, N):
+        """Sobhy's interlaced A/B-table alternative to Khatwani.
+
+        Uses alternating A/B rows driven by the numerator/denominator
+        coefficients to extract ``H_i`` and ``h_i`` without explicitly forming
+        Markov parameters; follows ``docs/theory/algorithms/sobhy_method.rst``.
+        """
         A = [[mpfr("0.0")] * (N) for i in range(N + 1)]
         B = [[mpfr("0.0")] * (N) for i in range(N + 1)]
 
@@ -805,6 +904,13 @@ class StructureFunction:
         return a, b
 
     def conti_frac_convers(self, N, large_h, small_h):
+        """Map H–h coefficients to the Stieltjes (Cauer) continued fraction.
+
+        Applies the algebra from the J-fraction notes to compute the alternating
+        ``c`` coefficients which directly correspond to the Cauer ladder's
+        capacitances/resistances.  The result drops straight into the exporter
+        path just like the polynomial and Lanczos methods.
+        """
         a_square = [None] * (N - 1)
         small_b = [None] * (N - 1)
 
@@ -841,7 +947,10 @@ class StructureFunction:
         if np.any(self.cau_res[self.cau_res < 0.0]) or np.any(
             self.cau_res[self.cau_cap < 0.0]
         ):
-            logger.error("\n negative values ecountered at length", len(self.cau_cap))
+            logger.error(
+                "negative structure-function values detected for N=%d",
+                len(self.cau_cap),
+            )
 
         self.int_cau_res = np.cumsum(self.cau_res)
         self.int_cau_cap = np.cumsum(self.cau_cap)
@@ -855,6 +964,14 @@ class StructureFunction:
                 )
 
     def lanczos(self):
+        """Apply the Lanczos iteration to stream Cauer elements on the fly.
+
+        Works directly on the diagonal Foster matrices through
+        ``eng.lanczos_inner`` which orthogonalises with respect to the thermal
+        capacitance metric.  The method is fast, numerically stable, and emits
+        partial ladders early—ideal when only the front layers of the structure
+        function are needed.
+        """
 
         res, cap = eng.lanczos_inner(self.therm_capa_fost, self.therm_resist_fost)
 
@@ -864,7 +981,10 @@ class StructureFunction:
         if np.any(self.cau_res[self.cau_res < 0.0]) or np.any(
             self.cau_res[self.cau_cap < 0.0]
         ):
-            logger.error("\n negative values encountered at length", len(self.cau_cap))
+            logger.error(
+                "negative structure-function values detected for N=%d",
+                len(self.cau_cap),
+            )
 
         if self.blockwise_sum_width > 1:
 
