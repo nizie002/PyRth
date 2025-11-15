@@ -1,3 +1,14 @@
+"""Concrete StructureFigure subclasses used by the exporter handlers.
+
+Each class encapsulates one plot type (voltage, impedance, structure
+functions, bootstrap summaries, etc.) and is responsible for inserting the
+module-specific data into shared Matplotlib axes created by
+``StructureFigure``.  The exporter layer instantiates only the figures it
+needs per evaluation run, so keeping this file declarative—one class per
+plot—keeps the IO workflow predictable and makes it easy to extend with new
+visualizations.
+"""
+
 import numpy as np
 import numpy.polynomial.polynomial as poly
 import scipy.integrate as sin
