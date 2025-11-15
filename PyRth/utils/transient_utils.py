@@ -1,15 +1,25 @@
-import numpy as np
-import scipy.interpolate as interp
-import numpy.polynomial.polynomial as poly
+"""Utility helpers shared by PyRth's transient-processing pipeline.
+
+The functions below cover lightweight numerical utilities (Gaussian kernels,
+weighting functions), temperature/impedance conversions, and convenience
+wrappers that keep the structure-function modules small and readable.
+"""
+
 import logging
 import time
-import numba
+
+import numpy as np
+import numpy.polynomial.polynomial as poly
+import scipy.interpolate as interp
 from scipy.integrate import cumulative_trapezoid
+import numba
 
 logger = logging.getLogger("PyRthLogger")
 
 
 def get_iterator(value):
+    """Return an iterator constructed from ``value``.
+    """
     if callable(value):
         # Assume it's a generator function; call it to get a generator (lazy)
         return value()
@@ -17,11 +27,17 @@ def get_iterator(value):
         return iter(value)
     else:
         raise ValueError(
-            f"Value for an iterable keyword must be an iterable or generator function"
+            "Value for an iterable keyword must be an iterable or generator function"
         )
 
 
 def numba_preloader():
+    """JIT-compile a tiny Numba kernel so later imports incur less latency.
+
+    ``numba`` tends to pay the compilation cost on the first decorated call.
+    Running this no-op function at module import primes the cache so that
+    latency-sensitive routines do not surprise CLI users.
+    """
     # This is a workaround to make numba work faster on the first function call
     # by preloading the JIT compiler with a dummy function.
 
@@ -33,6 +49,8 @@ def numba_preloader():
 
 
 def format_time(seconds):
+    """Format *seconds* with the most suitable SI unit for logging.
+    """
     units = [("s", 1), ("ms", 1e3), ("us", 1e6), ("ns", 1e9)]
     for unit, factor in units:
         if seconds * factor >= 1:
@@ -41,6 +59,11 @@ def format_time(seconds):
 
 
 def timer_decorator(func):
+    """Decorator that logs the minimum runtime of the wrapped function.
+
+    The wrapper currently performs a single measurement but keeps the loop so
+    future callers can increase ``reps`` without touching call sites.
+    """
     def wrapper(*args, **kwargs):
         min_time = float("inf")
         reps = 1
@@ -72,11 +95,12 @@ def first_nonzero_index(array):
 
 
 def weight_z(x):
+    """Return the analytical weighting kernel used for structure functions.
+
+    The kernel corresponds to the derivative of temperature with respect to
+    logarithmic time and serves as the convolution window in ``time_const_to_imp``.
+    """
     return np.exp(x - np.exp(x))
-
-
-def weight_z_int(x):
-    return 1 - np.exp(-np.exp(x))
 
 
 def time_const_to_imp(log_time, time_const):
@@ -98,14 +122,20 @@ def time_const_to_imp(log_time, time_const):
 
 
 def gaussian(x):
+    """Return the unit-variance Gaussian evaluated at ``x``.
+    """
     return np.exp(-x * x / 2.0)
 
 
 def generalized_gaussian(x, a, sigma, mu):
+    """Return a scaled Gaussian with amplitude ``a``, width ``sigma``, and offset ``mu``.
+    """
     return a * np.exp(-0.5 * ((x - mu) / sigma) ** 2)
 
 
 def volt_to_temp_t3ster(dig, lsb, uref, kfac, span=(0.0, 150.0)):
+    """Convert T3Ster ADC readings to temperatures using calibration arrays.
+    """
 
     ndig = 4095.0  # number of digital values in t3ster
 
@@ -120,11 +150,15 @@ def volt_to_temp_t3ster(dig, lsb, uref, kfac, span=(0.0, 150.0)):
         vltint = poly.polyval(tmpint, kfac)
 
         tmp = np.interp(vlt, np.flip(vltint), np.flip(tmpint))
+    else:
+        raise ValueError("kfac must have length 2 or 3")
 
     return tmp, vlt
 
 
 def volt_to_temp(vlt, calib, kfac_fit_deg):
+    """Convert voltages to temperatures via a polynomial fit of ``calib``.
+    """
     voltages = calib[:, 1]
     temperatures = calib[:, 0]
     coeffs = np.polyfit(voltages, temperatures, kfac_fit_deg)
@@ -133,8 +167,10 @@ def volt_to_temp(vlt, calib, kfac_fit_deg):
 
 
 def tmp_to_z(
-    tmp, t_zero, power_step, optical_power, power_scale_factor, is_heating="False"
+    tmp, t_zero, power_step, optical_power, power_scale_factor, is_heating=False
 ):
+    """Translate a temperature transient into thermal impedance Zth.
+    """
 
     power_step = abs(power_step)
 
@@ -146,13 +182,13 @@ def tmp_to_z(
     return z
 
 
-def pl_curve(values, ft_prm):
-
-    return ft_prm[1] + ft_prm[0] * np.sqrt(values)
-
-
 def get_early_zth(module):
-    # Create an interpolation function
+    """Interpolate ``module.impedance`` to obtain Zth at 100 µs.
+
+    The helper mirrors the reference-time sampling used when stitching
+    bootstrap runs, ensuring extrapolated transients start from a comparable
+    absolute impedance.
+    """
     f = interp.interp1d(module.log_time, module.impedance)
 
     # Get the impedance value at np.log(1e-4)
@@ -164,33 +200,16 @@ def extrapolate_temperature(
 ):
     """
     Extrapolate temperature data using polynomial fitting.
-
-    Parameters:
-        time_raw (array): Raw time data.
-        temp_raw (array): Raw temperature data.
-        lower_fit_limit (int): Lower index for fitting.
-        upper_fit_limit (int): Upper index for fitting.
-        additional_decades (int): Number of additional decades to add to the time range.
-
-    Returns:
-        time (array): Combined time data after extrapolation.
-        temperature (array): Combined temperature data after extrapolation.
-        expl_ft_prm (array): Polynomial fit parameters.
-        t_null (float): Temperature at time zero.
     """
 
-    # Calculate the total number of decades for the entire range
     total_decades = np.log10(time_raw[-1]) - np.log10(time_raw[0])
 
-    # Calculate the number of decades for the extrapolation
     extrapolation_decades = np.log10(time_raw[lower_fit_index]) - np.log10(
         time_raw[0] / (10**additional_decades)
     )
 
-    # Calculate the number of points for the extrapolation
     fit_add_extrapolation = int(len(time_raw) * (extrapolation_decades / total_decades))
 
-    # Generate evenly distributed points in logarithmic time for the extrapolation range
     time_combined = np.logspace(
         np.log10(time_raw[0] / (10**additional_decades)),
         np.log10(time_raw[lower_fit_index]),
@@ -198,21 +217,17 @@ def extrapolate_temperature(
         endpoint=False,
     )
 
-    # Fit the polynomial using the raw data
     expl_ft_prm = poly.polyfit(
         np.sqrt(time_raw[lower_fit_index:upper_fit_index]),
         temp_raw[lower_fit_index:upper_fit_index],
         1,
     )
 
-    # Generate the corresponding temperature points for the combined time points
     temp_combined = poly.polyval(np.sqrt(time_combined), expl_ft_prm)
 
-    # Temperature at time zero
     t_null = poly.polyval(0.0, expl_ft_prm)
 
-    # Combine the extrapolated and raw data
-    time = np.append(time_combined, time_raw[lower_fit_index:])
+    time_var = np.append(time_combined, time_raw[lower_fit_index:])
     temperature = np.concatenate((temp_combined, temp_raw[lower_fit_index:]))
 
-    return time, temperature, expl_ft_prm, t_null
+    return time_var, temperature, expl_ft_prm, t_null
