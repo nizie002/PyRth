@@ -1,10 +1,19 @@
-import numpy as np
-import scipy.optimize as opt
+"""Optimisation utilities for refining PyRth structure functions.
+
+The routines in this module take the Foster/Cauer ladders produced by the
+standard NID pipeline and perform the piecewise-uniform fitting stage described
+in the theory docs.  ``TransientOptimizer`` exposes helpers for both structure
+simplification and impedance-domain optimisation so CLI workflows can drive the
+process end-to-end.
+"""
+
+import cmath as cm
 import functools
 import logging
-import cmath as cm
 import math
-from scipy.integrate import cumulative_trapezoid
+
+import numpy as np
+import scipy.optimize as opt
 
 from .utils import transient_utils as utl
 from .utils import optimizer_utils as optu
@@ -13,9 +22,17 @@ logger = logging.getLogger("PyRthLogger")
 
 
 class TransientOptimizer:
+    """Encapsulates the structure/impedance optimisation workflow.
+
+    The instance caches intermediate quantities (e.g. complex time axis) so that
+    repeated objective evaluations remain fast.  Callers typically construct one
+    optimiser per evaluation run and invoke the helper methods in the sequence:
+    structure simplification → impedance fit → reconvolution.
+    """
+
     def __init__(self, parameters=None):
+        """Store optional evaluation parameters and initialise caches."""
         self.parameters = parameters or {}
-        # Replace globals with instance attributes:
         self.complex_time = None
         self.delta_in_global_complex_time = None
         self.eval_count = 0
@@ -28,19 +45,24 @@ class TransientOptimizer:
     # ---------------------------
 
     def cm_tanh(self, arr):
-        # Element-wise hyperbolic tangent using math.tanh
+        """Return the element-wise complex hyperbolic tangent of ``arr``."""
         return np.array([cm.tanh(val) for val in arr])
 
     @functools.lru_cache(maxsize=80)
     def give_rung_imp(self, res, cap):
-        # Uses self.complex_time which must be set before calling this method.
+        """Compute impedance terms for a Foster rung using the cached complex time."""
         gamma_l = np.sqrt(res * cap * self.complex_time)
         z_null = np.sqrt(res / (cap * self.complex_time))
         tanh_gamma_l = self.cm_tanh(gamma_l)
         return (z_null, tanh_gamma_l)
 
     def struc_to_time_const(self, theo_log_time, delta, resistances, capacitances):
-        # Update instance attributes instead of using globals
+        """Transform a Foster ladder into its logarithmic time-constant spectrum.
+
+        The method accepts the theoretical log-time axis, the Laplace contour
+        rotation ``delta``, and arrays of rung resistances/capacitances ordered
+        from the heat source.  It evaluates the impedance along the contour and
+        returns the corresponding time-constant density."""
         if self.complex_time is None:
             self.complex_time = -complex(math.cos(delta), math.sin(delta)) * np.exp(
                 -theo_log_time
@@ -73,6 +95,12 @@ class TransientOptimizer:
         return time_const
 
     def struc_params_to_func(self, number, resistances, capacities):
+        """Return interpolated cumulative resistance/capacitance curves.
+
+        Given a requested sample count and the raw rung values, the helper
+        accumulates the Foster ladder, inserts intermediate points to preserve
+        break locations, and interpolates the cumulative capacitance onto the
+        refined grid."""
         N = len(resistances)
         sum_res = np.zeros(N + 1)
         sum_cap = np.zeros(N + 1)
@@ -88,6 +116,11 @@ class TransientOptimizer:
         return sum_res_int, sum_cap_int
 
     def opt_struc_params_to_func(self, args, r_org):
+        """Recreate logarithmic capacitance samples from an optimizer vector.
+
+        The optimiser packs resistance breakpoints followed by log-capacitance
+        values inside ``args``; sorting those halves and interpolating onto the
+        original resistance axis yields the smoothed capacitance estimate."""
         args1 = np.sort(args[: len(args) // 2], kind="stable")
         args2 = np.sort(args[len(args) // 2 :], kind="stable")
         c_vals = np.interp(r_org, args1, np.exp(args2))
@@ -98,15 +131,29 @@ class TransientOptimizer:
     # ---------------------------
 
     def to_minimize_struc(self, arguments, r_org, c_org):
+        """Objective measuring log-capacitance mismatch for simplification.
+
+        ``arguments`` carries packed resistance and log-capacitance guesses;
+        the routine rebuilds the curve, samples it at ``r_org``, and compares it
+        against the reference ``c_org`` using the weighted metric."""
         c_2 = self.opt_struc_params_to_func(arguments, r_org)
         return optu.weighted_diff(r_org, c_org, np.log(c_2))
 
     def struc_x_sample(self, x, y, N):
+        """Resample cumulative curves to a fixed-size grid.
+
+        The original cumulative axes ``x``/``y`` are interpolated onto ``N``
+        biased linspace samples so the hot-side receives slightly more detail."""
         new_x = np.linspace(x[0], 0.03 * x[0] + 0.97 * x[-1], N, endpoint=True)
         new_y = np.interp(new_x, x, y)
         return new_x, new_y
 
     def generate_init_vals(self, N, x, y):
+        """Generate arc-length-spaced initial guesses for optimisation.
+
+        Using the cumulative curves ``x`` and ``y``, the method walks their
+        arc length and drops ``N`` evenly spaced samples, which become the
+        initial resistance/capacitance ladders."""
         npts = len(x)
         arc = 0.0
         for k in range(npts - 1):
@@ -134,6 +181,12 @@ class TransientOptimizer:
         return init_stages_R, init_stages_C
 
     def optimize_theo_struc(self, res_l, cap_l, N):
+        """Fit a reduced-order theoretical structure with ``N`` segments.
+
+        The full-resolution cumulative curves ``res_l``/``cap_l`` are trimmed,
+        heavily sampled, and then approximated with ``N`` breakpoints via the
+        Powell optimiser; the returned tuple contains both the optimised ladder
+        and the SciPy result object for diagnostics."""
         cut_frac = 0.05
         maxidx = np.searchsorted(
             res_l, cut_frac * res_l[0] + (1.0 - cut_frac) * res_l[-1]
@@ -164,6 +217,12 @@ class TransientOptimizer:
         return struc_marker, opt_result
 
     def sort_and_lim_diff(self, arr):
+        """Return monotonically increasing positive increments.
+
+        This helper prevents SciPy from proposing degenerate ladder elements by
+        turning sorted samples into their successive differences and clamping
+        the minimum delta.
+        """
         arr = np.sort(arr, kind="stable")
         arr[1:] = arr[1:] - arr[:-1]
         arr[arr < 1e-10] = 1e-10
@@ -173,6 +232,7 @@ class TransientOptimizer:
     # ---------------------------
     # Impedance Optimization Functions
     # ---------------------------
+    
     def to_minimize_imp(
         self,
         arguments,
@@ -183,6 +243,12 @@ class TransientOptimizer:
         N,
         theo_delta,
     ):
+        """Objective comparing measured impedance to a candidate structure.
+
+        The candidate ladder is unpacked from ``arguments``, converted into a
+        time-constant spectrum, reconvolved to impedance, and compared against
+        the measured data sampled at ``log_time``; the scalar error is returned
+        to SciPy."""
         opt_res = self.sort_and_lim_diff(arguments[:N])
         opt_cap = self.sort_and_lim_diff(np.exp(arguments[N:]))
         theo_time_const = self.struc_to_time_const(
@@ -207,6 +273,12 @@ class TransientOptimizer:
         theo_delta,
         opt_method="COBYLA",
     ):
+        """Run SciPy optimisation to match the impedance trace.
+
+        Starting from ``res_init``/``cap_init`` and the theoretical axis
+        ``theo_log_time``, the routine configures bounds, runs Powell or COBYLA
+        against :meth:`to_minimize_imp`, logs intermediate results, and returns
+        the best ladder alongside the SciPy metadata."""
         # Set the complex_time based on theo_delta and theo_log_time
         self.complex_time = -complex(
             math.cos(theo_delta), math.sin(theo_delta)
@@ -224,6 +296,8 @@ class TransientOptimizer:
         res_init_copy = res_init.copy()
         for i in range(N - 1, -1, -1):
             if res_init_copy[i] > bounds_r[0][1]:
+                # Pull violating resistances back into the allowed interval to
+                # keep the solver from starting in an infeasible region.
                 res_init_copy[i] = bounds_r[0][1] - exceed_counter * (
                     bounds_r[0][1] - bounds_r[0][0]
                 ) / (N - 1)
@@ -320,4 +394,5 @@ class TransientOptimizer:
         return self.results_res[min_idx], self.results_cap[min_idx], opt_result
 
     def time_const_to_imp(self, theo_log_time, time_const):
+        """Convert a time-constant spectrum back into impedance space."""
         return utl.time_const_to_imp(theo_log_time, time_const)
