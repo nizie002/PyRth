@@ -1,4 +1,19 @@
-"""Central dispatcher coordinating CSV and figure exporters."""
+"""Central dispatcher coordinating CSV and figure exporters.
+
+``IOManager`` is the glue between the evaluation façade in
+``transient_scripts.py`` and the concrete exporter implementations.  Each
+``Evaluation`` method populates ``modules`` with ``StructureFunction``
+instances plus their requested ``data_handlers``.  ``IOManager`` inspects those
+handler flags, routes them to :mod:`PyRth.exporter.transient_csv_exporter`
+or :mod:`PyRth.exporter.transient_figure_exporter`, and the latter in turn
+instantiates the figure subclasses declared in
+``PyRth.exporter.transient_figures``.  When users run multiple evaluations or a
+module set, every module is stored under a unique label; exporting iterates the
+entire mapping, so CSV/PNG artifacts are emitted for each module and each
+handler without collisions.  This keeps the public API in ``transient_scripts``
+simple—callers only flip handler flags—and still yields a full suite of outputs
+per evaluation run, even when dozens of modules are queued.
+"""
 
 import logging
 
