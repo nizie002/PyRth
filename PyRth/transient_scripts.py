@@ -1,12 +1,19 @@
+"""Front-end helpers that wire user parameters into PyRth evaluations.
+
+This module exposes the high-level entrypoints (standard, optimization,
+bootstrap, etc.) that users invoke from scripts or the CLI.  Each helper
+instantiates a ``StructureFunction``, drives the configured pipeline, and
+delegates exporting to ``IOManager`` so callers see a simple façade.
+"""
+
+import logging
+from typing import Dict
+from itertools import zip_longest
+
 import numpy as np
-import os
 import scipy.interpolate as ipl
 import scipy.optimize as spo
 import scipy.integrate as sin
-import logging
-
-from typing import Dict, List
-from itertools import zip_longest
 
 from .utils import transient_utils as utl
 from .utils import optimizer_utils as optu
@@ -22,6 +29,14 @@ logger = logging.getLogger("PyRthLogger")
 
 
 class Evaluation:
+    """User-facing class for running thermal transient evaluations.
+
+    The class owns the shared parameter dictionary, tracks generated modules,
+    and offers convenience methods (``standard_module``, ``bootstrap_module``
+    …) that apply the appropriate defaults before delegating to
+    ``StructureFunction``.  It also centralizes exporter wiring so each module
+    can materialize CSV/figure outputs consistently.
+    """
 
     def __init__(self):
         """
@@ -38,6 +53,7 @@ class Evaluation:
         self.modules: Dict[str, StructureFunction] = {}
         self.module_counters = {}
         self.io_manager = IOManager(self.modules)
+        self.stored_early_zth: float | None = None
 
         utl.numba_preloader()
         logger.info("Evaluation instance initialized.")
@@ -71,7 +87,7 @@ class Evaluation:
         self.save_as_csv()
         self.save_figures()
 
-    def _add_module_to_eval_dict(self, module):
+    def _add_module_to_eval_dict(self, module : StructureFunction):
         """
         Add a module to the internal storage dictionary with proper labeling.
 
@@ -119,7 +135,6 @@ class Evaluation:
 
         module: StructureFunction = StructureFunction(self.parameters)
 
-        # Ensure required parameters are set in the module
         if not hasattr(module, "label"):
             raise AttributeError(
                 "Module is missing 'label' attribute. It is used to identify the results in CSV and image output."
@@ -129,8 +144,14 @@ class Evaluation:
                 "Module is missing 'input_mode' attribute. It is used for converting input data to the correct thermal impedance."
             )
 
-        if module.normalize_impedance_to_previous and hasattr(self, "stored_early_zth"):
-            module.stored_early_zth = self.stored_early_zth
+        if module.normalize_impedance_to_previous:
+            if self.stored_early_zth is not None:
+                module.stored_early_zth = self.stored_early_zth
+            else:
+                logger.info(
+                    "Impedance normalization requested but no reference stored yet; "
+                    "capturing the current module as the baseline once finished."
+                )
 
         logger.info(f"Compiled impedance for '{module.label}'")
         module.make_z()
@@ -195,9 +216,7 @@ class Evaluation:
 
                 logger.info(f"Total resistance: {module.int_cau_res[-1]:.2f} K/W")
 
-        if module.normalize_impedance_to_previous and not hasattr(
-            self, "stored_early_zth"
-        ):
+        if module.normalize_impedance_to_previous and self.stored_early_zth is None:
             self.stored_early_zth = utl.get_early_zth(module)
 
         if module.save_back_impedance or (
@@ -557,7 +576,7 @@ class Evaluation:
 
         logger.info("Optimizing impedance approximation")
 
-        if module.opt_use_extrapolate == False:
+        if not module.opt_use_extrapolate:
 
             lower_fit_index = np.searchsorted(
                 module.theo_log_time, np.log(module.lower_fit_limit)
@@ -566,7 +585,7 @@ class Evaluation:
             module.opt_log_time = module.log_time[lower_fit_index:]
             module.opt_imp = module.impedance[lower_fit_index:]
 
-        elif module.opt_use_extrapolate == True:
+        elif module.opt_use_extrapolate:
             module.opt_log_time = module.log_time
             module.opt_imp = module.impedance
 
