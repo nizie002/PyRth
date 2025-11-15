@@ -46,9 +46,10 @@ def norm_structure(theo_x, theo_y, compare_x, compare_y):
     theo_y = theo_y[1:]
     min_res = theo_x[0]
     max_res = compare_x[-1]
+    compare_y_capped = np.clip(compare_y, None, 1e6) # Cap to avoid punushing the divergence overly
     res_fine = np.linspace(min_res, max_res, int(1e6))
     theo_y_fine = np.interp(res_fine, theo_x, theo_y)
-    compare_y_fine = np.interp(res_fine, compare_x, compare_y)
+    compare_y_fine = np.interp(res_fine, compare_x, compare_y_capped)
     theo_y_fine = np.log(theo_y_fine)
     compare_y_fine = np.log(compare_y_fine)
     return np.trapz(np.abs(compare_y_fine - theo_y_fine), x=res_fine)

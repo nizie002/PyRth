@@ -346,8 +346,8 @@ class Evaluation:
             int_cau_cap_name = "theo_int_cau_cap"
             boot_method = self._optimization_module
         elif self.parameters["evaluation_type"] == "bootstrap_standard":
-            time_name = "log_time"
-            imp_name = "impedance"
+            time_name = "log_time_interp"
+            imp_name = "imp_smooth"
             deriv_name = "imp_deriv_interp"
             deriv_time_name = "log_time_pad"
             time_const_name = "time_spec"
@@ -488,7 +488,7 @@ class Evaluation:
             np.percentile(module.boot_results_sum_timeconst, [10, 90], axis=0)
         )
 
-        base_num_fine = int(1e5)
+        base_num_fine = int(1e4)
 
         module.boot_struc_res_fine = np.linspace(
             min_res, max_res, base_num_fine, endpoint=True
