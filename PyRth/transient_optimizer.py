@@ -101,10 +101,10 @@ class TransientOptimizer:
         accumulates the Foster ladder, inserts intermediate points to preserve
         break locations, and interpolates the cumulative capacitance onto the
         refined grid."""
-        N = len(resistances)
-        sum_res = np.zeros(N + 1)
-        sum_cap = np.zeros(N + 1)
-        for i in range(N):
+        n = len(resistances)
+        sum_res = np.zeros(n + 1)
+        sum_cap = np.zeros(n + 1)
+        for i in range(n):
             sum_res[i + 1] = sum_res[i] + resistances[i]
             sum_cap[i + 1] = sum_cap[i] + capacities[i]
         sum_res_int = np.linspace(sum_res[0], sum_res[-1], number)
@@ -139,32 +139,32 @@ class TransientOptimizer:
         c_2 = self.opt_struc_params_to_func(arguments, r_org)
         return optu.weighted_diff(r_org, c_org, np.log(c_2))
 
-    def struc_x_sample(self, x, y, N):
+    def struc_x_sample(self, x, y, n):
         """Resample cumulative curves to a fixed-size grid.
 
         The original cumulative axes ``x``/``y`` are interpolated onto ``N``
         biased linspace samples so the hot-side receives slightly more detail."""
-        new_x = np.linspace(x[0], 0.03 * x[0] + 0.97 * x[-1], N, endpoint=True)
+        new_x = np.linspace(x[0], 0.03 * x[0] + 0.97 * x[-1], n, endpoint=True)
         new_y = np.interp(new_x, x, y)
         return new_x, new_y
 
-    def generate_init_vals(self, N, x, y):
+    def generate_init_vals(self, n, x, y):
         """Generate arc-length-spaced initial guesses for optimisation.
 
         Using the cumulative curves ``x`` and ``y``, the method walks their
-        arc length and drops ``N`` evenly spaced samples, which become the
+        arc length and drops ``n`` evenly spaced samples, which become the
         initial resistance/capacitance ladders."""
         npts = len(x)
         arc = 0.0
         for k in range(npts - 1):
             arc += np.sqrt((x[k] - x[k + 1]) ** 2 + (y[k] - y[k + 1]) ** 2)
-        parts = (arc / (N - 1)) * 0.99
+        parts = (arc / (n - 1)) * 0.99
         next_stage = parts
         counter = 0
-        init_stages_R = np.zeros(N)
-        init_stages_C = np.zeros(N)
-        init_stages_R[0] = x[0]
-        init_stages_C[0] = y[0]
+        init_stages_r = np.zeros(n)
+        init_stages_c = np.zeros(n)
+        init_stages_r[0] = x[0]
+        init_stages_c[0] = y[0]
         segm = 0
         for k in range(npts - 1):
             increm = np.sqrt((x[k] - x[k + 1]) ** 2 + (y[k] - y[k + 1]) ** 2)
@@ -172,15 +172,15 @@ class TransientOptimizer:
             if segm > next_stage:
                 delta = segm - next_stage
                 next_stage += parts
-                while delta > 0 and counter < N - 1:
+                while delta > 0 and counter < n - 1:
                     fraction = delta / increm
                     counter += 1
-                    init_stages_R[counter] = x[k] + fraction * abs(x[k + 1] - x[k])
-                    init_stages_C[counter] = y[k] + fraction * abs(y[k + 1] - y[k])
+                    init_stages_r[counter] = x[k] + fraction * abs(x[k + 1] - x[k])
+                    init_stages_c[counter] = y[k] + fraction * abs(y[k + 1] - y[k])
                     delta -= parts
-        return init_stages_R, init_stages_C
+        return init_stages_r, init_stages_c
 
-    def optimize_theo_struc(self, res_l, cap_l, N):
+    def optimize_theo_struc(self, res_l, cap_l, n):
         """Fit a reduced-order theoretical structure with ``N`` segments.
 
         The full-resolution cumulative curves ``res_l``/``cap_l`` are trimmed,
@@ -194,14 +194,14 @@ class TransientOptimizer:
         res = res_l[:maxidx]
         cap = cap_l[:maxidx]
         cap_log = np.log(cap)
-        N_fine = int(1e4)
-        res_fine = np.linspace(res[0], res[-1], N_fine)
+        n_fine = int(1e4)
+        res_fine = np.linspace(res[0], res[-1], n_fine)
         cap_log_fine = np.interp(res_fine, res, cap_log)
-        r_init, c_init_log = self.generate_init_vals(N, res, cap_log)
+        r_init, c_init_log = self.generate_init_vals(n, res, cap_log)
         c_init = np.exp(c_init_log)
         init_vect = np.concatenate([r_init, c_init_log])
-        bounds_res = [(res[0], res_l[-1])] * N
-        bounds_cap = [(cap_log[0], cap_log[-1])] * N
+        bounds_res = [(res[0], res_l[-1])] * n
+        bounds_cap = [(cap_log[0], cap_log[-1])] * n
         opt_result = opt.minimize(
             self.to_minimize_struc,
             init_vect,
@@ -210,8 +210,8 @@ class TransientOptimizer:
             bounds=bounds_res + bounds_cap,
             options={"ftol": 0.0001},
         )
-        opt_res = np.sort(opt_result.x[:N], kind="stable")
-        opt_cap = np.exp(np.sort(opt_result.x[N:], kind="stable"))
+        opt_res = np.sort(opt_result.x[:n], kind="stable")
+        opt_cap = np.exp(np.sort(opt_result.x[n:], kind="stable"))
         opt_res[-1] = res_l[-1]
         struc_marker = (opt_res, opt_cap, r_init, c_init)
         return struc_marker, opt_result
@@ -232,7 +232,7 @@ class TransientOptimizer:
     # ---------------------------
     # Impedance Optimization Functions
     # ---------------------------
-    
+
     def to_minimize_imp(
         self,
         arguments,
@@ -240,7 +240,7 @@ class TransientOptimizer:
         impedance,
         log_time,
         global_weight,
-        N,
+        n,
         theo_delta,
     ):
         """Objective comparing measured impedance to a candidate structure.
@@ -249,8 +249,8 @@ class TransientOptimizer:
         time-constant spectrum, reconvolved to impedance, and compared against
         the measured data sampled at ``log_time``; the scalar error is returned
         to SciPy."""
-        opt_res = self.sort_and_lim_diff(arguments[:N])
-        opt_cap = self.sort_and_lim_diff(np.exp(arguments[N:]))
+        opt_res = self.sort_and_lim_diff(arguments[:n])
+        opt_cap = self.sort_and_lim_diff(np.exp(arguments[n:]))
         theo_time_const = self.struc_to_time_const(
             theo_log_time, theo_delta, opt_res, opt_cap
         )
