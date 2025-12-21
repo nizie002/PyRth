@@ -7,7 +7,7 @@ from tests.data.measurement_data import (
     LED_DATA,
     LED_CALIB_DATA,
 )
-from tests.test_transient_base import TransientTestBase
+from tests.test_transient_base import run_evaluation_test
 from tests.assertions.standard_set_assertions import standard_set_assertions
 
 
@@ -221,16 +221,15 @@ test_cases_set = [
 ]
 
 
-class TestStandardModuleSet(TransientTestBase):
-    @pytest.mark.parametrize(
-        "case",
-        test_cases_set,
-        ids=lambda case: case["name"],
+@pytest.mark.parametrize(
+    "case",
+    test_cases_set,
+    ids=lambda case: case["name"],
+)
+def test_standard_module_set(case):
+    run_evaluation_test(
+        case["name"],
+        case["params"],
+        evaluation_module="standard_module_set",
+        additional_assertions=standard_set_assertions,
     )
-    def test_standard_module_set(self, case):
-        self._run_evaluation_test(
-            case["name"],
-            case["params"],
-            evaluation_module="standard_module_set",
-            additional_assertions=standard_set_assertions,
-        )

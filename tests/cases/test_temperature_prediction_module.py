@@ -5,7 +5,7 @@ from tests.data.measurement_data import (
     MOSFET_TIM_DATA,
     MOSFET_CALIB_DATA,
 )
-from tests.test_transient_base import TransientTestBase
+from tests.test_transient_base import run_evaluation_test
 from tests.assertions.temperature_prediction_assertions import (
     temperature_prediction_assertions,
 )
@@ -62,17 +62,15 @@ test_cases_prediction = [
     },
 ]
 
-
-class TestTemperaturePredictionModule(TransientTestBase):
-    @pytest.mark.parametrize(
-        "case",
-        test_cases_prediction,
-        ids=lambda case: case["name"],
+@pytest.mark.parametrize(
+    "case",
+    test_cases_prediction,
+    ids=lambda case: case["name"],
+)
+def test_temperature_prediction(case):
+    run_evaluation_test(
+        case["name"],
+        case["params"],
+        evaluation_module="temperature_prediction_module",
+        additional_assertions=temperature_prediction_assertions,
     )
-    def test_temperature_prediction(self, case):
-        self._run_evaluation_test(
-            case["name"],
-            case["params"],
-            evaluation_module="temperature_prediction_module",
-            additional_assertions=temperature_prediction_assertions,
-        )

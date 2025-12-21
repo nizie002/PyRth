@@ -5,7 +5,7 @@ from tests.data.measurement_data import (
     MOSFET_TIM_DATA,
     MOSFET_CALIB_DATA,
 )
-from tests.test_transient_base import TransientTestBase
+from tests.test_transient_base import run_evaluation_test
 from tests.assertions.optimization_assertions import optimization_assertions
 
 test_cases_optimization = [
@@ -57,17 +57,15 @@ test_cases_optimization = [
     },
 ]
 
-
-class TestOptimizationModule(TransientTestBase):
-    @pytest.mark.parametrize(
-        "case",
-        test_cases_optimization,
-        ids=lambda case: case["name"],
+@pytest.mark.parametrize(
+    "case",
+    test_cases_optimization,
+    ids=lambda case: case["name"],
+)
+def test_optimization_module(case):
+    run_evaluation_test(
+        case["name"],
+        case["params"],
+        evaluation_module="optimization_module",
+        additional_assertions=optimization_assertions,
     )
-    def test_optimization_module(self, case):
-        self._run_evaluation_test(
-            case["name"],
-            case["params"],
-            evaluation_module="optimization_module",
-            additional_assertions=optimization_assertions,
-        )

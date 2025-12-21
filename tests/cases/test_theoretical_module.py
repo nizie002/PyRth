@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from tests.test_transient_base import TransientTestBase
+from tests.test_transient_base import run_evaluation_test
 from tests.assertions.theoretical_assertions import theoretical_assertions
 
 test_cases_theoretical = [
@@ -53,18 +53,15 @@ test_cases_theoretical = [
         },
     },
 ]
-
-
-class TestTheoreticalModule(TransientTestBase):
-    @pytest.mark.parametrize(
-        "case",
-        test_cases_theoretical,
-        ids=lambda case: case["name"],
+@pytest.mark.parametrize(
+    "case",
+    test_cases_theoretical,
+    ids=lambda case: case["name"],
+)
+def test_theoretical_module(case):
+    run_evaluation_test(
+        case["name"],
+        case["params"],
+        evaluation_module="theoretical_module",
+        additional_assertions=theoretical_assertions,
     )
-    def test_theoretical_module(self, case):
-        self._run_evaluation_test(
-            case["name"],
-            case["params"],
-            evaluation_module="theoretical_module",
-            additional_assertions=theoretical_assertions,
-        )

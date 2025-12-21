@@ -9,7 +9,7 @@ from tests.data.measurement_data import (
     TEMP_DATA,
 )
 
-from tests.test_transient_base import TransientTestBase
+from tests.test_transient_base import run_evaluation_test
 from tests.assertions.standard_assertions import standard_assertions
 
 test_cases_basic = [
@@ -254,18 +254,15 @@ test_cases_basic = [
         },
     },
 ]
-
-
-class TestStandardModule(TransientTestBase):
-    @pytest.mark.parametrize(
-        "case",
-        test_cases_basic,
-        ids=lambda case: case["name"],
+@pytest.mark.parametrize(
+    "case",
+    test_cases_basic,
+    ids=lambda case: case["name"],
+)
+def test_standard_module(case):
+    run_evaluation_test(
+        case["name"],
+        case["params"],
+        evaluation_module="standard_module",
+        additional_assertions=standard_assertions,
     )
-    def test_standard_module(self, case):
-        self._run_evaluation_test(
-            case["name"],
-            case["params"],
-            evaluation_module="standard_module",
-            additional_assertions=standard_assertions,
-        )

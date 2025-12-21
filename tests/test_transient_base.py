@@ -1,15 +1,19 @@
+import logging
 import os
 import re
 import shutil
-import logging
+import sys
+from collections.abc import Callable
 from contextlib import contextmanager
 
 logger = logging.getLogger("PyRthLogger")
 logger.setLevel(logging.DEBUG)
-handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+logger.propagate = False
+if not logger.handlers:
+    stream_handler = logging.StreamHandler(stream=sys.stdout)
+    stream_handler.setLevel(logging.DEBUG)
+    stream_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    logger.addHandler(stream_handler)
 
 
 @contextmanager
@@ -32,8 +36,9 @@ def log_to_file(log_file_path: str):
         log_hdl.close()
 
 
-class TransientTestBase:
-    # Lightweight assertion helpers so existing assertion modules can be reused
+class _AssertHelper:
+    """Lightweight assertion helpers so existing assertion modules can be reused."""
+
     def assertTrue(self, expr, msg: str | None = None) -> None:
         assert expr, msg or "Expected expression to be truthy"
 
@@ -52,79 +57,85 @@ class TransientTestBase:
     def assertGreater(self, a, b, msg: str | None = None) -> None:
         assert a > b, msg or f"Expected {a!r} to be greater than {b!r}"
 
-    @classmethod
-    def setup_class(cls):
-        output_dir = "tests/output"
-        if os.path.exists(output_dir):
+
+ASSERT = _AssertHelper()
+
+
+def clean_output_root() -> None:
+    """Ensure a clean tests/output directory."""
+    output_dir = "tests/output"
+    if os.path.exists(output_dir):
+        try:
+            shutil.rmtree(output_dir)
+        except PermissionError as e:
+            # On Windows, files might still be locked. Try to handle gracefully
+            import time
+            import gc
+
+            gc.collect()
+            time.sleep(0.1)
+
             try:
                 shutil.rmtree(output_dir)
-            except PermissionError as e:
-                # On Windows, files might still be locked. Try to handle gracefully
-                import time
-                import gc
-                
-                # Force garbage collection to close any remaining file handles
-                gc.collect()
-                time.sleep(0.1)  # Brief pause
-                
-                try:
-                    shutil.rmtree(output_dir)
-                except PermissionError:
-                    logger.warning(f"Could not remove {output_dir} due to permission error: {e}")
-                    logger.warning("Continuing with existing directory...")
-        
-        os.makedirs(output_dir, exist_ok=True)
+            except PermissionError:
+                logger.warning(
+                    f"Could not remove {output_dir} due to permission error: {e}"
+                )
+                logger.warning("Continuing with existing directory...")
 
-    def _run_evaluation_test(
-        self,
-        name: str,
-        params: dict,
-        evaluation_module: str,
-        additional_assertions: callable = None,
-    ) -> None:
-        output_dir = params.get("output_dir", "tests/output")
-        os.makedirs(output_dir, exist_ok=True)
-        log_file_path = os.path.join(output_dir, f"{name}.log")
+    os.makedirs(output_dir, exist_ok=True)
 
-        # Run evaluation inside log context
-        with log_to_file(log_file_path):
-            try:
-                # The evaluation call should be customized per category.
-                # For example: PyRth.Evaluation(), followed by evaluation_module (a method name)
-                from PyRth import Evaluation
 
-                eval_instance = Evaluation()
-                method = getattr(eval_instance, evaluation_module)
-                modules = method(params)
-                eval_instance.save_as_csv()
-                eval_instance.save_figures()
+def run_evaluation_test(
+    name: str,
+    params: dict,
+    evaluation_module: str,
+    additional_assertions: Callable | None = None,
+) -> None:
+    output_dir = params.get("output_dir", "tests/output")
+    os.makedirs(output_dir, exist_ok=True)
+    log_file_path = os.path.join(output_dir, f"{name}.log")
 
-                if not isinstance(modules, list):
-                    modules = [modules]
+    # Run evaluation inside log context
+    with log_to_file(log_file_path):
+        try:
+            from PyRth import Evaluation
 
-                assert modules, "Modules list is empty"
+            eval_instance = Evaluation()
+            method = getattr(eval_instance, evaluation_module)
+            modules = method(params)
+            eval_instance.save_as_csv()
+            eval_instance.save_figures()
 
-                if additional_assertions:
-                    for module in modules:
-                        assert module.label in eval_instance.modules
-                        additional_assertions(self, module)
+            if not isinstance(modules, list):
+                modules = [modules]
 
-            except Exception as e:
-                logger.exception(f"Exception during test '{name}': {e}")
-                raise e
+            assert modules, "Modules list is empty"
 
-        expected_log_path = os.path.join(output_dir, "logs", f"{name}.log")
-        assert os.path.exists(
-            expected_log_path
-        ), f"Log file '{expected_log_path}' was not created."
+            if additional_assertions:
+                for module in modules:
+                    assert module.label in eval_instance.modules
+                    additional_assertions(ASSERT, module)
 
-        with open(expected_log_path, "r") as log_file:
-            log_lines = log_file.readlines()
-            error_logs = [
-                line.strip()
-                for line in log_lines
-                if re.search(r"\b(ERROR|CRITICAL)\b", line)
-            ]
-        assert not error_logs, (
-            f"Error logs found in '{expected_log_path}':\n" + "\n".join(error_logs)
-        )
+        except Exception as e:
+            logger.exception(f"Exception during test '{name}': {e}")
+            raise e
+
+    expected_log_path = os.path.join(output_dir, "logs", f"{name}.log")
+    assert os.path.exists(
+        expected_log_path
+    ), f"Log file '{expected_log_path}' was not created."
+
+    with open(expected_log_path, "r") as log_file:
+        log_lines = log_file.readlines()
+        error_logs = [
+            line.strip()
+            for line in log_lines
+            if re.search(r"\b(ERROR|CRITICAL)\b", line)
+        ]
+    assert not error_logs, (
+        f"Error logs found in '{expected_log_path}':\n" + "\n".join(error_logs)
+    )
+
+
+__all__ = ["run_evaluation_test", "ASSERT", "logger", "clean_output_root"]

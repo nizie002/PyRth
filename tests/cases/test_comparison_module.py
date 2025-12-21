@@ -5,7 +5,7 @@ from tests.data.measurement_data import (
     MOSFET_TIM_DATA,
     MOSFET_CALIB_DATA,
 )
-from tests.test_transient_base import TransientTestBase
+from tests.test_transient_base import run_evaluation_test
 from tests.assertions.comparison_assertions import comparison_assertions
 
 test_cases_comparison = [
@@ -105,17 +105,15 @@ test_cases_comparison = [
     },
 ]
 
-
-class TestComparisonModule(TransientTestBase):
-    @pytest.mark.parametrize(
-        "case",
-        test_cases_comparison,
-        ids=lambda case: case["name"],
+@pytest.mark.parametrize(
+    "case",
+    test_cases_comparison,
+    ids=lambda case: case["name"],
+)
+def test_comparison_module(case):
+    run_evaluation_test(
+        case["name"],
+        case["params"],
+        evaluation_module="comparison_module",
+        additional_assertions=comparison_assertions,
     )
-    def test_comparison_module(self, case):
-        self._run_evaluation_test(
-            case["name"],
-            case["params"],
-            evaluation_module="comparison_module",
-            additional_assertions=comparison_assertions,
-        )
