@@ -1,7 +1,10 @@
 """Figure exporting utilities that mirror the CSV handlers in IOManager."""
 
+import gc
 import logging
 import os
+
+import matplotlib.pyplot as plt
 
 from .transient_base_exporter import BaseExporter
 from .transient_figures import (
@@ -152,7 +155,7 @@ class FigureExporter(BaseExporter):
                 fig_obj.close()
                 saved += 1
 
-            except Exception as e:
+            except (OSError, ValueError, RuntimeError) as e:
                 logger.error(f"Error saving figure '{plot_key}': {str(e)}")
                 failed_keys.append(plot_key)
                 continue
@@ -169,11 +172,7 @@ class FigureExporter(BaseExporter):
         else:
             logger.info("Saved %d/%d figures", saved, total)
 
-        import matplotlib.pyplot as plt
-
         plt.close("all")
-        import gc
-
         gc.collect()
 
     def initialize_registered_figures(self, keys, module):
@@ -185,7 +184,7 @@ class FigureExporter(BaseExporter):
 
         for key in keys:
             if key in self.figure_registry:
-                prefix, cond_attr, figure_class = self.figure_registry[key]
+                _, cond_attr, figure_class = self.figure_registry[key]
                 condition = getattr(module, cond_attr, False)
                 if condition:
                     plot_key = key
@@ -199,7 +198,7 @@ class FigureExporter(BaseExporter):
 
                     try:
                         fig_obj.plot_module_data(module)
-                    except Exception as e:
+                    except (ValueError, TypeError, RuntimeError) as e:
                         logger.error(
                             f"Error plotting data for module '{module.label}' on figure '{plot_key}': {str(e)}"
                         )
