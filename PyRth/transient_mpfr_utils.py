@@ -44,13 +44,13 @@ def make_z_s(r_fos, c_fos):
     c0max = len(chain[0])
     c1max = len(chain[1])
     for i in range(c0max):
-        if gp.is_zero(chain[0][-1 - i]):
+        if chain[0][-1 - i] == 0:
             c0max -= 1
         else:
             break
 
     for i in range(c1max):
-        if gp.is_zero(chain[1][-1 - i]):
+        if chain[1][-1 - i] == 0:
             c1max -= 1
         else:
             break
@@ -336,15 +336,15 @@ def boor_golub_cauer(mpfr_resist_fost, mpfr_capa_fost):
 
 def normalize_rational_polynomials(mpfr_z_num, mpfr_z_denom):
     """Normalize numerator/denominator so the denominator's leading coefficient is one."""
-    inv = gp.div(mpfr("1.0"), mpfr_z_denom[-1])
+    inv = mpfr("1.0") / mpfr_z_denom[-1]
 
     N = len(mpfr_z_denom)
 
     cleaned_mpfr_num = [
         mpfr("0.0"),
-        *[gp.mul(inv, mpfr_z_num[N - i - 2]) for i in range(N - 1)],
+        *[inv * mpfr_z_num[N - i - 2] for i in range(N - 1)],
     ]
-    cleaned_mpfr_denom = [gp.mul(inv, mpfr_z_denom[N - i - 1]) for i in range(N)]
+    cleaned_mpfr_denom = [inv * mpfr_z_denom[N - i - 1] for i in range(N)]
 
     return cleaned_mpfr_num, cleaned_mpfr_denom
 
@@ -359,7 +359,7 @@ def generate_markov_params(cleaned_mpfr_num, cleaned_mpfr_denom):
     last_term = [mpfr("1.0")]
     last_error = cleaned_mpfr_denom[1:]
 
-    for i in range(1, order + 1):
+    for _ in range(1, order + 1):
         pre_term = [mpfr("0.0")] * L
         pre_term = pre_term + last_term
 
