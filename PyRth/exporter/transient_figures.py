@@ -239,12 +239,12 @@ class CumulStrucFigure(StructureFigure):
 
         sliced = np.where(module.int_cau_cap <= 1e4)
 
-        self.int_cau_res = module.int_cau_res[sliced]
-        self.int_cau_cap = module.int_cau_cap[sliced]
+        int_cau_res_sliced = module.int_cau_res[sliced]
+        int_cau_cap_sliced = module.int_cau_cap[sliced]
 
         self.ax.semilogy(
-            self.int_cau_res,
-            self.int_cau_cap,
+            int_cau_res_sliced,
+            int_cau_cap_sliced,
             color=self.next_color(),
             label="struc." + module.label,
             linewidth=1.0,
@@ -264,12 +264,11 @@ class DiffStrucFigure(StructureFigure):
             )
             self._axis_initialized = True
 
-        self.int_cau_res = module.int_cau_res[:-1]
-        self.diff_struc = module.diff_struc
+        int_cau_res_sliced = module.int_cau_res[:-1]
 
         self.ax.semilogy(
-            self.int_cau_res,
-            self.diff_struc,
+            int_cau_res_sliced,
+            module.diff_struc,
             color=self.next_color(),
             label="dif. struc." + module.label,
             marker="o",
@@ -471,7 +470,6 @@ class BackwardsImpDerivFigure(StructureFigure):
             self.ax.set_ylabel(r"impulse response, $h$, in K$\cdot$ W$^{-1}$", color='blue')
             self._axis_initialized = True
 
-        # Plot original curves on left y-axis
         self.ax.semilogx(
             np.exp(module.log_time_pad),
             module.imp_deriv_interp,
@@ -491,11 +489,9 @@ class BackwardsImpDerivFigure(StructureFigure):
         )
         self.ax.tick_params(axis='y', labelcolor='blue')
 
-        # Create secondary y-axis for differences
         ax2 = self.ax.twinx()
         ax2.set_ylabel(r"difference, $\Delta h$, in K$\cdot$ W$^{-1}$", color='red')
         
-        # Calculate and plot the difference on right y-axis
         difference = module.back_imp_deriv - module.imp_deriv_interp
         ax2.semilogx(
             np.exp(module.log_time_pad),
@@ -508,7 +504,6 @@ class BackwardsImpDerivFigure(StructureFigure):
         )
         ax2.tick_params(axis='y', labelcolor='red')
         
-        # Add a zero reference line for differences
         ax2.axhline(y=0, color='red', linestyle='--', alpha=0.3, linewidth=0.5)
 
 
@@ -520,11 +515,9 @@ class BackwardsImpFigure(StructureFigure):
             self.ax.set_ylabel(r"thermal impedance, $Z_{\rm th}$, in K$\cdot$ W$^{-1}$", color='blue')
             self._axis_initialized = True
 
-        # Get time arrays
         time_orig = np.exp(module.log_time)
         time_pad = np.exp(module.log_time_pad)
 
-        # Plot original curves on left y-axis
         self.ax.semilogx(
             time_orig,
             module.impedance,
@@ -545,25 +538,20 @@ class BackwardsImpFigure(StructureFigure):
         )
         self.ax.tick_params(axis='y', labelcolor='blue')
 
-        # Create secondary y-axis for differences
         ax2 = self.ax.twinx()
         ax2.set_ylabel(r"difference, $\Delta Z_{\rm th}$, in K$\cdot$ W$^{-1}$", color='red')
 
-        # Find the actual overlap region between both arrays
         overlap_min = max(time_orig.min(), time_pad.min())
         overlap_max = min(time_orig.max(), time_pad.max())
 
-        # Create masks for the overlap region in both arrays
         orig_overlap_mask = (time_orig >= overlap_min) & (time_orig <= overlap_max)
         pad_overlap_mask = (time_pad >= overlap_min) & (time_pad <= overlap_max)
 
-        # Only proceed if there's actual overlap
         if (
             overlap_min < overlap_max
             and np.any(orig_overlap_mask)
             and np.any(pad_overlap_mask)
         ):
-            # Interpolate original impedance to padded time points within overlap
             impedance_interp = interp.interp1d(
                 time_orig[orig_overlap_mask],
                 module.impedance[orig_overlap_mask],
@@ -572,11 +560,9 @@ class BackwardsImpFigure(StructureFigure):
                 fill_value=np.nan,
             )(time_pad[pad_overlap_mask])
 
-            # Calculate difference for overlap region
             back_imp_overlap = module.back_imp[pad_overlap_mask]
             difference_overlap = back_imp_overlap - impedance_interp
 
-            # Plot differences on right y-axis
             ax2.semilogx(
                 time_pad[pad_overlap_mask],
                 difference_overlap,
@@ -588,8 +574,6 @@ class BackwardsImpFigure(StructureFigure):
             )
 
         ax2.tick_params(axis='y', labelcolor='red')
-        
-        # Add a zero reference line for differences
         ax2.axhline(y=0, color='red', linestyle='--', alpha=0.3, linewidth=0.5)
 
 
@@ -885,7 +869,6 @@ class PredictionFigure(StructureFigure):
             self.ax.set_ylabel(r"temperature, $T$, in $^\circ\!$C")
             self._axis_initialized = True
 
-        # Plot temperature on primary y-axis
         self.ax.plot(
             module.lin_time,
             module.predicted_temperature,
@@ -895,11 +878,9 @@ class PredictionFigure(StructureFigure):
             color="blue",
         )
 
-        # Create secondary y-axis
         self.ax2 = self.ax.twinx()
         self.ax2.set_ylabel(r"power, $P$, in W")
 
-        # Plot power function on secondary y-axis
         self.ax2.plot(
             module.lin_time,
             module.power_function_int,
