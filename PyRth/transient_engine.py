@@ -5,20 +5,19 @@ from numba import njit
 
 
 @njit(cache=True)
-def polyfit(X, y, weights):
+def polyfit(x, y, weights):
     """Return weighted linear fit coefficients (slope, intercept)."""
 
-    weighted_mean_x = sum([w * x for w, x in zip(weights, X)]) / sum(weights)
+    weighted_mean_x = sum([w * x for w, x in zip(weights, x)]) / sum(weights)
     weighted_mean_y = sum([w * y_i for w, y_i in zip(weights, y)]) / sum(weights)
 
     numerator = sum(
         [
             w * (x - weighted_mean_x) * (y_i - weighted_mean_y)
-            for w, x, y_i in zip(weights, X, y)
+            for w, x, y_i in zip(weights, x, y)
         ]
     )
-    denominator = sum([w * (x - weighted_mean_x) ** 2 for w, x in zip(weights, X)])
-
+    denominator = sum([w * (x - weighted_mean_x) ** 2 for w, x in zip(weights, x)])
     if denominator == 0:
         raise ValueError("Denominator in slope calculation is zero")
 
@@ -41,19 +40,11 @@ def derivative(
     expected_var,
     pad_factor_pre,
     pad_factor_after,
-    dummy=False,
 ):
     """Compute smoothed impedance and derivative on a log-time grid."""
 
-    if dummy:
-        return
-
     best_window_length = None
-    minimum_window_length = minimum_window_length
-    maximum_window_length = maximum_window_length
-    minimum_window_size = minimum_window_size
 
-    window_increment = window_increment
     full_window = [-window_increment, 0.0, window_increment]
     lower_window = [0.0, window_increment]
     upper_window = [-window_increment, 0.0]
@@ -97,6 +88,8 @@ def derivative(
                 bw_steps = upper_window
             elif last_window_length <= minimum_window_length:
                 bw_steps = lower_window
+            else:
+                bw_steps = full_window
         else:
             bw_steps = [
                 minimum_window_length + i * window_increment
@@ -215,13 +208,13 @@ def derivative(
 
 @njit(cache=True)
 def bayesian_deconvolution(
-    re_mat=np.array([[]]), imp_deriv_interp=np.array([]), N=float(1.0)
+    re_mat=np.array([[]]), imp_deriv_interp=np.array([]), n=float(1.0)
 ):
     """Iteratively deconvolve a response matrix from a derivative signal."""
 
     true = imp_deriv_interp.copy().reshape(-1, 1)
 
-    for step in range(N):
+    for _ in range(n):
 
         denom = np.dot(re_mat, true).reshape(-1)
 
@@ -258,11 +251,11 @@ def response_matrix(domain=np.array([]), x_len=float(1.0)):
 def lanczos_inner(cap_fost=np.array([]), res_fost=np.array([])):
     """Compute Foster RC elements via a Lanczos-style recurrence."""
 
-    C_diag = cap_fost
-    K_diag = 1.0 / res_fost
+    c_diag = cap_fost
+    k_diag = 1.0 / res_fost
 
-    g = np.ones_like(C_diag)
-    r = g / C_diag
+    g = np.ones_like(c_diag)
+    r = g / c_diag
 
     beta = np.sqrt(np.dot(r.T, g))
     v = np.zeros_like(r)
@@ -271,9 +264,9 @@ def lanczos_inner(cap_fost=np.array([]), res_fost=np.array([])):
     cap = []
 
     u = r / beta
-    alpha = -np.dot(u.T, K_diag * u)
-    r = (-(K_diag + alpha * C_diag) * u - beta * C_diag * v) / C_diag
-    beta_next = np.sqrt(np.dot(r.T, C_diag * r))
+    alpha = -np.dot(u.T, k_diag * u)
+    r = (-(k_diag + alpha * c_diag) * u - beta * c_diag * v) / c_diag
+    beta_next = np.sqrt(np.dot(r.T, c_diag * r))
     v = u
 
     cap.append(1 / (beta**2))
@@ -288,10 +281,10 @@ def lanczos_inner(cap_fost=np.array([]), res_fost=np.array([])):
 
     while cap_sum < 1e4:
         u = r / beta_next
-        alpha = -np.dot(u.T, K_diag * u)
-        r = (-(K_diag + alpha * C_diag) * u - beta_next * C_diag * v) / C_diag
+        alpha = -np.dot(u.T, k_diag * u)
+        r = (-(k_diag + alpha * c_diag) * u - beta_next * c_diag * v) / c_diag
         beta_prev = beta_next
-        beta_next = np.sqrt(np.dot(r.T, C_diag * r))
+        beta_next = np.sqrt(np.dot(r.T, c_diag * r))
 
         v = u
 
