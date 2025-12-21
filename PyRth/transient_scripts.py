@@ -52,6 +52,7 @@ class Evaluation:
         self.parameters: dict = {**dbase.std_eval_defaults, **dbase.std_output_defaults}
         self.modules: Dict[str, StructureFunction] = {}
         self.module_counters = {}
+        self.set_length = 0
         self.io_manager = IOManager(self.modules)
         self.stored_early_zth: float | None = None
 
@@ -416,6 +417,11 @@ class Evaluation:
                 "Structure function calculation must be enabled for bootstrapping."
             )
 
+        time_name = deriv_time_name = time_const_name = None
+        imp_name = deriv_name = None
+        int_cau_res_name = int_cau_cap_name = None
+        boot_method = None
+
         if self.parameters["evaluation_type"] == "bootstrap_optimization":
             time_name = "theo_log_time"
             imp_name = "theo_impedance"
@@ -458,9 +464,14 @@ class Evaluation:
             )
 
             module.bins = (bin_edge[1:] + bin_edge[:-1]) / 2.0
-            popt, pcov = spo.curve_fit(
-                utl.generalized_gaussian, module.bins, module.hist, p0=(500, 0.1, 0.01)
+            fit_result = spo.curve_fit(
+                utl.generalized_gaussian,
+                module.bins,
+                module.hist,
+                p0=(500, 0.1, 0.01),
+                full_output=False,
             )
+            popt = fit_result[0]
 
             module.gauss_curve = utl.generalized_gaussian(module.bins, *popt)
 
@@ -590,24 +601,22 @@ class Evaluation:
         module.boot_struc_cap_perc_u = np.zeros(base_num_fine)
         module.boot_struc_cap_perc_l = np.zeros(base_num_fine)
 
-        N_res = -1
-        for res in module.boot_struc_res_fine:
-            N_res += 1
-            N = 0
+        for res_idx, res in enumerate(module.boot_struc_res_fine):
+            n_vals = 0
             vals = [0.0] * repetitions
             for m in range(repetitions):
                 if res > module.boot_results_struc_res[m][-1]:
-                    vals[N] = module.boot_results_struc_cap[m][-1]
-                    N += 1
+                    vals[n_vals] = module.boot_results_struc_cap[m][-1]
+                    n_vals += 1
                 elif (res >= module.boot_results_struc_res[m][0]) and (
                     res <= module.boot_results_struc_res[m][-1]
                 ):
-                    vals[N] = interp_func[m](res)
-                    N += 1
+                    vals[n_vals] = interp_func[m](res)
+                    n_vals += 1
 
-            module.boot_struc_cap_av[N_res] = np.median(vals[:N])
-            module.boot_struc_cap_perc_u[N_res], module.boot_struc_cap_perc_l[N_res] = (
-                np.percentile(vals[:N], [10, 90])
+            module.boot_struc_cap_av[res_idx] = np.median(vals[:n_vals])
+            module.boot_struc_cap_perc_u[res_idx], module.boot_struc_cap_perc_l[res_idx] = (
+                np.percentile(vals[:n_vals], [10, 90])
             )
 
         module.data_handlers.add("boot")
@@ -984,6 +993,8 @@ class Evaluation:
             len(results_module.mod_value_list),
             results_module.mod_key_display_name,
         )
+
+        time_name = time_const_name = int_cau_res_name = int_cau_cap_name = None
 
         if not bootstraping:
             logger.info(
