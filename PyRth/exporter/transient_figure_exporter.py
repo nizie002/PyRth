@@ -125,12 +125,14 @@ class FigureExporter(BaseExporter):
 
         super().__init__()
         self.figures = figures
+        self.module_fig_ops = {}
 
     def save_all_figures(self) -> None:
         """Persist every registered figure to a prefixed PNG file."""
 
-        logger.info("Saving figures")
-        logger.debug(f"Number of figures to save: {len(self.figures)}")
+        total = len(self.figures)
+        saved = 0
+        failed_keys = []
 
         for plot_key, fig_obj in self.figures.items():
             try:
@@ -148,11 +150,24 @@ class FigureExporter(BaseExporter):
                 fig_obj.add_legend()
                 fig_obj.fig.savefig(filename, bbox_inches="tight", dpi=300)
                 fig_obj.close()
-                logger.debug(f"Figure '{plot_key}' saved successfully to {filename}.")
+                saved += 1
 
             except Exception as e:
                 logger.error(f"Error saving figure '{plot_key}': {str(e)}")
+                failed_keys.append(plot_key)
                 continue
+
+        if total == 0:
+            logger.info("No figures to save")
+        elif failed_keys:
+            logger.info(
+                "Saved %d/%d figures (failed: %s)",
+                saved,
+                total,
+                ", ".join(failed_keys),
+            )
+        else:
+            logger.info("Saved %d/%d figures", saved, total)
 
         import matplotlib.pyplot as plt
 
@@ -164,6 +179,10 @@ class FigureExporter(BaseExporter):
     def initialize_registered_figures(self, keys, module):
         """Ensure figures exist for ``keys`` and plot ``module`` data into them."""
 
+        ops = self.module_fig_ops.setdefault(
+            module.label, {"created": set(), "updated": set(), "skipped": set()}
+        )
+
         for key in keys:
             if key in self.figure_registry:
                 prefix, cond_attr, figure_class = self.figure_registry[key]
@@ -171,16 +190,12 @@ class FigureExporter(BaseExporter):
                 if condition:
                     plot_key = key
                     if plot_key not in self.figures:
-                        logger.debug(
-                            f"Creating figure for key '{plot_key}' using module '{module.label}'"
-                        )
                         fig_obj = figure_class(module)
                         self.figures[plot_key] = fig_obj
+                        ops["created"].add(plot_key)
                     else:
-                        logger.debug(
-                            f"Adding data from module '{module.label}' to existing figure '{plot_key}'"
-                        )
                         fig_obj = self.figures[plot_key]
+                        ops["updated"].add(plot_key)
 
                     try:
                         fig_obj.plot_module_data(module)
@@ -190,46 +205,52 @@ class FigureExporter(BaseExporter):
                         )
 
                 else:
-                    logger.debug(
-                        f"Condition '{cond_attr}' for key '{key}' not met for module '{module.label}'."
-                    )
+                    ops["skipped"].add(key)
             else:
                 logger.error(f"Key '{key}' not found in figure registry")
+
+    def log_module_summary(self, module_label: str):
+        """Emit a single debug summary for the module's figure operations."""
+        ops = self.module_fig_ops.pop(
+            module_label, {"created": set(), "updated": set(), "skipped": set()}
+        )
+        if any(ops.values()):
+            logger.debug(
+                "Figure summary for '%s': created=%s updated=%s skipped=%s",
+                module_label,
+                sorted(ops["created"]) or "none",
+                sorted(ops["updated"]) or "none",
+                sorted(ops["skipped"]) or "none",
+            )
 
     def extrapol_data_handler(self, module):
         """Plot extrapolated raw-data overlays."""
 
-        logger.debug("extrapol_data_handler called")
         self.initialize_registered_figures(["extrpl"], module)
 
     def voltage_data_handler(self, module):
         """Plot voltage-domain captures."""
 
-        logger.debug("voltage_data_handler called")
         self.initialize_registered_figures(["voltage"], module)
 
     def temp_data_handler(self, module):
         """Plot both raw and processed temperature traces."""
 
-        logger.debug("temp_data_handler called")
         self.initialize_registered_figures(["raw", "temp"], module)
 
     def impedance_data_handler(self, module):
         """Plot impedance curves and their derivatives."""
 
-        logger.debug("impedance_data_handler called")
         self.initialize_registered_figures(["impedance", "deriv"], module)
 
     def fft_data_handler(self, module):
         """Plot the FFT magnitude and window."""
 
-        logger.debug("fft_data_handler called")
         self.initialize_registered_figures(["fft"], module)
 
     def time_spec_data_handler(self, module):
         """Plot forward and backward time-spectrum figures."""
 
-        logger.debug("time_spec_data_handler called")
         self.initialize_registered_figures(
             ["time_spec", "sum_time_spec", "back_imp", "back_deriv"], module
         )
@@ -237,7 +258,6 @@ class FigureExporter(BaseExporter):
     def structure_function_data_handler(self, module):
         """Plot cumulative and local structure functions."""
 
-        logger.debug("structure_function_data_handler called")
         self.initialize_registered_figures(
             ["cumul_struc", "diff_struc", "local_resist", "local_gradient"], module
         )
@@ -245,13 +265,11 @@ class FigureExporter(BaseExporter):
     def theo_structure_function_data_handler(self, module):
         """Plot theoretical structure curves."""
 
-        logger.debug("theo_structure_function_data_handler called")
         self.initialize_registered_figures(["theo_cstruc", "theo_diff_struc"], module)
 
     def theo_data_handler(self, module):
         """Plot theoretical impedance products."""
 
-        logger.debug("theo_data_handler called")
         self.initialize_registered_figures(
             [
                 "theo_time_const",
@@ -265,19 +283,16 @@ class FigureExporter(BaseExporter):
     def theo_compare_data_handler(self, module):
         """Plot backwards-theoretical comparisons."""
 
-        logger.debug("theo_compare_data_handler called")
         self.initialize_registered_figures(["theo_back_imp"], module)
 
     def optimize_data_handler(self, module):
         """Plot optimisation overlays."""
 
-        logger.debug("optimize_data_handler called")
         self.initialize_registered_figures(["optimize_struc"], module)
 
     def comparison_data_handler(self, module):
         """Plot module comparisons such as time constant or resistance deltas."""
 
-        logger.debug("comparison_data_handler called")
         self.initialize_registered_figures(
             ["time_const_comparison", "struc_comparison", "total_resist_comparison"],
             module,
@@ -286,19 +301,16 @@ class FigureExporter(BaseExporter):
     def prediction_data_handler(self, module):
         """Plot temperature and power predictions."""
 
-        logger.debug("prediction_data_handler called")
         self.initialize_registered_figures(["prediction", "prediction_imp"], module)
 
     def residual_data_handler(self, module):
         """Plot residual histograms and fits."""
 
-        logger.debug("residual_data_handler called")
         self.initialize_registered_figures(["residual"], module)
 
     def boot_data_handler(self, module):
         """Plot bootstrap aggregates for every supported figure type."""
 
-        logger.debug("boot_data_handler called")
         self.initialize_registered_figures(
             [
                 "boot_impedance",

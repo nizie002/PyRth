@@ -15,6 +15,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 import numpy as np
 
 logger = logging.getLogger("PyRthLogger")
+_last_logged_params: Dict[str, Any] = {}
 
 
 def doc_field(*, default=MISSING, default_factory=MISSING, doc: str):
@@ -584,16 +585,26 @@ def validate_and_merge_defaults(
 
         if key in {"data", "calib"} and value is not None:
             try:
-                logger.info("%s: shape=%s", key, value.shape)
+                shape = value.shape
+                sig = (shape, type(value))
+                if _last_logged_params.get(key) != sig:
+                    logger.debug("%s: shape=%s", key, shape)
+                    _last_logged_params[key] = sig
             except AttributeError:
-                logger.info("%s: object type=%s", key, type(value))
+                sig = ("object", type(value))
+                if _last_logged_params.get(key) != sig:
+                    logger.debug("%s: object type=%s", key, type(value))
+                    _last_logged_params[key] = sig
             continue
 
         is_equal = deep_equals(value, default_value)
         if isinstance(is_equal, np.ndarray):
             is_equal = is_equal.all()
         if not bool(is_equal):
-            logger.info("using non-default %s: %s", key, value)
+            sig = ("value", repr(value))
+            if _last_logged_params.get(key) != sig:
+                logger.debug("using non-default %s: %s", key, value)
+                _last_logged_params[key] = sig
 
     return merged
 

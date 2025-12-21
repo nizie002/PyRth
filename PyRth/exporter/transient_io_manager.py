@@ -55,6 +55,8 @@ class IOManager:
     def exporter_output(self, exporter: BaseExporter):
         """Run each module through the handlers supported by ``exporter``."""
         logger.info("Saving output data")
+        saved_files = []
+        failed = []
 
         for module in self.modules.values():
             logger.debug(
@@ -65,13 +67,35 @@ class IOManager:
 
             for capability in capabilities:
                 if capability in self.handlers:
-                    logger.debug(f"Executing {capability} data handler")
                     try:
-                        getattr(exporter, self.handlers[capability])(module)
+                        result = getattr(exporter, self.handlers[capability])(module)
+                        if exporter.type == "DataExporter" and result is not None:
+                            if isinstance(result, list):
+                                saved_files.extend([path for path in result if path])
+                            elif result:
+                                saved_files.append(result)
                     except (AttributeError, ValueError, RuntimeError) as e:
                         logger.error(f"Error in {capability} data handler: {str(e)}")
+                        failed.append((module.label, capability))
                 else:
                     logger.error(f"Handler {capability} not found")
+                    failed.append((module.label, capability))
+
+            if exporter.type == "figure" and hasattr(exporter, "log_module_summary"):
+                exporter.log_module_summary(module.label)
+
+        if exporter.type == "DataExporter":
+            total = len(saved_files)
+            if failed:
+                failed_desc = ", ".join([f"{mod}:{cap}" for mod, cap in failed])
+                logger.info(
+                    "Saved %d CSV file(s); %d handler(s) failed (%s)",
+                    total,
+                    len(failed),
+                    failed_desc,
+                )
+            else:
+                logger.info("Saved %d CSV file(s)", total)
 
     def export_csv(self):
         """Trigger CSV exporter for every module."""

@@ -396,14 +396,14 @@ class StructureFunction(dbase.StructureParameters):
 
         phi_norms = np.linalg.norm(phi_unnormalized, axis=0, keepdims=True)
 
-        logger.info(
+        logger.debug(
             f"Condition number of unnormalized phi: {np.linalg.cond(phi_unnormalized):.4e}"
         )
 
         phi_norms[phi_norms == 0] = 1.0
         phi = phi_unnormalized / phi_norms
 
-        logger.info(f"Condition number of phi: {np.linalg.cond(phi):.4e}")
+        logger.debug(f"Condition number of phi: {np.linalg.cond(phi):.4e}")
 
         if self.deconv_mode == "adaptive":
             epsilon = 1e-6 
@@ -414,10 +414,10 @@ class StructureFunction(dbase.StructureParameters):
 
             phi = phi / weights[None, :]
 
-            logger.info(f"Condition number of weighted phi: {np.linalg.cond(phi):.4e}")
+            logger.debug(f"Condition number of weighted phi: {np.linalg.cond(phi):.4e}")
 
         if hasattr(self, "lasso_cv_folds") and self.lasso_cv_folds > 1:
-            logger.info(
+            logger.debug(
                 f"Performing Lasso with Cross-Validation (folds={self.lasso_cv_folds})..."
             )
             lasso = LassoCV(
@@ -437,7 +437,7 @@ class StructureFunction(dbase.StructureParameters):
                 raise TypeError(
                     f"When not using CV, lasso_alpha must be a number, but got {type(self.lasso_alpha)}"
                 )
-            logger.info(f"Performing Lasso with fixed alpha={self.lasso_alpha}...")
+            logger.debug(f"Performing Lasso with fixed alpha={self.lasso_alpha}...")
             lasso = Lasso(
                 alpha=self.lasso_alpha,
                 positive=True, 
@@ -474,12 +474,17 @@ class StructureFunction(dbase.StructureParameters):
         else:
             used_alpha = lasso.alpha
 
-        logger.info(f"Final measured resistance: {self.impedance[-1]:.4f}")
-        logger.info(f"Model R_th (Sum of A_k): {R_th_model:.4f}")
-        logger.info(f"Used alpha: {used_alpha:.2e}")
-        logger.info(f"RMSE: {sigma_hat:.4f}")
-        logger.info(f"R-squared: {r2:.4f}")
-        logger.info(f"Number of active components: {np.count_nonzero(a_hat > 0)}")
+        active_components = np.count_nonzero(a_hat > 0)
+        logger.info(
+            "Lasso results (mode=%s): R_meas=%.4f, R_model=%.4f, alpha=%.2e, RMSE=%.4f, R2=%.4f, active=%d",
+            self.deconv_mode,
+            self.impedance[-1],
+            R_th_model,
+            used_alpha,
+            sigma_hat,
+            r2,
+            active_components,
+        )
 
         if not np.any(a_hat > 0):
             raise ValueError(

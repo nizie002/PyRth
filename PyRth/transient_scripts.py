@@ -56,7 +56,7 @@ class Evaluation:
         self.stored_early_zth: float | None = None
 
         utl.numba_preloader()
-        logger.info("Evaluation instance initialized.")
+        logger.info("Evaluation initialized with standard defaults and IO manager ready.")
 
     def save_as_csv(self):
         """
@@ -114,6 +114,9 @@ class Evaluation:
             )
 
         self.modules[module.label] = module
+        logger.debug(
+            "Registered module '%s' (instance #%s)", module.label, self.module_counters[module.label]
+        )
 
     def standard_module(self, parameters):
         """
@@ -144,46 +147,63 @@ class Evaluation:
                 "Module is missing 'input_mode' attribute. It is used for converting input data to the correct thermal impedance."
             )
 
+        logger.info(
+            "Starting standard evaluation for '%s' (deconv_mode=%s, calc_struc=%s)",
+            module.label,
+            getattr(module, "deconv_mode", "unknown"),
+            getattr(module, "calc_struc", False),
+        )
+
         if module.normalize_impedance_to_previous:
             if self.stored_early_zth is not None:
                 module.stored_early_zth = self.stored_early_zth
+                logger.debug(
+                    "Normalizing impedance for '%s' using stored early-Zth reference",
+                    module.label,
+                )
             else:
                 logger.info(
-                    "Impedance normalization requested but no reference stored yet; "
-                    "capturing the current module as the baseline once finished."
+                    "Normalization requested for '%s' but no baseline stored; "
+                    "capturing this run as the future reference.",
+                    module.label,
                 )
 
-        logger.info(f"Compiled impedance for '{module.label}'")
+        logger.debug("Computing impedance for '%s'", module.label)
         module.make_z()
 
         module.data_handlers.add("impedance")
 
         if not module.only_make_z:
 
-            if module.deconv_mode == "lasso":
-                logger.info("Performing Lasso deconvolution")
+            logger.info(
+                "Running deconvolution for '%s' using mode '%s'",
+                module.label,
+                module.deconv_mode,
+            )
 
+            if module.deconv_mode == "lasso":
                 module.z_fit_lasso()
+                logger.debug("Lasso deconvolution complete for '%s'", module.label)
                 module.data_handlers.add("time_spec")
 
             else:
                 module.z_fit_deriv()
-                logger.debug("Z fit derivative completed")
+                logger.debug("Z fit derivative completed for '%s'", module.label)
 
                 if module.deconv_mode == "fourier":
-                    logger.info("Performing Fourier transform")
+                    logger.debug("Performing Fourier transform for '%s'", module.label)
                     module.fft_signal()
                     module.fft_weight()
                     module.fft_time_spec()
                     # Add FFT and time_spec handlers
                     module.data_handlers.update(["fft", "time_spec"])
                 elif module.deconv_mode == "bayesian":
-                    logger.info("Performing Bayesian deconvolution")
+                    logger.debug("Performing Bayesian deconvolution for '%s'", module.label)
                     module.perform_bayesian_deconvolution()
                     # Add time_spec handler for Bayesian
                     module.data_handlers.add("time_spec")
                 elif module.deconv_mode == "adaptive":
-                    logger.info("Performing adaptive deconvolution")
+                    logger.debug("Performing adaptive deconvolution for '%s'", module.label)
                     module.perform_bayesian_deconvolution()
                     module.z_fit_lasso()
                     # Add time_spec handler for adaptive
@@ -192,42 +212,59 @@ class Evaluation:
                 else:
                     raise ValueError("Invalid deconvolution mode specified.")
 
+            logger.debug("Synthesizing Foster network for '%s'", module.label)
             module.foster_network()
 
             if module.calc_struc:
                 logger.info(
-                    f"Calculating structure function using {module.struc_method}"
+                    "Calculating structure function for '%s' using %s",
+                    module.label,
+                    module.struc_method,
                 )
 
                 if module.struc_method == "polylong":
+                    logger.debug("Using poly long division for '%s'", module.label)
                     module.mpfr_foster_impedance()
                     module.poly_long_div()
                 elif module.struc_method in ["khatwani", "sobhy"]:
+                    logger.debug("Using continued fraction methods for '%s'", module.label)
                     module.mpfr_foster_impedance()
                     module.j_fraction_methods()
                 elif module.struc_method == "boor_golub":
+                    logger.debug("Using Boor-Golub method for '%s'", module.label)
                     module.mpfr_foster_impedance()
                     module.boor_golub()
                 elif module.struc_method == "lanczos":
+                    logger.debug("Using Lanczos method for '%s'", module.label)
                     module.lanczos()
 
                 # Add structure handler after any structure calculation
                 module.data_handlers.add("structure")
 
-                logger.info(f"Total resistance: {module.int_cau_res[-1]:.2f} K/W")
+                logger.info(
+                    "Structure function complete for '%s'; total resistance: %.2f K/W",
+                    module.label,
+                    module.int_cau_res[-1],
+                )
 
         if module.normalize_impedance_to_previous and self.stored_early_zth is None:
             self.stored_early_zth = utl.get_early_zth(module)
+            logger.debug(
+                "Captured early-Zth reference from '%s' for future normalization",
+                module.label,
+            )
 
         if module.save_back_impedance or (
             (module.look_at_backwards_imp_deriv or module.look_at_backwards_impedance)
         ):
             inverse_module = trop.TransientOptimizer()
 
+            logger.debug("Generating backward impedance for '%s'", module.label)
             module.back_imp_deriv, module.back_imp = inverse_module.time_const_to_imp(
                 module.log_time_pad, module.time_spec
             )
 
+        logger.info("Finished standard evaluation for '%s'", module.label)
         return module
 
     def standard_module_set(self, parameters):
@@ -292,6 +329,14 @@ class Evaluation:
 
         self.set_length = 0
 
+        logger.info(
+            "Starting module set '%s' (%s) with %d variations over %s",
+            base_label,
+            evaluation_type,
+            len(temp_iter),
+            ", ".join(map(str, iterable_keywords)),
+        )
+
         # Lazy iteration using zip (since all iterators have equal length)
         for counter, values in enumerate(zip(*iterators)):
             # Update parameters with the current set of values.
@@ -314,6 +359,13 @@ class Evaluation:
                 modified_parameters, self.parameters
             )
 
+            logger.debug(
+                "Building variant %d/%d with label '%s'",
+                counter + 1,
+                len(temp_iter),
+                modified_parameters["label"],
+            )
+
             # Create module using the appropriate evaluation type.
             if evaluation_type == "standard":
                 module = self._standard_module()
@@ -328,6 +380,9 @@ class Evaluation:
             modules_list.append(module)
             self.set_length += 1
 
+        logger.info(
+            "Completed module set '%s'; generated %d module(s)", base_label, self.set_length
+        )
         return modules_list
 
     def bootstrap_module(self, parameters: Dict):
@@ -349,6 +404,12 @@ class Evaluation:
                 f"Invalid mode '{mode}' for bootstrap evaluation. Valid options are: ['from_theo', 'from_data']"
             )
         repetitions = self.parameters["repetitions"]
+        logger.info(
+            "Starting bootstrap evaluation (%s) for '%s' with %d repetitions",
+            mode,
+            self.parameters.get("label", "no_label"),
+            repetitions,
+        )
 
         if not self.parameters["calc_struc"]:
             raise ValueError(
@@ -382,6 +443,11 @@ class Evaluation:
             module = self.theoretical_module(self.parameters)
             var = module.theo_impedance[-1] / self.parameters["signal_to_noise_ratio"]
             self.parameters["expected_var"] = var
+            logger.debug(
+                "Bootstrapping from theoretical data for '%s' with expected variance %.4e",
+                module.label,
+                var,
+            )
 
         elif mode == "from_data":
 
@@ -399,12 +465,13 @@ class Evaluation:
             module.gauss_curve = utl.generalized_gaussian(module.bins, *popt)
 
             module.data_handlers.add("residual")
-        else:
-            logger.error(f"Invalid mode for bootstrapping: {mode}")
+            logger.debug(
+                "Bootstrapping from measured data for '%s' with fitted variance %.4e",
+                module.label,
+                popt[1],
+            )
 
         self.parameters["input_mode"] = "impedance"
-
-        logger.info(f"Bootstrapping: {repetitions} times")
 
         min_res = np.inf
         max_res = -np.inf
@@ -418,7 +485,7 @@ class Evaluation:
 
         for n in range(repetitions):
 
-            logger.info(f"Repetition {n + 1}")
+            logger.debug("Bootstrap repetition %d/%d", n + 1, repetitions)
 
             if mode == "from_theo":
                 impedance = module.theo_impedance + rng.normal(
@@ -480,7 +547,7 @@ class Evaluation:
             min_res = min(min_res, current_min)
             max_res = max(max_res, current_max)
 
-        logger.info("Calculating confidence intervals")
+        logger.info("Calculating bootstrap confidence intervals for '%s'", module.label)
 
         module.boot_imp_time = getattr(boot_module, time_name).flatten()
         module.boot_deriv_time = getattr(boot_module, deriv_time_name).flatten()
@@ -545,6 +612,7 @@ class Evaluation:
 
         module.data_handlers.add("boot")
 
+        logger.info("Bootstrap evaluation complete for '%s'", module.label)
         return module
 
     def optimization_module(self, parameters: dict):
@@ -566,6 +634,7 @@ class Evaluation:
     def _optimization_module(self):
 
         module = self._standard_module()
+        logger.info("Starting optimization refinement for '%s'", module.label)
         module.theo_log_time = np.linspace(
             np.log(self.parameters["theo_time"][0]),
             np.log(self.parameters["theo_time"][1]),
@@ -574,9 +643,12 @@ class Evaluation:
 
         opt_module = trop.TransientOptimizer(self.parameters)
 
-        logger.info("Optimizing impedance approximation")
-
         if not module.opt_use_extrapolate:
+            logger.debug(
+                "Restricting optimization window for '%s' starting at %.3e s",
+                module.label,
+                module.lower_fit_limit,
+            )
 
             lower_fit_index = np.searchsorted(
                 module.theo_log_time, np.log(module.lower_fit_limit)
@@ -588,13 +660,20 @@ class Evaluation:
         elif module.opt_use_extrapolate:
             module.opt_log_time = module.log_time
             module.opt_imp = module.impedance
+            logger.debug(
+                "Using full impedance curve for '%s' during optimization", module.label
+            )
 
         module.cau_res_opt = module.int_cau_res
         module.cau_cap_opt = module.int_cau_cap
 
         N = self.parameters["opt_model_layers"]
         if self.parameters["struc_init_method"] == "optimal_fit":
-            logger.info("Optimizing structure function approximation")
+            logger.info(
+                "Initializing structure function via optimal_fit for '%s' with %d layers",
+                module.label,
+                N,
+            )
 
             struc_marker, init_opt_result = opt_module.optimize_theo_struc(
                 module.cau_res_opt, module.cau_cap_opt, N
@@ -606,13 +685,18 @@ class Evaluation:
                 module.init_opt_struc_cap,
             ) = struc_marker
 
-            logger.info("Optimization done")
             logger.info(
-                f"Message: {init_opt_result.message}, Success: {init_opt_result.success}"
+                "Initial optimization finished for '%s' (success=%s, message=%s)",
+                module.label,
+                init_opt_result.success,
+                init_opt_result.message,
             )
 
         if self.parameters["struc_init_method"] == "x_sampling":
 
+            logger.debug(
+                "Initializing structure function via x_sampling for '%s'", module.label
+            )
             module.init_opt_imp_res, module.init_opt_imp_cap = (
                 opt_module.struc_x_sample(module.cau_res_opt, module.cau_cap_opt, N)
             )
@@ -624,7 +708,11 @@ class Evaluation:
             module.init_opt_imp_cap
         )
 
-        logger.info("Optimizing structure function to impedance")
+        logger.info(
+            "Running impedance fit for '%s' using method '%s'",
+            module.label,
+            self.parameters["opt_method"],
+        )
 
         global_weight = np.append(
             (module.opt_log_time[1:] - module.opt_log_time[:-1]),
@@ -645,7 +733,10 @@ class Evaluation:
         )
 
         logger.info(
-            f"Optimization done. Message: {opt_result.message}, Success: {opt_result.success}"
+            "Optimization completed for '%s' (success=%s, message=%s)",
+            module.label,
+            opt_result.success,
+            opt_result.message,
         )
 
         module.fin_res_diff = opt_module.sort_and_lim_diff(module.fin_res)
@@ -706,15 +797,25 @@ class Evaluation:
             ["theo_structure", "theo", "theo_compare", "optimize"]
         )
 
-        logger.info(
-            f"initial diff: {optu.weighted_diff(module.opt_log_time, module.opt_imp, init_theo_impedance_int)}"
+        initial_diff = optu.weighted_diff(
+            module.opt_log_time, module.opt_imp, init_theo_impedance_int
         )
-        logger.info(
-            f"forward diff: {optu.weighted_diff(module.opt_log_time, module.opt_imp, back_imp_int)}"
+        forward_diff = optu.weighted_diff(
+            module.opt_log_time, module.opt_imp, back_imp_int
         )
-        logger.info(
-            f"optimi. diff: {optu.weighted_diff(module.opt_log_time, module.opt_imp, theo_impedance_int)}"
+        optimized_diff = optu.weighted_diff(
+            module.opt_log_time, module.opt_imp, theo_impedance_int
         )
+
+        logger.info(
+            "Optimization metrics for '%s': initial=%.4e, forward=%.4e, optimized=%.4e",
+            module.label,
+            initial_diff,
+            forward_diff,
+            optimized_diff,
+        )
+
+        logger.info("Finished optimization refinement for '%s'", module.label)
 
         return module
 
@@ -780,15 +881,13 @@ class Evaluation:
 
     def _theoretical_module(self):
 
-        logger.info("Calculating theoretical impedance")
-
         saved_parameters = self.parameters.copy()
 
         if (
             "theo_inverse_specs" in self.parameters.keys()
             and self.parameters["theo_inverse_specs"] is not None
         ):
-            logger.info("Using theoretical inverse specs")
+            logger.debug("Using theoretical inverse specs")
             inverse_specs = self.parameters.pop("theo_inverse_specs")
             self.parameters = dbase.validate_and_merge_defaults(
                 inverse_specs, self.parameters
@@ -800,6 +899,7 @@ class Evaluation:
                 raise ValueError(f"{key} must be provided in the parameters.")
 
         module: StructureFunction = StructureFunction(self.parameters)
+        logger.info("Calculating theoretical impedance for '%s'", module.label)
         inv_module = trop.TransientOptimizer(self.parameters)
 
         module.theo_log_time = np.linspace(
@@ -847,6 +947,7 @@ class Evaluation:
         self._add_module_to_eval_dict(module)
         self.parameters = saved_parameters
 
+        logger.info("Finished theoretical module '%s'", module.label)
         return module
 
     def comparison_module(self, parameters: dict):
@@ -885,9 +986,18 @@ class Evaluation:
         ]
 
         results_module.mod_value_list = list(iterators[0])
+        logger.info(
+            "Starting comparison (%s) across %d variation(s) of %s",
+            self.parameters["evaluation_type"],
+            len(results_module.mod_value_list),
+            results_module.mod_key_display_name,
+        )
 
         if not bootstraping:
-            logger.info("Comparing to theoretical impedance, not bootstrapping")
+            logger.info(
+                "Comparing against theoretical impedance using '%s' evaluation",
+                self.parameters["evaluation_type"],
+            )
             if self.parameters["evaluation_type"] == "optimization":
                 time_name = "theo_log_time"
                 time_const_name = "theo_time_const"
@@ -905,7 +1015,7 @@ class Evaluation:
             )
 
         else:
-            logger.info("Bootstrapping comparison")
+            logger.info("Comparing bootstrap results to theoretical impedance")
             self.parameters["bootstrap_mode"] = "from_theo"
             time_name = "boot_deriv_time"
             time_const_name = "boot_time_spec_av"
@@ -958,14 +1068,19 @@ class Evaluation:
                 results_module.structure_comparison[n] = norm_struc
                 results_module.total_resist_diff[n] = res_diff
 
-            logger.info(f"l2_norm_time_const: {norm_time}")
-            logger.info(f"norm_structure: {norm_struc}")
-            logger.info(f"total_resist_diff: {res_diff}")
+            logger.info(
+                "Comparison for '%s': l2_norm_time_const=%.4e, norm_structure=%.4e, total_resist_diff=%.4e",
+                module.label,
+                norm_time,
+                norm_struc,
+                res_diff,
+            )
 
         results_module.data_handlers.add("comparison")
 
         self._add_module_to_eval_dict(results_module)
 
+        logger.info("Completed comparison across %d module(s)", self.set_length)
         return results_module
 
     def temperature_prediction_module(self, parameters):
@@ -991,6 +1106,12 @@ class Evaluation:
             module.reference_impulse_response = module.theo_imp_deriv
         else:
             raise ValueError("evaluation_type must be 'standard' or 'optimization'.")
+
+        logger.info(
+            "Starting temperature prediction for '%s' using '%s' evaluation",
+            module.label,
+            evaluation_type,
+        )
 
         module.power_t = self.parameters.get("power_data")[:, 0]
         module.power_function = self.parameters.get("power_data")[:, 1]
@@ -1020,8 +1141,8 @@ class Evaluation:
         area_interp = np.trapz(module.impulse_response_int, x=module.lin_time)
         area_org = np.trapz(module.reference_impulse_response, x=module.reference_time)
 
-        logger.info(f"Original area: {area_org}")
-        logger.info(f"Interpolated area: {area_interp}")
+        logger.debug("Original impulse area: %s", area_org)
+        logger.debug("Interpolated impulse area: %s", area_interp)
 
         logger.info("Starting convolution")
 
@@ -1041,4 +1162,9 @@ class Evaluation:
 
         self._add_module_to_eval_dict(module)
 
+        logger.info(
+            "Temperature prediction complete for '%s' (%d samples)",
+            module.label,
+            len(module.predicted_temperature),
+        )
         return module

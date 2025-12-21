@@ -67,15 +67,15 @@ def timer_decorator(func):
     def wrapper(*args, **kwargs):
         min_time = float("inf")
         reps = 1
-        logger.info("\n" + func.__name__ + " is running")
+        logger.debug("%s is running", func.__name__)
         for _ in range(reps):
             start = time.perf_counter()
             result = func(*args, **kwargs)
             end = time.perf_counter()
             min_time = min(min_time, end - start)
         formatted_time = format_time(min_time)
-        logger.info(
-            f"{func.__name__} took a minimum of {formatted_time} over {reps} runs\n"
+        logger.debug(
+            "%s took a minimum of %s over %d run(s)", func.__name__, formatted_time, reps
         )
         return result
 

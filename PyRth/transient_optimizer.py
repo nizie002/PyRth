@@ -323,8 +323,10 @@ class TransientOptimizer:
             )
             self.results_res.append(opt_res)
             self.results_cap.append(opt_cap)
-            logger.info(
-                f"#function eval: {self.eval_count} objective: {self.results_obj[-1]:.4f}"
+            logger.debug(
+                "#function eval: %d objective: %.4f",
+                self.eval_count,
+                self.results_obj[-1],
             )
             self.eval_count += 1
 
