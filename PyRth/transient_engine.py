@@ -1,14 +1,16 @@
+"""Core numerical routines for transient analysis."""
+
 import numpy as np
 from numba import njit
 
 
 @njit(cache=True)
 def polyfit(X, y, weights):
-    # Calculate weighted means
+    """Return weighted linear fit coefficients (slope, intercept)."""
+
     weighted_mean_x = sum([w * x for w, x in zip(weights, X)]) / sum(weights)
     weighted_mean_y = sum([w * y_i for w, y_i in zip(weights, y)]) / sum(weights)
 
-    # Calculate weighted sums for the slope calculation
     numerator = sum(
         [
             w * (x - weighted_mean_x) * (y_i - weighted_mean_y)
@@ -41,6 +43,7 @@ def derivative(
     pad_factor_after,
     dummy=False,
 ):
+    """Compute smoothed impedance and derivative on a log-time grid."""
 
     if dummy:
         return
@@ -145,7 +148,6 @@ def derivative(
             weight = frame_weight * spacing_weight
 
             coefs = polyfit(t_frame, z_frame, weight)
-            # poly_value = polyval(t_val, coefs)
             poly_value = coefs[0] * t_val + coefs[1]
 
             var = expected_var**2
@@ -154,12 +156,10 @@ def derivative(
             z_frame_copy = z_frame.copy()
             z_frame_copy[center_index] = impedance[index] - dif_spread * poly_value
             coefs_lower = polyfit(t_frame, z_frame_copy, weight)
-            # polval_lower = polyval(t_val, coefs_lower)
             polval_lower = coefs_lower[0] * t_val + coefs_lower[1]
 
             z_frame_copy[center_index] = impedance[index] + dif_spread * poly_value
             coefs_upper = polyfit(t_frame, z_frame_copy, weight)
-            # polval_upper = polyval(t_val, coefs_upper)
             polval_upper = coefs_upper[0] * t_val + coefs_upper[1]
 
             diff_term = abs(
@@ -217,6 +217,7 @@ def derivative(
 def bayesian_deconvolution(
     re_mat=np.array([[]]), imp_deriv_interp=np.array([]), N=float(1.0)
 ):
+    """Iteratively deconvolve a response matrix from a derivative signal."""
 
     true = imp_deriv_interp.copy().reshape(-1, 1)
 
@@ -237,6 +238,7 @@ def bayesian_deconvolution(
 
 @njit(cache=True)
 def response_matrix(domain=np.array([]), x_len=float(1.0)):
+    """Build the normalized response matrix for the given log-time domain."""
 
     response = np.zeros((x_len, x_len))
 
@@ -254,44 +256,36 @@ def response_matrix(domain=np.array([]), x_len=float(1.0)):
 
 @njit(cache=True)
 def lanczos_inner(cap_fost=np.array([]), res_fost=np.array([])):
+    """Compute Foster RC elements via a Lanczos-style recurrence."""
 
     C_diag = cap_fost
     K_diag = 1.0 / res_fost
 
-    # Initialize g as a vector of ones
     g = np.ones_like(C_diag)
-    # Solve Cr = g for r
     r = g / C_diag
 
-    # Initialize variables
     beta = np.sqrt(np.dot(r.T, g))
     v = np.zeros_like(r)
 
-    # Initialize lists for res and cap
     res = []
     cap = []
 
-    # Compute u, alpha, r, and beta for the first iteration
     u = r / beta
     alpha = -np.dot(u.T, K_diag * u)
     r = (-(K_diag + alpha * C_diag) * u - beta * C_diag * v) / C_diag
     beta_next = np.sqrt(np.dot(r.T, C_diag * r))
     v = u
 
-    # Compute cap1 and res1
     cap.append(1 / (beta**2))
     res.append(-1 / (alpha * cap[0]))
 
-    # Store previous values
     beta_prev = beta
     cap_prev = cap[0]
     res_prev = res[0]
 
-    # Initialize res_sum and cap_sum
     res_sum = 0.0
     cap_sum = 0.0
 
-    # Continue the loop until the divergence is reached
     while cap_sum < 1e4:
         u = r / beta_next
         alpha = -np.dot(u.T, K_diag * u)
@@ -301,7 +295,6 @@ def lanczos_inner(cap_fost=np.array([]), res_fost=np.array([])):
 
         v = u
 
-        # Compute capi and resi
         cap_next = 1.0 / (beta_prev**2.0 * res_prev**2.0 * cap_prev)
         res_next = -1.0 / (alpha * cap_next + 1.0 / res_prev)
 
@@ -311,11 +304,9 @@ def lanczos_inner(cap_fost=np.array([]), res_fost=np.array([])):
         cap.append(cap_next)
         res.append(res_next)
 
-        # Add res_next to res_sum and cap_next to cap_sum
         res_sum += res_next
         cap_sum += cap_next
 
-        # Update previous values
         cap_prev = cap_next
         res_prev = res_next
 
