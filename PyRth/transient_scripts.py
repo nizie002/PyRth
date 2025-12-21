@@ -676,16 +676,16 @@ class Evaluation:
         module.cau_res_opt = module.int_cau_res
         module.cau_cap_opt = module.int_cau_cap
 
-        N = self.parameters["opt_model_layers"]
+        num_layers = self.parameters["opt_model_layers"]
         if self.parameters["struc_init_method"] == "optimal_fit":
             logger.info(
                 "Initializing structure function via optimal_fit for '%s' with %d layers",
                 module.label,
-                N,
+                num_layers,
             )
 
             struc_marker, init_opt_result = opt_module.optimize_theo_struc(
-                module.cau_res_opt, module.cau_cap_opt, N
+                module.cau_res_opt, module.cau_cap_opt, num_layers
             )
             (
                 module.init_opt_imp_res,
@@ -707,7 +707,7 @@ class Evaluation:
                 "Initializing structure function via x_sampling for '%s'", module.label
             )
             module.init_opt_imp_res, module.init_opt_imp_cap = (
-                opt_module.struc_x_sample(module.cau_res_opt, module.cau_cap_opt, N)
+                opt_module.struc_x_sample(module.cau_res_opt, module.cau_cap_opt, num_layers)
             )
 
         module.init_opt_imp_res_diff = opt_module.sort_and_lim_diff(
