@@ -1,8 +1,11 @@
+"""Frequency-domain filter curves for transient processing."""
+
 import numpy as np
 from scipy import fftpack
 
 
 def give_current_filter(name, frequency, filter_range, filter_parameter):
+    """Return the selected filter curve in the original frequency ordering."""
 
     frequency = fftpack.fftshift(frequency)
     if name == "fermi":
@@ -26,18 +29,15 @@ def give_current_filter(name, frequency, filter_range, filter_parameter):
 
 
 def fermi_filter(vrange, bandw, sigm):
-
-    # fermi filter
+    """Build a Fermi-style roll-off filter curve."""
 
     exp = np.exp(-(np.abs(vrange) - bandw) / sigm)
 
     return exp / (1 + exp)
-    # return 1.0/(np.exp((np.abs(vrange) - bandw)/sigm) + 1)
 
 
 def nuttall_filter(vrange, ipt_freq):
-
-    # nuttall filter
+    """Build a Nuttall window filter curve within the input frequency bounds."""
 
     maxfreq = np.abs(ipt_freq)
 
@@ -45,9 +45,9 @@ def nuttall_filter(vrange, ipt_freq):
     idx_u = np.searchsorted(vrange, maxfreq)
     idx_max = vrange.size
 
-    N_minus_one = idx_u - idx_l - 1
+    n_minus_one = idx_u - idx_l - 1
 
-    index = np.arange(0, N_minus_one + 1)
+    index = np.arange(0, n_minus_one + 1)
     a_0 = 0.355768
     a_1 = 0.487396
     a_2 = 0.144232
@@ -55,9 +55,9 @@ def nuttall_filter(vrange, ipt_freq):
 
     filter_curve = (
         a_0
-        - a_1 * np.cos(2 * np.pi * index / N_minus_one)
-        + a_2 * np.cos(4 * np.pi * index / N_minus_one)
-        - a_3 * np.cos(6 * np.pi * index / N_minus_one)
+        - a_1 * np.cos(2 * np.pi * index / n_minus_one)
+        + a_2 * np.cos(4 * np.pi * index / n_minus_one)
+        - a_3 * np.cos(6 * np.pi * index / n_minus_one)
     )
 
     filter_curve = np.append(np.zeros(idx_l), filter_curve)
@@ -67,8 +67,7 @@ def nuttall_filter(vrange, ipt_freq):
 
 
 def blackman_nuttall_filter(vrange, ipt_freq):
-
-    # blackman nuttall filter
+    """Build a Blackman-Nuttall window filter curve within the input frequency bounds."""
 
     maxfreq = np.abs(ipt_freq)
 
@@ -76,9 +75,9 @@ def blackman_nuttall_filter(vrange, ipt_freq):
     idx_u = np.searchsorted(vrange, maxfreq)
     idx_max = vrange.size
 
-    N_minus_one = idx_u - idx_l - 1
+    n_minus_one = idx_u - idx_l - 1
 
-    index = np.arange(0, N_minus_one + 1)
+    index = np.arange(0, n_minus_one + 1)
     a_0 = 0.3635819
     a_1 = 0.4891775
     a_2 = 0.1365995
@@ -86,9 +85,9 @@ def blackman_nuttall_filter(vrange, ipt_freq):
 
     filter_curve = (
         a_0
-        - a_1 * np.cos(2 * np.pi * index / N_minus_one)
-        + a_2 * np.cos(4 * np.pi * index / N_minus_one)
-        - a_3 * np.cos(6 * np.pi * index / N_minus_one)
+        - a_1 * np.cos(2 * np.pi * index / n_minus_one)
+        + a_2 * np.cos(4 * np.pi * index / n_minus_one)
+        - a_3 * np.cos(6 * np.pi * index / n_minus_one)
     )
 
     filter_curve = np.append(np.zeros(idx_l), filter_curve)
@@ -98,8 +97,7 @@ def blackman_nuttall_filter(vrange, ipt_freq):
 
 
 def blackman_harris_filter(vrange, ipt_freq):
-
-    # blackman harris filter
+    """Build a Blackman-Harris window filter curve within the input frequency bounds."""
 
     maxfreq = np.abs(ipt_freq)
 
@@ -107,9 +105,9 @@ def blackman_harris_filter(vrange, ipt_freq):
     idx_u = np.searchsorted(vrange, maxfreq)
     idx_max = vrange.size
 
-    N_minus_one = idx_u - idx_l - 1
+    n_minus_one = idx_u - idx_l - 1
 
-    index = np.arange(0, N_minus_one + 1)
+    index = np.arange(0, n_minus_one + 1)
     a_0 = 0.35875
     a_1 = 0.48829
     a_2 = 0.14128
@@ -117,9 +115,9 @@ def blackman_harris_filter(vrange, ipt_freq):
 
     filter_curve = (
         a_0
-        - a_1 * np.cos(2 * np.pi * index / N_minus_one)
-        + a_2 * np.cos(4 * np.pi * index / N_minus_one)
-        - a_3 * np.cos(6 * np.pi * index / N_minus_one)
+        - a_1 * np.cos(2 * np.pi * index / n_minus_one)
+        + a_2 * np.cos(4 * np.pi * index / n_minus_one)
+        - a_3 * np.cos(6 * np.pi * index / n_minus_one)
     )
 
     filter_curve = np.append(np.zeros(idx_l), filter_curve)
@@ -129,8 +127,7 @@ def blackman_harris_filter(vrange, ipt_freq):
 
 
 def hann_filter(vrange, ipt_freq):
-
-    # hann filter
+    """Build a Hann window filter curve within the input frequency bounds."""
 
     maxfreq = np.abs(ipt_freq)
 
@@ -138,12 +135,12 @@ def hann_filter(vrange, ipt_freq):
     idx_u = np.searchsorted(vrange, maxfreq)
     idx_max = vrange.size
 
-    N_minus_one = idx_u - idx_l - 1
+    n_minus_one = idx_u - idx_l - 1
 
-    index = np.arange(0, N_minus_one + 1)
+    index = np.arange(0, n_minus_one + 1)
 
-    filter_curve = np.sin(np.pi * index / N_minus_one) * np.sin(
-        np.pi * index / N_minus_one
+    filter_curve = np.sin(np.pi * index / n_minus_one) * np.sin(
+        np.pi * index / n_minus_one
     )
 
     filter_curve = np.append(np.zeros(idx_l), filter_curve)
@@ -153,8 +150,7 @@ def hann_filter(vrange, ipt_freq):
 
 
 def rectangular_filter(vrange, ipt_freq):
-
-    # rectangular filter
+    """Build a rectangular window filter curve within the input frequency bounds."""
 
     maxfreq = np.abs(ipt_freq)
 
@@ -162,9 +158,9 @@ def rectangular_filter(vrange, ipt_freq):
     idx_u = np.searchsorted(vrange, maxfreq)
     idx_max = vrange.size
 
-    N_minus_one = idx_u - idx_l - 1
+    n_minus_one = idx_u - idx_l - 1
 
-    index = np.arange(0, N_minus_one + 1)
+    index = np.arange(0, n_minus_one + 1)
 
     filter_curve = np.ones(len(index))
 
@@ -175,8 +171,7 @@ def rectangular_filter(vrange, ipt_freq):
 
 
 def gauss_filter(vrange, ipt_freq, sigm):
-
-    # rectangular filter
+    """Build a Gaussian window filter curve within the input frequency bounds."""
 
     maxfreq = np.abs(ipt_freq)
 
@@ -184,12 +179,12 @@ def gauss_filter(vrange, ipt_freq, sigm):
     idx_u = np.searchsorted(vrange, maxfreq)
     idx_max = vrange.size
 
-    N_minus_one = idx_u - idx_l - 1
+    n_minus_one = idx_u - idx_l - 1
 
-    index = np.arange(0, N_minus_one + 1)
+    index = np.arange(0, n_minus_one + 1)
 
     filter_curve = np.exp(
-        -0.5 * ((index - (N_minus_one / 2)) / (sigm * N_minus_one / 2)) ** 2
+        -0.5 * ((index - (n_minus_one / 2)) / (sigm * n_minus_one / 2)) ** 2
     )
 
     filter_curve = np.append(np.zeros(idx_l), filter_curve)
