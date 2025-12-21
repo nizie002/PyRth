@@ -7,7 +7,7 @@ from scipy.integrate import cumulative_trapezoid
 def ext_weighted_diff(x_vals, y_1, y_2, weight):
     """Compute weighted L2 distance using trapezoidal integration."""
 
-    return np.sqrt(np.trapz(((y_1 - y_2) * weight) ** 2, x=x_vals))
+    return np.sqrt(np.trapezoid(((y_1 - y_2) * weight) ** 2, x=x_vals))
 
 
 def weighted_diff_sum(x_vals, y_1, y_2, weight):
@@ -20,7 +20,7 @@ def weighted_diff_sum(x_vals, y_1, y_2, weight):
 def weighted_diff(x_vals, y_1, y_2):
     """Measure L2 difference between two curves over shared x-axis."""
 
-    return np.sqrt(np.trapz((y_1 - y_2) ** 2, x=x_vals))
+    return np.sqrt(np.trapezoid((y_1 - y_2) ** 2, x=x_vals))
 
 
 def log_log_weighted_diff(x_vals, y_1, y_2):
@@ -30,13 +30,13 @@ def log_log_weighted_diff(x_vals, y_1, y_2):
     y1_filt = y_1[safe]
     y2_filt = y_2[safe]
     x_filt = x_vals[safe]
-    return np.sqrt(np.trapz((np.log(y1_filt) - np.log(y2_filt)) ** 2, x=x_filt))
+    return np.sqrt(np.trapezoid((np.log(y1_filt) - np.log(y2_filt)) ** 2, x=x_filt))
 
 
 def weighted_relativ_diff(x_vals, y_1, y_2):
     """Relative difference penalizing proportionate deviations between curves."""
 
-    return np.sqrt(np.trapz(((y_1 - y_2) / (y_1 + y_2)) ** 2, x=x_vals))
+    return np.sqrt(np.trapezoid(((y_1 - y_2) / (y_1 + y_2)) ** 2, x=x_vals))
 
 
 def l2_norm_time_const(theo_x, theo_y, compare_x, compare_y, sum_given=False):
@@ -52,7 +52,7 @@ def l2_norm_time_const(theo_x, theo_y, compare_x, compare_y, sum_given=False):
     theo_x_small = theo_x[dex1:dex2]
     sum_compare_y_fine = np.interp(theo_x_small, compare_x, sum_compare_y)
     return np.sqrt(
-        np.trapz((sum_compare_y_fine - sum_theo_y[dex1:dex2]) ** 2, x=theo_x_small)
+        np.trapezoid((sum_compare_y_fine - sum_theo_y[dex1:dex2]) ** 2, x=theo_x_small)
     )
 
 
@@ -69,4 +69,4 @@ def norm_structure(theo_x, theo_y, compare_x, compare_y):
     compare_y_fine = np.interp(res_fine, compare_x, compare_y_capped)
     theo_y_fine = np.log(theo_y_fine)
     compare_y_fine = np.log(compare_y_fine)
-    return np.trapz(np.abs(compare_y_fine - theo_y_fine), x=res_fine)
+    return np.trapezoid(np.abs(compare_y_fine - theo_y_fine), x=res_fine)
