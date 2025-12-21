@@ -14,8 +14,8 @@ import numpy.fft as fftpack
 import numpy.polynomial.polynomial as poly
 import scipy.interpolate as interp
 
-from sklearn.linear_model import Lasso, LassoCV  # automatic α via CV
-from sklearn.metrics import r2_score  # Import R2 score
+from sklearn.linear_model import Lasso, LassoCV
+from sklearn.metrics import r2_score
 
 from . import transient_filter_functions as flt
 from .utils import transient_utils as utl
@@ -189,7 +189,6 @@ class StructureFunction(dbase.StructureParameters):
             self.lower_fit_index = np.searchsorted(self.time_raw, self.lower_fit_limit)
             self.upper_fit_index = np.searchsorted(self.time_raw, self.upper_fit_limit)
 
-            # Extrapolate temperature data
             self.time, self.temperature, self.expl_ft_prm, t_null = (
                 utl.extrapolate_temperature(
                     self.time_raw,
@@ -200,7 +199,6 @@ class StructureFunction(dbase.StructureParameters):
             )
 
         else:
-            # Apply data cutting based on specified indices
             start_idx = max(0, self.data_cut_lower)
             end_idx = min(len(self.time_raw), self.data_cut_upper)
 
@@ -213,12 +211,10 @@ class StructureFunction(dbase.StructureParameters):
 
             self.temperature = self.temp_raw[start_idx:end_idx]
 
-            # Calculate initial temperature, t_null, using average over specified range
             t0_start = max(0, self.temp_0_avg_range[0])
             t0_end = min(len(self.temp_raw), self.temp_0_avg_range[1])
             t_null = np.mean(self.temp_raw[t0_start:t0_end])
 
-        # Calculate impedance
         self.impedance = utl.tmp_to_z(
             self.temperature,
             t_null,
@@ -369,7 +365,6 @@ class StructureFunction(dbase.StructureParameters):
         spectrum.  The resulting ``time_spec`` feeds the same Foster/Cauer
         converters as every other deconvolution strategy.
         """
-        # require at least one positive impedance
         if not np.any(self.impedance > 0):
             logger.error("z_fit_lasso: impedance must contain positive values")
             logger.error(f"Impedance: {self.impedance}")
@@ -524,7 +519,6 @@ class StructureFunction(dbase.StructureParameters):
         FFT origin; this keeps ``fft_idi`` and ``fft_wgt`` on the same frequency
         grid before division and windowing.
         """
-        # calculates the fourier transform of the weight function
         null_index = np.searchsorted(self.log_time_pad, 0.0)
 
         self.trans_weight = np.roll(utl.weight_z(self.log_time_pad), -null_index)
@@ -542,8 +536,6 @@ class StructureFunction(dbase.StructureParameters):
         inverse-transforms back to logarithmic time to obtain ``time_spec`` and
         its cumulative sum.
         """
-
-        # calculates the deconvolution and returns the time constant spectrum with the selected filter
 
         self.current_filter = flt.give_current_filter(
             self.filter_name, self.fft_freq, self.filter_range, self.filter_parameter
@@ -993,13 +985,10 @@ class StructureFunction(dbase.StructureParameters):
 
         if self.blockwise_sum_width > 1:
 
-            # Calculate the number of blocks
             num_blocks = len(self.cau_res) // self.blockwise_sum_width
 
-            # Create an array of indices for each block
             indices = np.arange(num_blocks) * self.blockwise_sum_width
 
-            # Calculate the blockwise sum
             self.cau_res = np.add.reduceat(self.cau_res, indices)
             self.cau_cap = np.add.reduceat(self.cau_cap, indices)
 
