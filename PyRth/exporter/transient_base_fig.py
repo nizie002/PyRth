@@ -86,7 +86,6 @@ class StructureFigure:
     def close(self):
         """Release Matplotlib resources associated with this figure."""
         try:
-            self.fig.clf()
             plt.close(self.fig)
         except (RuntimeError, ValueError) as e:
             plt.close("all")
