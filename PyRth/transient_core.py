@@ -8,7 +8,6 @@ conversion algorithms described throughout the theory docs.
 import logging
 from typing import Any, Mapping
 import gmpy2 as gp
-from gmpy2 import mpfr
 import numpy as np
 import numpy.fft as fftpack
 import numpy.polynomial.polynomial as poly
@@ -611,155 +610,30 @@ class StructureFunction(dbase.StructureParameters):
         keeps the subsequent Euclidean conversions numerically stable even for
         ladders with dozens of elements.
         """
-        # use gmp2 for arbitrary precision floating point arithmetic
-        self.mpfr_resist_fost = [
-            mpfr(num) for num in self.therm_resist_fost
-        ]  # num[0] is the constant term in Z(s)
-        self.mpfr_capa_fost = [
-            mpfr(denom) for denom in self.therm_capa_fost
-        ]  # num[i] is the a_i x^i term in Z(s)
-
-        self.mpfr_z_num, self.mpfr_z_denom = mpu.make_z_s(
-            self.mpfr_resist_fost, self.mpfr_capa_fost
-        )
+        (
+            self.mpfr_resist_fost,
+            self.mpfr_capa_fost,
+            self.mpfr_z_num,
+            self.mpfr_z_denom,
+        ) = mpu.build_mpfr_foster_impedance(self.therm_resist_fost, self.therm_capa_fost)
 
     def poly_long_div(self):
         """Classical Euclidean Foster→Cauer conversion with MPFR arithmetic."""
 
-        ar_len = len(self.mpfr_z_denom) - 1
+        self.cau_res, self.cau_cap = mpu.poly_long_division_to_cauer(
+            self.mpfr_z_num, self.mpfr_z_denom
+        )
 
-        self.cau_res = np.zeros(ar_len)
-        self.cau_cap = np.zeros(ar_len)
-
-        for i in range(ar_len):
-            self.mpfr_z_num, self.mpfr_z_denom, cap, res = mpu.precision_step(
-                self.mpfr_z_num, self.mpfr_z_denom
-            )
-            self.cau_res[i] = float(res)
-            self.cau_cap[i] = float(cap)
-
-        if np.any(self.cau_res[self.cau_res < 0.0]) or np.any(
-            self.cau_res[self.cau_cap < 0.0]
-        ):
-            logger.error(
-                "\n negative values in structure function encountered using N = %d",
-                len(self.cau_cap),
-            )
-
-        self.int_cau_res = np.cumsum(self.cau_res)
-        self.int_cau_cap = np.cumsum(self.cau_cap)
-
-        self.diff_struc = np.zeros(ar_len - 1)
-
-        for i in range(len(self.int_cau_res) - 1):
-            if not (self.int_cau_res[i] - self.int_cau_res[i + 1]) == 0.0:
-                self.diff_struc[i] = (self.int_cau_cap[i] - self.int_cau_cap[i + 1]) / (
-                    self.int_cau_res[i] - self.int_cau_res[i + 1]
-                )
+        self._finalize_cauer()
 
     def boor_golub(self):
         """Execute the Boor–Golub continued-fraction algorithm in MPFR space."""
 
-        poles = []
+        self.cau_res, self.cau_cap = mpu.boor_golub_cauer(
+            self.mpfr_resist_fost, self.mpfr_capa_fost
+        )
 
-        for R, C in zip(self.mpfr_resist_fost, self.mpfr_capa_fost):
-            if R > 0 and C > 0:
-                poles.append(mpfr("-1.0") / (R * C))
-
-        M = len(poles) - 1
-        w_0 = [0] * (M + 1)
-
-        for i in range(M + 1):
-            w_0[i] = mpfr("1.0") / self.mpfr_capa_fost[i]
-
-        k = [mpfr("0.0")] * (2 * (M + 1))
-
-        w_sum = mpfr("0.0")
-        for w in w_0:
-            w_sum = w_sum + w
-
-        k[1] = mpfr("1.0") / w_sum
-
-        lmda = [mpfr("0.0")] * (M + 1)
-        mu = [mpfr("0.0")] * (M + 1)
-        l_mu_sum = [mpfr("0.0")] * (M)
-        l_mu_prod = [mpfr("0.0")] * (M)
-        B = [0] * (M + 1)
-
-        B[0] = [mpfr("1.0")]
-
-        for i in range(M + 1):
-            lmda[0] = lmda[0] - w_0[i] * poles[i]
-        lmda[0] = lmda[0] / w_sum
-
-        k[2] = mpfr("1.0") / (k[1] * lmda[0])
-        B[1] = [lmda[0], mpfr("1.0")]
-
-        Bs1 = list(B[1])
-        Bs1.insert(0, mpfr("0.0"))
-
-        l_mu_prod[0] = mpu.mpfr_weighted_self_product(
-            poles, B[1], w_0
-        ) / mpu.mpfr_weighted_self_product(poles, B[0], w_0)
-
-        mu[1] = l_mu_prod[0] / lmda[0]
-
-        for i in range(2, M + 1):
-            Bs = list(B[i - 1])
-            Bs.insert(0, mpfr("0.0"))
-
-            l_mu_sum[i - 1] = mpu.mpfr_weighted_inner_product(
-                poles, B[i - 1], Bs, w_0
-            ) / mpu.mpfr_weighted_self_product(poles, B[i - 1], w_0)
-
-            lmda[i - 1] = l_mu_sum[i - 1] - mu[i - 1]
-
-            fst = mpu.mpfr_pol_mul(([l_mu_sum[i - 1], mpfr("1.0")]), B[i - 1])
-            snd = mpu.mpfr_pol_mul(([-l_mu_prod[i - 2]]), B[i - 2])
-            B[i] = mpu.mpfr_pol_add(fst, snd)
-
-            l_mu_prod[i - 1] = mpu.mpfr_weighted_self_product(
-                poles, B[i], w_0
-            ) / mpu.mpfr_weighted_self_product(poles, B[i - 1], w_0)
-            mu[i] = l_mu_prod[i - 1] / lmda[i - 1]
-
-        k[3] = (k[1] * lmda[0]) / mu[1]
-        for i in range(2, M + 1):
-            lambdas = k[1]
-            mus = mu[1]
-            for j in range(2, i):
-                mus = mus * mu[j]
-            for j in range(i):
-                lambdas = lambdas * lmda[j]
-            k[2 * i] = mus / lambdas
-            k[2 * i + 1] = lambdas / (mus * mu[i])
-
-        self.cau_res = np.zeros(M + 1)
-        self.cau_cap = np.zeros(M + 1)
-
-        for i in range(0, M):
-            self.cau_res[i] = float(k[2 * i + 2])
-            self.cau_cap[i] = float(k[2 * i + 1])
-        self.cau_cap[M] = float(k[2 * M + 1])
-
-        if np.any(self.cau_res[self.cau_res < 0.0]) or np.any(
-            self.cau_res[self.cau_cap < 0.0]
-        ):
-            logger.error(
-                "\n negative values in structure function encountered using N = %d",
-                len(self.cau_cap),
-            )
-
-        self.int_cau_res = np.cumsum(self.cau_res)
-        self.int_cau_cap = np.cumsum(self.cau_cap)
-
-        self.diff_struc = np.zeros(M)
-
-        for i in range(len(self.int_cau_res) - 1):
-            if not (self.int_cau_res[i] - self.int_cau_res[i + 1]) == 0.0:
-                self.diff_struc[i] = (self.int_cau_cap[i] - self.int_cau_cap[i + 1]) / (
-                    self.int_cau_res[i] - self.int_cau_res[i + 1]
-                )
+        self._finalize_cauer()
 
     def j_fraction_methods(self):
         """Select between the Khatwani or Sobhy J-fraction routes to Cauer.
@@ -770,195 +644,29 @@ class StructureFunction(dbase.StructureParameters):
         that J-fraction into the desired Cauer S-fraction.
         """
 
-        inv = gp.div(mpfr("1.0"), self.mpfr_z_denom[-1])
+        cleaned_mpfr_num, cleaned_mpfr_denom = mpu.normalize_rational_polynomials(
+            self.mpfr_z_num, self.mpfr_z_denom
+        )
 
-        N = len(self.mpfr_z_denom)
-
-        self.cleaned_mpfr_num = [
-            mpfr("0.0"),
-            *[gp.mul(inv, self.mpfr_z_num[N - i - 2]) for i in range(N - 1)],
-        ]
-        self.cleaned_mpfr_denom = [
-            gp.mul(inv, self.mpfr_z_denom[N - i - 1]) for i in range(N)
-        ]
+        N = len(cleaned_mpfr_denom)
 
         if self.struc_method == "khatwani":
-            markov_parameters = self.generate_markov_params(N)
-            large_h, small_h = self.khatwani_method(N, markov_parameters)
-
-        if self.struc_method == "sobhy":
-            large_h, small_h = self.sobhy_method(N)
-
-        self.conti_frac_convers(N, large_h, small_h)
-
-    def generate_markov_params(self, N):
-        """Produce the first ``2N`` Markov parameters via Newton doubling.
-
-        Implements the inversion strategy discussed in the Khatwani notes:
-        repeatedly doubles the accuracy of the inverse of the denominator
-        polynomial and multiplies it with the numerator to obtain the Markov
-        (Maclaurin) coefficients required by the triangular table.
-        """
-        order = int(np.ceil(np.log2(N)) + 1)
-
-        L = 1
-
-        last_term = [mpfr("1.0")]
-        last_error = self.cleaned_mpfr_denom[1:]
-
-        for i in range(1, order + 1):
-            pre_term = [mpfr("0.0")] * L
-            pre_term = pre_term + last_term
-
-            next_term = mpu.mpfr_pol_add(
-                last_term, mpu.mpfr_neg_pol_mul(last_error, pre_term, maxorder=2 * N)
-            )  # 2**(order)
-            next_error = mpu.mpfr_neg_pol_mul(
-                last_error, last_error, maxorder=2 * N
-            )  # 2**(order)
-
-            last_term = next_term
-            last_error = next_error
-
-            L = L * 2
-
-        markov_parameters = mpu.mpfr_pol_mul(self.cleaned_mpfr_num, next_term)[
-            1 : 2 * N + 1
-        ]  # L+1
-
-        return markov_parameters
-
-    def khatwani_method(self, N, markov_parameters):
-        """Build the triangular table that yields the H–h coefficients.
-
-        Populates the recurrence from the Markov parameters, mimicking the
-        algorithm documented in ``docs/theory/algorithms/khatwani_method.rst``.
-        The first two entries of each row provide ``H_i``/``h_i`` pairs that
-        later become the J-fraction coefficients.
-        """
-        a_matrix = [[None] * (2 * N) for i in range(N + 1)]
-        a_matrix[0] = [mpfr("0.0")] * (2 * N)
-        a_matrix[0][0] = mpfr("1.0")
-
-        large_h = [None] * (N - 1)
-        small_h = [None] * (N - 1)
-
-        for i in range(2 * N):
-            a_matrix[1][i] = markov_parameters[i]
-
-        large_h[0] = a_matrix[0][0] / a_matrix[1][0]
-        small_h[0] = (a_matrix[0][1] - large_h[0] * a_matrix[1][1]) / a_matrix[1][0]
-
-        for i in range(2, N):
-            for j in range(2 * N - (i - 1) * 2):
-                a_matrix[i][j] = (
-                    a_matrix[i - 2][j + 2]
-                    - large_h[i - 2] * a_matrix[i - 1][j + 2]
-                    - small_h[i - 2] * a_matrix[i - 1][j + 1]
-                )
-
-            large_h[i - 1] = a_matrix[i - 1][0] / a_matrix[i][0]
-            small_h[i - 1] = (
-                a_matrix[i - 1][1] - large_h[i - 1] * a_matrix[i][1]
-            ) / a_matrix[i][0]
-
-        return large_h, small_h
-
-    def sobhy_method(self, N):
-        """Sobhy's interlaced A/B-table alternative to Khatwani.
-
-        Uses alternating A/B rows driven by the numerator/denominator
-        coefficients to extract ``H_i`` and ``h_i`` without explicitly forming
-        Markov parameters; follows ``docs/theory/algorithms/sobhy_method.rst``.
-        """
-        A = [[mpfr("0.0")] * (N) for i in range(N + 1)]
-        B = [[mpfr("0.0")] * (N) for i in range(N + 1)]
-
-        for i in range(N):
-            A[0][i] = self.cleaned_mpfr_denom[i]
-            B[0][i] = self.cleaned_mpfr_denom[i]
-
-        for i in range(N - 1):
-            A[1][i] = self.cleaned_mpfr_num[i + 1]
-
-        for k in range(N - 1):
-            j = 1
-            B[j][k] = A[j - 1][k + 1] - A[j - 1][0] / A[j][0] * A[j][k + 1]
-
-        for j in range(2, N + 1):
-            for k in range(N - j):
-                A[j][k] = B[j - 1][k + 1] - B[j - 1][0] / A[j - 1][0] * A[j - 1][k + 1]
-            for k in range(N - j):
-                B[j][k] = A[j - 1][k + 1] - A[j - 1][0] / A[j][0] * A[j][k + 1]
-
-        a = [None] * (N - 1)
-        b = [None] * (N - 1)
-
-        for m in range(1, N):
-            a[m - 1] = A[m - 1][0] / A[m][0]
-            b[m - 1] = B[m][0] / A[m][0]
-
-        return a, b
-
-    def conti_frac_convers(self, N, large_h, small_h):
-        """Map H–h coefficients to the Stieltjes (Cauer) continued fraction.
-
-        Applies the algebra from the J-fraction notes to compute the alternating
-        ``c`` coefficients which directly correspond to the Cauer ladder's
-        capacitances/resistances.  The result drops straight into the exporter
-        path just like the polynomial and Lanczos methods.
-        """
-        a_square = [None] * (N - 1)
-        small_b = [None] * (N - 1)
-
-        a_square[0] = mpfr("1.0") / large_h[0]
-        small_b[0] = mpfr("-1.0") * small_h[0] / large_h[0]
-
-        for i in range(1, N - 1):
-            a_square[i] = mpfr("-1.0") / (large_h[i] * large_h[i - 1])
-            small_b[i] = -small_h[i] / large_h[i]
-
-        small_c = [None] * (2 * (N - 1))
-
-        small_c[0] = mpfr("1.0") / a_square[0]
-        small_c[1] = -a_square[0] / small_b[0]
-
-        for i in range(1, N - 1):
-            small_c[2 * i] = mpfr("1.0") / (
-                small_c[2 * i - 2]
-                * small_c[2 * i - 1]
-                * small_c[2 * i - 1]
-                * a_square[i]
+            markov_parameters = mpu.generate_markov_params(
+                cleaned_mpfr_num, cleaned_mpfr_denom
             )
-            small_c[2 * i + 1] = -small_c[2 * i - 1] / (
-                mpfr("1.0") + small_c[2 * i] * small_c[2 * i - 1] * small_b[i]
+            large_h, small_h = mpu.khatwani_method(N, markov_parameters)
+        elif self.struc_method == "sobhy":
+            large_h, small_h = mpu.sobhy_method(
+                N, cleaned_mpfr_num, cleaned_mpfr_denom
+            )
+        else:
+            raise ValueError(
+                f"Unsupported struc_method '{self.struc_method}' for J-fraction conversion"
             )
 
-        self.cau_res = np.zeros(N - 1)
-        self.cau_cap = np.zeros(N - 1)
+        self.cau_res, self.cau_cap = mpu.conti_frac_convers(N, large_h, small_h)
 
-        for i in range(0, N - 1):
-            self.cau_cap[i] = float(small_c[2 * i])
-            self.cau_res[i] = float(small_c[2 * i + 1])
-
-        if np.any(self.cau_res[self.cau_res < 0.0]) or np.any(
-            self.cau_res[self.cau_cap < 0.0]
-        ):
-            logger.error(
-                "negative structure-function values detected for N=%d",
-                len(self.cau_cap),
-            )
-
-        self.int_cau_res = np.cumsum(self.cau_res)
-        self.int_cau_cap = np.cumsum(self.cau_cap)
-
-        self.diff_struc = np.zeros(N - 2)
-
-        for i in range(len(self.int_cau_res) - 1):
-            if not (self.int_cau_res[i] - self.int_cau_res[i + 1]) == 0.0:
-                self.diff_struc[i] = (self.int_cau_cap[i] - self.int_cau_cap[i + 1]) / (
-                    self.int_cau_res[i] - self.int_cau_res[i + 1]
-                )
+        self._finalize_cauer()
 
     def lanczos(self):
         """Apply the Lanczos iteration to stream Cauer elements on the fly.
@@ -975,14 +683,6 @@ class StructureFunction(dbase.StructureParameters):
         self.cau_res = np.array(res)
         self.cau_cap = np.array(cap)
 
-        if np.any(self.cau_res[self.cau_res < 0.0]) or np.any(
-            self.cau_res[self.cau_cap < 0.0]
-        ):
-            logger.error(
-                "negative structure-function values detected for N=%d",
-                len(self.cau_cap),
-            )
-
         if self.blockwise_sum_width > 1:
 
             num_blocks = len(self.cau_res) // self.blockwise_sum_width
@@ -992,13 +692,34 @@ class StructureFunction(dbase.StructureParameters):
             self.cau_res = np.add.reduceat(self.cau_res, indices)
             self.cau_cap = np.add.reduceat(self.cau_cap, indices)
 
+        self._finalize_cauer()
+
+    def _compute_diff_structure(self):
+        """Derive the differential structure function, guarding zero slopes."""
+
+        if len(self.int_cau_res) < 2:
+            self.diff_struc = np.array([])
+            return
+
+        delta_res = np.diff(self.int_cau_res)
+        delta_cap = np.diff(self.int_cau_cap)
+
+        self.diff_struc = np.zeros_like(delta_res)
+
+        non_zero = delta_res != 0.0
+        self.diff_struc[non_zero] = delta_cap[non_zero] / delta_res[non_zero]
+
+    def _finalize_cauer(self):
+        """Common post-processing after Cauer ladder generation."""
+
+        if np.any(self.cau_res[self.cau_res < 0.0]) or np.any(
+            self.cau_res[self.cau_cap < 0.0]
+        ):
+            logger.error(
+                "negative structure-function values detected for N=%d", len(self.cau_cap)
+            )
+
         self.int_cau_res = np.cumsum(self.cau_res)
         self.int_cau_cap = np.cumsum(self.cau_cap)
 
-        self.diff_struc = np.zeros(len(self.int_cau_res) - 1)
-
-        for i in range(len(self.int_cau_res) - 1):
-            if not (self.int_cau_res[i] - self.int_cau_res[i + 1]) == 0.0:
-                self.diff_struc[i] = (self.int_cau_cap[i] - self.int_cau_cap[i + 1]) / (
-                    self.int_cau_res[i] - self.int_cau_res[i + 1]
-                )
+        self._compute_diff_structure()
