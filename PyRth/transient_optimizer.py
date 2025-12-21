@@ -239,7 +239,6 @@ class TransientOptimizer:
         theo_log_time,
         impedance,
         log_time,
-        global_weight,
         n,
         theo_delta,
     ):
@@ -259,7 +258,6 @@ class TransientOptimizer:
         )
         theo_impedance_int = np.interp(log_time, theo_log_time, theo_impedance)
         diff_val = optu.weighted_diff(log_time, theo_impedance_int, impedance)
-        # You may also compute diffloglog if needed.
         return diff_val
 
     def optimize_to_imp(
@@ -269,7 +267,6 @@ class TransientOptimizer:
         theo_log_time,
         impedance,
         log_time,
-        global_weight,
         theo_delta,
         opt_method="COBYLA",
     ):
@@ -307,7 +304,7 @@ class TransientOptimizer:
         self.results_res = []
         self.results_cap = []
 
-        def callbackF(arguments):
+        def callbackf(arguments):
             opt_res = np.sort(arguments[:N], kind="stable")
             opt_cap = np.sort(np.exp(arguments[N:]), kind="stable")
             self.results_obj.append(
@@ -316,7 +313,6 @@ class TransientOptimizer:
                     theo_log_time,
                     impedance,
                     log_time,
-                    global_weight,
                     N,
                     theo_delta,
                 )
@@ -335,8 +331,8 @@ class TransientOptimizer:
             opt_result = opt.minimize(
                 self.to_minimize_imp,
                 init_vect,
-                args=(theo_log_time, impedance, log_time, global_weight, N, theo_delta),
-                callback=callbackF,
+                args=(theo_log_time, impedance, log_time, N, theo_delta),
+                callback=callbackf,
                 method="Powell",
                 bounds=bounds_r * N + bounds_c * N,
                 options={"ftol": 0.001, "maxiter": N * 1000},
@@ -365,7 +361,7 @@ class TransientOptimizer:
             opt_result = opt.minimize(
                 self.to_minimize_imp,
                 init_vect,
-                args=(theo_log_time, impedance, log_time, global_weight, N, theo_delta),
+                args=(theo_log_time, impedance, log_time, N, theo_delta),
                 method="COBYLA",
                 constraints=cons,
                 tol=0.0001,
@@ -383,7 +379,6 @@ class TransientOptimizer:
                 theo_log_time,
                 impedance,
                 log_time,
-                global_weight,
                 N,
                 theo_delta,
             )

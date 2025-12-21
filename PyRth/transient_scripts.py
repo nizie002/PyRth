@@ -714,20 +714,12 @@ class Evaluation:
             self.parameters["opt_method"],
         )
 
-        global_weight = np.append(
-            (module.opt_log_time[1:] - module.opt_log_time[:-1]),
-            (module.opt_log_time[-1] - module.opt_log_time[-2]),
-        )
-
-        global_weight = global_weight / np.average(global_weight)
-
         module.fin_res, module.fin_cap, opt_result = opt_module.optimize_to_imp(
             module.init_opt_imp_res,
             module.init_opt_imp_cap,
             module.theo_log_time,
             module.opt_imp,
             module.opt_log_time,
-            global_weight,
             self.parameters["theo_delta"],
             self.parameters["opt_method"],
         )
@@ -1138,8 +1130,8 @@ class Evaluation:
             right=0.0,
         )
 
-        area_interp = np.trapz(module.impulse_response_int, x=module.lin_time)
-        area_org = np.trapz(module.reference_impulse_response, x=module.reference_time)
+        area_interp = np.trapezoid(module.impulse_response_int, x=module.lin_time)
+        area_org = np.trapezoid(module.reference_impulse_response, x=module.reference_time)
 
         logger.debug("Original impulse area: %s", area_org)
         logger.debug("Interpolated impulse area: %s", area_interp)
