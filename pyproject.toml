@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=64", "wheel"]
+requires = ["setuptools>=80.9.0", "wheel>=0.45.1"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,7 +7,7 @@ name = "PyRth"
 version = "1.2.0"
 description = "A tool for thermal transient analysis"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE.txt"]
 authors = [
@@ -18,27 +18,26 @@ classifiers = [
     "Operating System :: OS Independent"
 ]
 
-
 dependencies = [
-    "numpy>=1.26.4,<2.0.0",
-    "scipy>=1.14.1,<2.0.0",
-    "matplotlib>=3.9.3,<4.0.0",
-    "numba>=0.60.0,<1.0.0",
-    "gmpy2>=2.2.1,<3.0.0",
-    "scikit-learn>=1.4.2,<2.0.0"
+    "numpy>=2.2.0,<3.0.0",
+    "scipy>=1.16.0,<2.0.0",
+    "matplotlib>=3.10.0,<4.0.0",
+    "numba>=0.63.0,<1.0.0",
+    "gmpy2>=2.2.2,<3.0.0",
+    "scikit-learn>=1.8.0,<2.0.0"
 ]
 
 [project.optional-dependencies]
 docs = [
-    "sphinx>=4",
-    "sphinx-rtd-theme",
-    "sphinx-proof",
-    "myst-parser>=0.18.0",
+    "sphinx>=8.2.0,<9.0.0",
+    "sphinx-rtd-theme>=3.0.2,<4.0.0",
+    "sphinx-proof>=0.3.0,<1.0.0",
+    "myst-parser>=4.0.1,<5.0.0",
 ]
 dev = [
-    "pytest>=7.0.0",
-    "parameterized>=0.9.0",
+    "pytest>=9.0.0,<10.0.0",
 ]
+
 
 [project.urls]
 Homepage = "https://github.com/nizie002/PyRth"
