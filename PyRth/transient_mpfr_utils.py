@@ -12,7 +12,7 @@ behavior.
 from typing import Any, cast
 
 import gmpy2 as gp
-from gmpy2 import mpfr
+from gmpy2 import mpfr # pylint: disable=no-name-in-module
 import numpy as np
 
 gp = cast(Any, gp)
@@ -32,7 +32,7 @@ def make_z_s(r_fos, c_fos):
 
     for r_val, c_val in zip(r_fos, c_fos):
         sum_num = [r_val]
-        sum_denom = [mpfr("1.0"), gp.mul(r_val, c_val)]
+        sum_denom = [mpfr("1.0"), r_val * c_val]
         denom_list.append(sum_denom)
         num_list.append(sum_num)
 
@@ -187,12 +187,10 @@ def precision_step(numerator, denominator):
     res_inv = quotient[0]
     cap = quotient[1]
 
-    res = gp.div(mpfr("1.0"), res_inv)
+    res = mpfr("1.0") / res_inv
 
-    num_new = [gp.mul(-res, remainder[i]) for i in range(len(numerator))]
-    denom_new = [
-        gp.add(res_inv * numerator[i], remainder[i]) for i in range(len(numerator))
-    ]
+    num_new = [-res * remainder[i] for i in range(len(numerator))]
+    denom_new = [res_inv * numerator[i] + remainder[i] for i in range(len(numerator))]
 
     return num_new, denom_new, cap, res
 
@@ -212,11 +210,9 @@ def precision_polydiv(numerator, denominator):
     quotient = [mpfr("0.0") for i in range(len(numerator))]
 
     for k in range(nl - dl, -1, -1):
-        quotient[k] = gp.div(remainder[dl + k], denominator[dl])
+        quotient[k] = remainder[dl + k] / denominator[dl]
         for j in range(dl + k - 1, k - 1, -1):
-            remainder[j] = gp.add(
-                remainder[j], -gp.mul(quotient[k], denominator[j - k])
-            )
+            remainder[j] = remainder[j] - quotient[k] * denominator[j - k]
 
     for l in range(dl, nl + 1, 1):
         remainder[l] = mpfr("0.0")
