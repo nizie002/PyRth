@@ -7,10 +7,8 @@ from tests.assertions.bootstrap_assertions import bootstrap_assertions
 from tests.data.measurement_data import (
     MOSFET_CALIB_DATA,
     MOSFET_DRY_DATA,
-    MOSFET_TIM_DATA,
 )
 from tests.test_transient_base import run_evaluation_test
-from tests.assertions.bootstrap_assertions import bootstrap_assertions
 
 test_cases_bootstrap = [
     {

@@ -130,7 +130,7 @@ def run_evaluation_test(
         expected_log_path
     ), f"Log file '{expected_log_path}' was not created."
 
-    with open(expected_log_path, "r") as log_file:
+    with open(expected_log_path, "r", encoding="utf-8") as log_file:
         log_lines = log_file.readlines()
         error_logs = [
             line.strip()

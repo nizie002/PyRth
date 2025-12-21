@@ -5,7 +5,6 @@ import pytest
 from tests.data.measurement_data import (
     MOSFET_CALIB_DATA,
     MOSFET_DRY_DATA,
-    MOSFET_TIM_DATA,
 )
 from tests.test_transient_base import run_evaluation_test
 from tests.assertions.temperature_prediction_assertions import (

@@ -7,7 +7,6 @@ from tests.data.measurement_data import (
     MOSFET_DRY_DATA,
     LED_DATA,
     LED_CALIB_DATA,
-    MOSFET_TIM_DATA,
 )
 from tests.test_transient_base import run_evaluation_test
 from tests.assertions.standard_set_assertions import standard_set_assertions
@@ -15,11 +14,11 @@ from tests.assertions.standard_set_assertions import standard_set_assertions
 
 test_cases_set = [
     {
-        "name": f"bayesian_evaluation_set_bay_step",
+        "name": "bayesian_evaluation_set_bay_step",
         "params": {
             "data": MOSFET_DRY_DATA,
             "output_dir": "tests/output/set_test",
-            "label": f"bayesian_evaluation_set_bay_step",
+            "label": "bayesian_evaluation_set_bay_step",
             "input_mode": "volt",
             "deconv_mode": "bayesian",
             "bay_steps": [50, 1000, 10000],
@@ -31,11 +30,11 @@ test_cases_set = [
         },
     },
     {
-        "name": f"evaluation_set_deconv_mode",
+        "name": "evaluation_set_deconv_mode",
         "params": {
             "data": MOSFET_DRY_DATA,
             "output_dir": "tests/output/set_test",
-            "label": f"deconv_mode",
+            "label": "deconv_mode",
             "input_mode": "volt",
             "deconv_mode": [
                 "bayesian",
@@ -86,11 +85,11 @@ test_cases_set = [
         },
     },
     {
-        "name": f"optimization_evaluation_set_layers",
+        "name": "optimization_evaluation_set_layers",
         "params": {
             "data": MOSFET_DRY_DATA,
             "output_dir": "tests/output/set_test",
-            "label": f"optimization_evaluation_set_layers",
+            "label": "optimization_evaluation_set_layers",
             "input_mode": "volt",
             "iterable_keywords": ["opt_model_layers"],
             "opt_model_layers": [7, 8, 9],
@@ -204,11 +203,11 @@ test_cases_set = [
         },
     },
     {
-        "name": f"lasso_parameter_comparison",
+        "name": "lasso_parameter_comparison",
         "params": {
             "data": MOSFET_DRY_DATA,
             "output_dir": "tests/output/comparison_test",
-            "label": f"lasso_parameter_comparison",
+            "label": "lasso_parameter_comparison",
             "input_mode": "volt",
             "deconv_mode": "lasso",
             "log_time_size": np.arange(50, 750, 25),
