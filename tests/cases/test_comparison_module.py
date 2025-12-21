@@ -1,9 +1,11 @@
+"""Comparison module parameterized cases."""
+
 import numpy as np
 import pytest
 from tests.data.measurement_data import (
+    MOSFET_CALIB_DATA,
     MOSFET_DRY_DATA,
     MOSFET_TIM_DATA,
-    MOSFET_CALIB_DATA,
 )
 from tests.test_transient_base import run_evaluation_test
 from tests.assertions.comparison_assertions import comparison_assertions
@@ -111,6 +113,7 @@ test_cases_comparison = [
     ids=lambda case: case["name"],
 )
 def test_comparison_module(case):
+    """Run comparison_module for each parameter set."""
     run_evaluation_test(
         case["name"],
         case["params"],

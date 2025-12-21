@@ -1,3 +1,5 @@
+"""Shared helpers for running evaluation module tests with logging."""
+
 import logging
 import os
 import re
@@ -18,6 +20,7 @@ if not logger.handlers:
 
 @contextmanager
 def log_to_file(log_file_path: str):
+    """Log to both stdout and a per-test file."""
     logs_dir = os.path.join(os.path.dirname(log_file_path), "logs")
     os.makedirs(logs_dir, exist_ok=True)
     full_log_path = os.path.join(logs_dir, os.path.basename(log_file_path))
@@ -92,6 +95,7 @@ def run_evaluation_test(
     evaluation_module: str,
     additional_assertions: Callable | None = None,
 ) -> None:
+    """Execute an evaluation module with provided params and assertions."""
     output_dir = params.get("output_dir", "tests/output")
     os.makedirs(output_dir, exist_ok=True)
     log_file_path = os.path.join(output_dir, f"{name}.log")

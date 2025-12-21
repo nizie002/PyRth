@@ -1,7 +1,9 @@
+"""Theoretical module parameterized cases."""
+
 import numpy as np
 import pytest
-from tests.test_transient_base import run_evaluation_test
 from tests.assertions.theoretical_assertions import theoretical_assertions
+from tests.test_transient_base import run_evaluation_test
 
 test_cases_theoretical = [
     {
@@ -59,6 +61,7 @@ test_cases_theoretical = [
     ids=lambda case: case["name"],
 )
 def test_theoretical_module(case):
+    """Run theoretical_module for each parameter set."""
     run_evaluation_test(
         case["name"],
         case["params"],

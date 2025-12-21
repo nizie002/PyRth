@@ -1,9 +1,13 @@
+"""Bootstrap evaluation module parameterized cases."""
+
 import numpy as np
 import pytest
+
+from tests.assertions.bootstrap_assertions import bootstrap_assertions
 from tests.data.measurement_data import (
+    MOSFET_CALIB_DATA,
     MOSFET_DRY_DATA,
     MOSFET_TIM_DATA,
-    MOSFET_CALIB_DATA,
 )
 from tests.test_transient_base import run_evaluation_test
 from tests.assertions.bootstrap_assertions import bootstrap_assertions
@@ -52,6 +56,7 @@ test_cases_bootstrap = [
     ids=lambda case: case["name"],
 )
 def test_bootstrap_module(case):
+    """Run bootstrap_module for each parameterized case."""
     run_evaluation_test(
         case["name"],
         case["params"],

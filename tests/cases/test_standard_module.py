@@ -1,11 +1,13 @@
+"""Standard module parameterized cases."""
+
 import numpy as np
 import pytest
 from tests.data.measurement_data import (
-    MOSFET_DRY_DATA,
-    MOSFET_TIM_DATA,
     MOSFET_CALIB_DATA,
+    MOSFET_DRY_DATA,
     LED_DATA,
     LED_CALIB_DATA,
+    MOSFET_TIM_DATA,
     TEMP_DATA,
 )
 
@@ -260,6 +262,7 @@ test_cases_basic = [
     ids=lambda case: case["name"],
 )
 def test_standard_module(case):
+    """Run standard_module for each parameter set."""
     run_evaluation_test(
         case["name"],
         case["params"],

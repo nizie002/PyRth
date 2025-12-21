@@ -1,9 +1,11 @@
+"""Optimization module parameterized cases."""
+
 import numpy as np
 import pytest
 from tests.data.measurement_data import (
+    MOSFET_CALIB_DATA,
     MOSFET_DRY_DATA,
     MOSFET_TIM_DATA,
-    MOSFET_CALIB_DATA,
 )
 from tests.test_transient_base import run_evaluation_test
 from tests.assertions.optimization_assertions import optimization_assertions
@@ -63,6 +65,7 @@ test_cases_optimization = [
     ids=lambda case: case["name"],
 )
 def test_optimization_module(case):
+    """Run optimization_module for each parameter set."""
     run_evaluation_test(
         case["name"],
         case["params"],
