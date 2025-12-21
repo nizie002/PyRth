@@ -1,12 +1,12 @@
 import numpy as np
+import pytest
 from tests.data.measurement_data import (
     MOSFET_DRY_DATA,
     MOSFET_TIM_DATA,
     MOSFET_CALIB_DATA,
 )
-from parameterized import parameterized
-from test_transient_base import TransientTestBase
-from assertions.temperature_prediction_assertions import (
+from tests.test_transient_base import TransientTestBase
+from tests.assertions.temperature_prediction_assertions import (
     temperature_prediction_assertions,
 )
 
@@ -64,13 +64,15 @@ test_cases_prediction = [
 
 
 class TestTemperaturePredictionModule(TransientTestBase):
-    test_cases = test_cases_prediction
-
-    @parameterized.expand([(case["name"], case["params"]) for case in test_cases])
-    def test_temperature_prediction(self, name: str, params: dict):
+    @pytest.mark.parametrize(
+        "case",
+        test_cases_prediction,
+        ids=lambda case: case["name"],
+    )
+    def test_temperature_prediction(self, case):
         self._run_evaluation_test(
-            name,
-            params,
+            case["name"],
+            case["params"],
             evaluation_module="temperature_prediction_module",
             additional_assertions=temperature_prediction_assertions,
         )

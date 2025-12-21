@@ -1,12 +1,12 @@
 import numpy as np
+import pytest
 from tests.data.measurement_data import (
     MOSFET_DRY_DATA,
     MOSFET_TIM_DATA,
     MOSFET_CALIB_DATA,
 )
-from parameterized import parameterized
-from test_transient_base import TransientTestBase
-from assertions.optimization_assertions import optimization_assertions
+from tests.test_transient_base import TransientTestBase
+from tests.assertions.optimization_assertions import optimization_assertions
 
 test_cases_optimization = [
     {
@@ -59,13 +59,15 @@ test_cases_optimization = [
 
 
 class TestOptimizationModule(TransientTestBase):
-    test_cases = test_cases_optimization
-
-    @parameterized.expand([(case["name"], case["params"]) for case in test_cases])
-    def test_optimization_module(self, name: str, params: dict):
+    @pytest.mark.parametrize(
+        "case",
+        test_cases_optimization,
+        ids=lambda case: case["name"],
+    )
+    def test_optimization_module(self, case):
         self._run_evaluation_test(
-            name,
-            params,
+            case["name"],
+            case["params"],
             evaluation_module="optimization_module",
             additional_assertions=optimization_assertions,
         )

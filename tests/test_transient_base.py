@@ -1,7 +1,6 @@
 import os
 import re
 import shutil
-import unittest
 import logging
 from contextlib import contextmanager
 
@@ -33,12 +32,28 @@ def log_to_file(log_file_path: str):
         log_hdl.close()
 
 
-class TransientTestBase(unittest.TestCase):
-    # Each subclass can override test_cases with its own category.
-    test_cases = []
+class TransientTestBase:
+    # Lightweight assertion helpers so existing assertion modules can be reused
+    def assertTrue(self, expr, msg: str | None = None) -> None:
+        assert expr, msg or "Expected expression to be truthy"
+
+    def assertFalse(self, expr, msg: str | None = None) -> None:
+        assert not expr, msg or "Expected expression to be falsy"
+
+    def assertIn(self, member, container, msg: str | None = None) -> None:
+        assert member in container, msg or f"{member!r} not found in container"
+
+    def assertIsInstance(self, obj, cls, msg: str | None = None) -> None:
+        assert isinstance(obj, cls), msg or f"{obj!r} is not an instance of {cls}"
+
+    def assertEqual(self, first, second, msg: str | None = None) -> None:
+        assert first == second, msg or f"{first!r} != {second!r}"
+
+    def assertGreater(self, a, b, msg: str | None = None) -> None:
+        assert a > b, msg or f"Expected {a!r} to be greater than {b!r}"
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         output_dir = "tests/output"
         if os.path.exists(output_dir):
             try:
@@ -87,11 +102,11 @@ class TransientTestBase(unittest.TestCase):
                 if not isinstance(modules, list):
                     modules = [modules]
 
-                self.assertTrue(modules, "Modules list is empty")
+                assert modules, "Modules list is empty"
 
                 if additional_assertions:
                     for module in modules:
-                        self.assertIn(module.label, eval_instance.modules)
+                        assert module.label in eval_instance.modules
                         additional_assertions(self, module)
 
             except Exception as e:
@@ -99,10 +114,9 @@ class TransientTestBase(unittest.TestCase):
                 raise e
 
         expected_log_path = os.path.join(output_dir, "logs", f"{name}.log")
-        self.assertTrue(
-            os.path.exists(expected_log_path),
-            f"Log file '{expected_log_path}' was not created.",
-        )
+        assert os.path.exists(
+            expected_log_path
+        ), f"Log file '{expected_log_path}' was not created."
 
         with open(expected_log_path, "r") as log_file:
             log_lines = log_file.readlines()
@@ -111,7 +125,6 @@ class TransientTestBase(unittest.TestCase):
                 for line in log_lines
                 if re.search(r"\b(ERROR|CRITICAL)\b", line)
             ]
-        self.assertFalse(
-            len(error_logs) > 0,
-            f"Error logs found in '{expected_log_path}':\n" + "\n".join(error_logs),
+        assert not error_logs, (
+            f"Error logs found in '{expected_log_path}':\n" + "\n".join(error_logs)
         )

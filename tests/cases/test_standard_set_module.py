@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from tests.data.measurement_data import (
     MOSFET_DRY_DATA,
     MOSFET_TIM_DATA,
@@ -6,9 +7,8 @@ from tests.data.measurement_data import (
     LED_DATA,
     LED_CALIB_DATA,
 )
-from parameterized import parameterized
-from test_transient_base import TransientTestBase
-from assertions.standard_set_assertions import standard_set_assertions
+from tests.test_transient_base import TransientTestBase
+from tests.assertions.standard_set_assertions import standard_set_assertions
 
 
 test_cases_set = [
@@ -222,13 +222,15 @@ test_cases_set = [
 
 
 class TestStandardModuleSet(TransientTestBase):
-    test_cases = test_cases_set
-
-    @parameterized.expand([(case["name"], case["params"]) for case in test_cases])
-    def test_standard_module_set(self, name: str, params: dict):
+    @pytest.mark.parametrize(
+        "case",
+        test_cases_set,
+        ids=lambda case: case["name"],
+    )
+    def test_standard_module_set(self, case):
         self._run_evaluation_test(
-            name,
-            params,
+            case["name"],
+            case["params"],
             evaluation_module="standard_module_set",
             additional_assertions=standard_set_assertions,
         )

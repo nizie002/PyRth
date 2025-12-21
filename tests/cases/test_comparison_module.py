@@ -1,12 +1,12 @@
 import numpy as np
+import pytest
 from tests.data.measurement_data import (
     MOSFET_DRY_DATA,
     MOSFET_TIM_DATA,
     MOSFET_CALIB_DATA,
 )
-from parameterized import parameterized
-from test_transient_base import TransientTestBase
-from assertions.comparison_assertions import comparison_assertions
+from tests.test_transient_base import TransientTestBase
+from tests.assertions.comparison_assertions import comparison_assertions
 
 test_cases_comparison = [
     {
@@ -107,14 +107,15 @@ test_cases_comparison = [
 
 
 class TestComparisonModule(TransientTestBase):
-    test_cases = test_cases_comparison
-
-    @parameterized.expand([(case["name"], case["params"]) for case in test_cases])
-    def test_standard_module(self, name: str, params: dict):
-        # 'standard_module' is the evaluation method specific to standard tests.
+    @pytest.mark.parametrize(
+        "case",
+        test_cases_comparison,
+        ids=lambda case: case["name"],
+    )
+    def test_comparison_module(self, case):
         self._run_evaluation_test(
-            name,
-            params,
+            case["name"],
+            case["params"],
             evaluation_module="comparison_module",
             additional_assertions=comparison_assertions,
         )

@@ -1,12 +1,12 @@
 import numpy as np
+import pytest
 from tests.data.measurement_data import (
     MOSFET_DRY_DATA,
     MOSFET_TIM_DATA,
     MOSFET_CALIB_DATA,
 )
-from parameterized import parameterized
-from test_transient_base import TransientTestBase
-from assertions.bootstrap_assertions import bootstrap_assertions
+from tests.test_transient_base import TransientTestBase
+from tests.assertions.bootstrap_assertions import bootstrap_assertions
 
 test_cases_bootstrap = [
     {
@@ -48,13 +48,15 @@ test_cases_bootstrap = [
 
 
 class TestBootstrapModule(TransientTestBase):
-    test_cases = test_cases_bootstrap
-
-    @parameterized.expand([(case["name"], case["params"]) for case in test_cases])
-    def test_bootstrap_module(self, name: str, params: dict):
+    @pytest.mark.parametrize(
+        "case",
+        test_cases_bootstrap,
+        ids=lambda case: case["name"],
+    )
+    def test_bootstrap_module(self, case):
         self._run_evaluation_test(
-            name,
-            params,
+            case["name"],
+            case["params"],
             evaluation_module="bootstrap_module",
             additional_assertions=bootstrap_assertions,
         )
