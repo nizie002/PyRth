@@ -30,16 +30,16 @@ def make_z_s(r_fos, c_fos):
     denom_list = []
     num_list = []
 
-    for i in range(len(r_fos)):
-        sum_num = [r_fos[i]]
-        sum_denom = [mpfr("1.0"), gp.mul(r_fos[i], c_fos[i])]
+    for r_val, c_val in zip(r_fos, c_fos):
+        sum_num = [r_val]
+        sum_denom = [mpfr("1.0"), gp.mul(r_val, c_val)]
         denom_list.append(sum_denom)
         num_list.append(sum_num)
 
     chain = [[mpfr("0.0")], [mpfr("1.0")]]
 
-    for i in range(len(denom_list)):
-        chain = add_rationals(chain, num_list[i], denom_list[i])
+    for num, denom in zip(num_list, denom_list):
+        chain = add_rationals(chain, num, denom)
 
     c0max = len(chain[0])
     c1max = len(chain[1])
@@ -136,9 +136,9 @@ def mpfr_pol_add(add_1, add_2):
 def mpfr_weighted_inner_product(poles, p1, p2, weights):
     """Weighted inner product used by the Boor–Golub algorithm."""
     prod = mpfr("0.0")
-    N = len(poles)
+    n = len(poles)
 
-    for i in range(N):
+    for i in range(n):
         p1val = mpfr_horner_poly_eval(poles[i], p1)
         p2val = mpfr_horner_poly_eval(poles[i], p2)
         prod = prod - p1val * p2val * weights[i]
@@ -150,9 +150,9 @@ def mpfr_weighted_self_product(poles, p1, weights):
     """Weighted self product counterpart to ``mpfr_weighted_inner_product``."""
 
     prod = mpfr("0.0")
-    N = len(poles)
+    n = len(poles)
 
-    for i in range(N):
+    for i in range(n):
         p1val = mpfr_horner_poly_eval(poles[i], p1)
         prod = prod + p1val * p1val * weights[i]
 
@@ -162,12 +162,12 @@ def mpfr_weighted_self_product(poles, p1, weights):
 def mpfr_horner_poly_eval(val, poly):
     """Evaluate a polynomial with Horner's rule using MPFR arithmetic."""
 
-    N = len(poly)
+    n = len(poly)
 
     res = mpfr("0.0")
 
-    for i in range(N - 1):
-        res = (res + poly[N - i - 1]) * val
+    for i in range(n - 1):
+        res = (res + poly[n - i - 1]) * val
 
     return res + poly[0]
 
