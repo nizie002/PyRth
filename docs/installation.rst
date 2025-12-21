@@ -60,7 +60,7 @@ These are installed automatically when running ``pip install PyRth``.
 
 For testing and contributing:
 
-* :mod:`parameterized` — for parameterized testing
+* :mod:`pytest` — for running the test suite
 
 **Documentation Dependencies**
 
