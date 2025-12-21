@@ -305,21 +305,21 @@ class Evaluation:
         evaluation_type = self.parameters.get("evaluation_type")
         base_label = self.parameters.get("label")
 
-        # Helper to wrap a parameter as an iterator lazily.
-
-        # Create iterators for each keyword.
         iterators = [
             utl.get_iterator(self.parameters.get(keyword, []))
             for keyword in iterable_keywords
         ]
 
-        # Perform lazy length check using zip_longest
-        fill_value = object()  # unique fill value
+        fill_value = object()
         temp_iter = list(zip_longest(*iterators, fillvalue=fill_value))
-        if any(fill_value in values for values in temp_iter):
+        has_holes = any(
+            fill_value is value
+            for values in temp_iter
+            for value in values
+        )
+        if has_holes:
             raise ValueError("Iterables do not have the same length")
 
-        # Reset iterators since they've been exhausted by the check.
         iterators = [
             utl.get_iterator(self.parameters.get(keyword, []))
             for keyword in iterable_keywords
@@ -338,12 +338,9 @@ class Evaluation:
             ", ".join(map(str, iterable_keywords)),
         )
 
-        # Lazy iteration using zip (since all iterators have equal length)
         for counter, values in enumerate(zip(*iterators)):
-            # Update parameters with the current set of values.
             modified_parameters = org_parameters.copy()
 
-            # Use simpler label suffix: first keyword + counter
             if iterable_keywords:
                 first_keyword = iterable_keywords[0]
                 label_suffix = f"{first_keyword}_{counter}"
@@ -355,7 +352,6 @@ class Evaluation:
             for keyword, value in zip(iterable_keywords, values):
                 modified_parameters[keyword] = value
 
-            # Merge defaults.
             self.parameters = dbase.validate_and_merge_defaults(
                 modified_parameters, self.parameters
             )
@@ -367,7 +363,6 @@ class Evaluation:
                 modified_parameters["label"],
             )
 
-            # Create module using the appropriate evaluation type.
             if evaluation_type == "standard":
                 module = self._standard_module()
             elif evaluation_type == "optimization":

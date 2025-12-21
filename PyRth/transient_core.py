@@ -152,8 +152,8 @@ class StructureFunction(dbase.StructureParameters):
         # all calculations are done in logarithmic time
         self.log_time = np.log(self.time)
         if hasattr(self, "stored_early_zth"):
-            f = interp.interp1d(self.log_time, self.impedance)
-            self.impedance *= self.stored_early_zth / f(np.log(1e-4))
+            current_early_zth = utl.get_early_zth(self)
+            self.impedance *= self.stored_early_zth / current_early_zth
 
     def _process_temp_volt_data(self):
         """Convert raw temperature/voltage traces into an impedance step.

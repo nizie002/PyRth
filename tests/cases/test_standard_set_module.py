@@ -5,6 +5,7 @@ import pytest
 from tests.data.measurement_data import (
     MOSFET_CALIB_DATA,
     MOSFET_DRY_DATA,
+    MOSFET_TIM_DATA,
     LED_DATA,
     LED_CALIB_DATA,
 )
@@ -217,6 +218,21 @@ test_cases_set = [
             "calib": MOSFET_CALIB_DATA,
             "lower_fit_limit": 5e-4,
             "upper_fit_limit": 1e-3,
+        },
+    },
+        {
+        "name": "standard_set_normalization",
+        "params": {
+            "data": [MOSFET_DRY_DATA,MOSFET_TIM_DATA],
+            "output_dir": "tests/output/set_test",
+            "label": "normalize_set",
+            "input_mode": "volt",
+            "calib": MOSFET_CALIB_DATA,
+            "iterable_keywords": ["data"],
+            "lower_fit_limit": 5e-4,
+            "upper_fit_limit": 1e-3,
+            "normalize_impedance_to_previous": True,
+            "evaluation_type": "standard",
         },
     },
 ]

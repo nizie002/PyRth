@@ -183,16 +183,34 @@ def tmp_to_z(
 
 
 def get_early_zth(module):
-    """Interpolate ``module.impedance`` to obtain Zth at 100 µs.
+    """Interpolate ``module.impedance`` at the configured early-Zth time.
 
     The helper mirrors the reference-time sampling used when stitching
     bootstrap runs, ensuring extrapolated transients start from a comparable
-    absolute impedance.
+    absolute impedance. The reference defaults to 100 µs and can be
+    overridden via ``early_zth_time``; passing a scalar samples that instant
+    while a 2-element interval averages all points within the bounds.
     """
-    f = interp.interp1d(module.log_time, module.impedance)
+    ref_time = module.early_zth_time
+    if isinstance(ref_time, (list, tuple, np.ndarray)):
+        if len(ref_time) != 2:
+            raise ValueError("early_zth_time interval must have two elements")
+        t_start, t_stop = float(ref_time[0]), float(ref_time[1])
+        if t_start <= 0 or t_stop <= 0 or t_stop < t_start:
+            raise ValueError("early_zth_time interval must be positive and non-decreasing")
 
-    # Get the impedance value at np.log(1e-4)
-    return f(np.log(1e-4))
+        log_start, log_stop = np.log(t_start), np.log(t_stop)
+        mask = (module.log_time >= log_start) & (module.log_time <= log_stop)
+        if not np.any(mask):
+            raise ValueError("No impedance samples fall within early_zth_time interval")
+
+        return float(np.mean(module.impedance[mask]))
+
+    ref_time = float(ref_time)
+    if ref_time <= 0:
+        raise ValueError("early_zth_time must be positive")
+    f = interp.interp1d(module.log_time, module.impedance)
+    return float(f(np.log(ref_time)))
 
 
 def extrapolate_temperature(

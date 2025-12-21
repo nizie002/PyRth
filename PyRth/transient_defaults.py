@@ -262,6 +262,10 @@ class EvalDefaults:
         default=False,
         doc="bool: In batch processing, normalize subsequent impedance curves to the first one.",
     )
+    early_zth_time: float | Tuple[float, float] = doc_field(
+        default=1e-4,
+        doc="float | (float, float): Reference time or interval [start, stop] in seconds used to sample/average Zth when normalizing consecutive impedance runs.",
+    )
     evaluation_type: str = doc_field(
         default="standard",
         doc="str: Type of evaluation module to run within `standard_module_set`.",
