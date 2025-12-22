@@ -914,7 +914,7 @@ class PredictionFigure(StructureFigure):
 
     def plot_module_data(self, module):
         self.ax.plot(
-            module.lin_time,
+            module.lin_time_pos,
             module.predicted_temperature,
             linewidth=1.5,
             markersize=0.0,
@@ -926,7 +926,7 @@ class PredictionFigure(StructureFigure):
         self.ax2.set_ylabel(r"power, $P$, in W")
 
         self.ax2.plot(
-            module.lin_time,
+            module.lin_time_pos,
             module.power_function_int,
             linewidth=1.0,
             marker="o",
@@ -941,14 +941,15 @@ class PredictionImpulseUsedFigure(StructureFigure):
         self.init_axes(
             "Prediction Impulse Response Used",
             r"time, $t$, in s",
-            r"thermal impedance, $Z_{\rm th}$, in K$\cdot$ W$^{-1}$",
+            r"impulse response, $h$, in K$\cdot$ W$^{-1}$",
         )
 
     def plot_module_data(self, module):
         self.ax.plot(
-            module.reference_time,
-            module.reference_impulse_response,
-            linewidth=1.5,
+            module.lin_time,
+            module.impulse_response_int,
+            linewidth=1.0,
             label="lin. impulse resp." + module.label,
             markersize=1.5,
+            marker="o",
         )

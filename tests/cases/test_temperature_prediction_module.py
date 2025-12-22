@@ -53,12 +53,12 @@ test_cases_prediction = [
             # Optimization parameters
             "evaluation_type": "optimization",
             "opt_method": "Powell",
-            "theo_time": [1e-8, 5e2],
+            "theo_time": [1e-6, 5e2],
             "theo_time_size": 8000,
             "theo_delta": 1.5 * (2 * np.pi / 360),
             "opt_model_layers": 8,
             "power_data": rect_power_data,
-            "lin_sampling_period": 1e-4,
+            "lin_sampling_period": 1e-3,
         },
     },
 ]

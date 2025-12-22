@@ -307,7 +307,7 @@ class CSVExporter(BaseExporter):
             self.save_csv(
                 True,
                 self.construct_filename(module, "impedance_prediction"),
-                module.lin_time,
+                module.lin_time_pos,
                 module.predicted_temperature,
             ),
             self.save_csv(

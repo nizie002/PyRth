@@ -1144,7 +1144,10 @@ class Evaluation:
         logger.debug("Original impulse area: %s", area_org)
         logger.debug("Interpolated impulse area: %s", area_interp)
 
-        logger.info("Starting convolution")
+        logger.info(
+            "Starting convolution (size=%d)",
+            module.power_function_int.size,
+        )
 
         module.predicted_temperature = (
             np.convolve(
@@ -1155,7 +1158,7 @@ class Evaluation:
         module.predicted_temperature = module.predicted_temperature[
             lin_t_number // 2 - 1 :
         ]
-        module.lin_time = module.lin_time[lin_t_number // 2 - 1 :]
+        module.lin_time_pos = module.lin_time[lin_t_number // 2 - 1 :]
         module.power_function_int = module.power_function_int[lin_t_number // 2 - 1 :]
 
         module.data_handlers.add("prediction")
