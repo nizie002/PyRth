@@ -401,6 +401,10 @@ class OutputDefaults:
         default=True,
         doc="bool: Save relative thermal resistance B(z) curve (log of derivative magnitude) derived from voltage measurements.",
     )
+    annotate_figures: bool = doc_field(
+        default=True,
+        doc="bool: Overlay concise parameter comments on exported figures.",
+    )
     look_at_raw_data: bool = doc_field(
         default=True, doc="bool: Generate plot of raw input data."
     )

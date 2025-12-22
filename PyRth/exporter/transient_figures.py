@@ -15,6 +15,7 @@ import scipy.integrate as sin
 import scipy.interpolate as interp
 
 from .transient_base_fig import StructureFigure
+from . import figure_comments
 
 
 class VoltageFigure(StructureFigure):
@@ -127,6 +128,9 @@ class ZCurveFigure(StructureFigure):
             color=self.same_color(),
         )
 
+    def build_comment(self, module, plot_key: str | None = None) -> str:
+        return figure_comments.format_normalization_comment(module)
+
 
 class DerivFigure(StructureFigure):
     def plot_module_data(self, module):
@@ -146,13 +150,16 @@ class DerivFigure(StructureFigure):
             color=self.next_color(),
         )
 
+    def build_comment(self, module, plot_key: str | None = None) -> str:
+        return figure_comments.format_normalization_comment(module)
+
 
 class BzFigure(StructureFigure):
     def plot_module_data(self, module):
         if not self._axis_initialized:
-            self.ax.set_title("B(z) log-derivative signature")
+            self.ax.set_title(r"$B(z) = \log(h(z))$, log-derivative curve")
             self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"$B(z) = \ln(|dZ_{\rm th}/dz|)$")
+            self.ax.set_ylabel(r"logarithmic derivative, $B(z)$")
             self._axis_initialized = True
 
         bz_values = np.asarray(module.bz_curve if module.bz_curve is not None else [])
@@ -180,6 +187,9 @@ class BzFigure(StructureFigure):
             markersize=0.0,
             color=self.next_color(),
         )
+
+    def build_comment(self, module, plot_key: str | None = None) -> str:
+        return figure_comments.format_normalization_comment(module)
 
 
 class FFTFigure(StructureFigure):
@@ -237,6 +247,9 @@ class TimeSpecFigure(StructureFigure):
             marker="o",
             color=self.same_color(),
         )
+
+    def build_comment(self, module, plot_key: str | None = None) -> str:
+        return f"Deconvolution mode: {getattr(module, 'deconv_mode', 'unknown')}"
 
 
 class SumTimeSpecFigure(StructureFigure):

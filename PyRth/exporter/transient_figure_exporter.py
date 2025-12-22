@@ -132,6 +132,34 @@ class FigureExporter(BaseExporter):
         self.figures = figures
         self.module_fig_ops = {}
 
+    def _parse_registry_entry(self, key):
+        """Return (prefix, condition_attr, figure_class)."""
+        if key not in self.figure_registry:
+            raise KeyError(f"Key '{key}' not found in figure registry")
+
+        entry = self.figure_registry[key]
+        prefix, cond_attr, figure_class = entry[:3]
+        return prefix, cond_attr, figure_class
+
+    def _maybe_add_comment(self, figure_obj, module, plot_key, created: bool):
+        """Attach a one-time comment to the figure if enabled."""
+        if not created or not getattr(module, "annotate_figures", False):
+            return
+        if not hasattr(figure_obj, "build_comment"):
+            return
+
+        try:
+            comment_text = figure_obj.build_comment(module, plot_key)
+        except Exception as exc:
+            logger.warning(
+                "Skipping comment for plot '%s' on module '%s': %s",
+                plot_key,
+                getattr(module, "label", "unknown"),
+                exc,
+            )
+            return
+        figure_obj.add_comment(comment_text)
+
     def save_all_figures(self) -> None:
         """Persist every registered figure to a prefixed PNG file."""
 
@@ -148,7 +176,7 @@ class FigureExporter(BaseExporter):
 
                 prefix = "99"
                 if plot_key in self.figure_registry:
-                    prefix = self.figure_registry[plot_key][0]
+                    prefix, _, _ = self._parse_registry_entry(plot_key)
 
                 filename = os.path.join(png_output_dir, f"{prefix}_{plot_key}.png")
 
@@ -185,30 +213,34 @@ class FigureExporter(BaseExporter):
         )
 
         for key in keys:
-            if key in self.figure_registry:
-                _, cond_attr, figure_class = self.figure_registry[key]
-                condition = getattr(module, cond_attr, False)
-                if condition:
-                    plot_key = key
-                    if plot_key not in self.figures:
-                        fig_obj = figure_class(module)
-                        self.figures[plot_key] = fig_obj
-                        ops["created"].add(plot_key)
-                    else:
-                        fig_obj = self.figures[plot_key]
-                        ops["updated"].add(plot_key)
-
-                    try:
-                        fig_obj.plot_module_data(module)
-                    except (ValueError, TypeError, RuntimeError) as e:
-                        logger.error(
-                            f"Error plotting data for module '{module.label}' on figure '{plot_key}': {str(e)}"
-                        )
-
-                else:
-                    ops["skipped"].add(key)
-            else:
+            if key not in self.figure_registry:
                 logger.error(f"Key '{key}' not found in figure registry")
+                continue
+
+            _, cond_attr, figure_class = self._parse_registry_entry(key)
+            condition = getattr(module, cond_attr, False)
+            if condition:
+                plot_key = key
+                created = False
+                if plot_key not in self.figures:
+                    fig_obj = figure_class(module)
+                    self.figures[plot_key] = fig_obj
+                    ops["created"].add(plot_key)
+                    created = True
+                else:
+                    fig_obj = self.figures[plot_key]
+                    ops["updated"].add(plot_key)
+
+                try:
+                    fig_obj.plot_module_data(module)
+                    self._maybe_add_comment(fig_obj, module, plot_key, created)
+                except (ValueError, TypeError, RuntimeError) as e:
+                    logger.error(
+                        f"Error plotting data for module '{module.label}' on figure '{plot_key}': {str(e)}"
+                    )
+
+            else:
+                ops["skipped"].add(key)
 
     def log_module_summary(self, module_label: str):
         """Emit a single debug summary for the module's figure operations."""

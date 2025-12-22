@@ -33,6 +33,7 @@ class StructureFigure:
         self._axis_initialized = False
         self.ax2 = None
         self.last_call_index = None
+        self._comment_added = False
 
     def _create_fig_ax(self):
         fig = Figure(figsize=(10, 6))
@@ -68,6 +69,28 @@ class StructureFigure:
                 handles, truncated_labels, loc="best", fontsize="x-small", ncol=ncol
             )
             self.fig.tight_layout()
+
+    def add_comment(self, text: str) -> None:
+        """Render a single annotation in the lower-left corner if provided."""
+        if self._comment_added or not text:
+            return
+
+        self.ax.text(
+            0.01,
+            0.01,
+            text,
+            transform=self.ax.transAxes,
+            fontsize="xx-small",
+            color="gray",
+            va="bottom",
+            ha="left",
+            wrap=True,
+        )
+        self._comment_added = True
+
+    def build_comment(self, module, plot_key: str | None = None) -> str:
+        """Return a concise description for this figure; subclasses may override."""
+        return ""
 
     def plot_module_data(self, module):
         """Dispatch to subclass-specific plotting logic for ``module``.
