@@ -18,16 +18,15 @@ class CSVExporter(BaseExporter):
     type = "DataExporter"
 
     def save_csv(self, save_flag, filename, data1, data2):
+        """Write paired vectors to CSV when the corresponding save flag is enabled."""
         if not save_flag:
             return None
 
         filename = f"{filename}.csv"
 
-        # Check if either array contains non-numeric data (strings)
         data1_array = np.asarray(data1)
         data2_array = np.asarray(data2)
 
-        # Check if arrays contain string data
         has_strings = data1_array.dtype.kind in [
             "U",
             "S",
@@ -35,7 +34,6 @@ class CSVExporter(BaseExporter):
         ] or data2_array.dtype.kind in ["U", "S", "O"]
 
         if has_strings:
-            # Use string format for mixed or string data
             np.savetxt(
                 filename,
                 np.transpose([data1, data2]),
@@ -43,7 +41,6 @@ class CSVExporter(BaseExporter):
                 delimiter=" ",
             )
         else:
-            # Use default numerical format for numeric data
             np.savetxt(
                 filename,
                 np.transpose([data1, data2]),
@@ -52,11 +49,13 @@ class CSVExporter(BaseExporter):
         return filename
 
     def construct_filename(self, module, name):
+        """Return the full CSV path for a given module label and artifact name."""
         csv_output_dir = os.path.join(module.output_dir, module.label, "csv")
         os.makedirs(csv_output_dir, exist_ok=True)
         return os.path.join(csv_output_dir, name)
 
     def extrapol_data_handler(self, module):
+        """Persist extrapolation inputs, fit window, and fitted polynomial values."""
         saved = []
         saved.append(
             self.save_csv(
@@ -85,6 +84,7 @@ class CSVExporter(BaseExporter):
         return saved
 
     def voltage_data_handler(self, module):
+        """Export raw voltage trace."""
         return [
             self.save_csv(
                 module.save_voltage,
@@ -95,6 +95,7 @@ class CSVExporter(BaseExporter):
         ]
 
     def temp_data_handler(self, module):
+        """Export processed temperature signals (log-time and raw)."""
         return [
             self.save_csv(
                 module.save_temperature,
@@ -111,6 +112,7 @@ class CSVExporter(BaseExporter):
         ]
 
     def impedance_data_handler(self, module):
+        """Export impedance step, smoothed impedance, and derivative."""
         return [
             self.save_csv(
                 module.save_impedance,
@@ -133,6 +135,7 @@ class CSVExporter(BaseExporter):
         ]
 
     def fft_data_handler(self, module):
+        """Export FFT-domain data."""
         return [
             self.save_csv(
                 module.save_frequency,
@@ -143,6 +146,7 @@ class CSVExporter(BaseExporter):
         ]
 
     def time_spec_data_handler(self, module):
+        """Export time-constant spectrum and optional cumulative sum/back projections."""
         saved = [
             self.save_csv(
                 module.save_back_impedance,
@@ -177,6 +181,7 @@ class CSVExporter(BaseExporter):
         return saved
 
     def structure_function_data_handler(self, module):
+        """Export cumulative, differential, and local-resistance structure functions."""
         saved = [
             self.save_csv(
                 module.save_cumul_struc,
@@ -209,6 +214,7 @@ class CSVExporter(BaseExporter):
         return saved
 
     def theo_structure_function_data_handler(self, module):
+        """Export theoretical structure-function curves."""
         return [
             self.save_csv(
                 module.save_theo_struc,
@@ -225,6 +231,7 @@ class CSVExporter(BaseExporter):
         ]
 
     def theo_data_handler(self, module):
+        """Export theoretical spectra, cumulative spectrum, and impedance/derivative."""
         sum_theo_time_spec = sin.cumulative_trapezoid(
             module.theo_time_const, x=module.theo_log_time, initial=0.0
         )
@@ -260,6 +267,7 @@ class CSVExporter(BaseExporter):
         return saved
 
     def comparison_data_handler(self, module):
+        """Export comparison metrics across evaluated modules."""
         comparisons = [
             (module.time_const_comparison, "time_const_comparison"),
             (module.structure_comparison, "struc_comparison"),
@@ -285,6 +293,7 @@ class CSVExporter(BaseExporter):
         return saved
 
     def prediction_data_handler(self, module):
+        """Export temperature and power predictions when enabled."""
         if not module.save_prediction:
             return []
 
@@ -304,6 +313,7 @@ class CSVExporter(BaseExporter):
         ]
 
     def residual_data_handler(self, module):
+        """Export residual histogram and Gaussian fit."""
         if not module.save_residual:
             return []
 
@@ -323,6 +333,7 @@ class CSVExporter(BaseExporter):
         ]
 
     def boot_data_handler(self, module):
+        """Export bootstrap-derived impedance, derivative, spectrum, and structure stats."""
         boot_data = [
             (
                 module.save_boot_impedance,
