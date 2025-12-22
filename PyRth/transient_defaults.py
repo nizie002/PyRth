@@ -190,6 +190,10 @@ class EvalDefaults:
         default=1e-3,
         doc="float: Sampling period [s] for linear interpolation of the impulse response in temperature prediction.",
     )
+    perf_eval: bool = doc_field(
+        default=False,
+        doc="bool: Enable optional performance monitoring for major pipeline stages.",
+    )
     minimum_window_length: float = doc_field(
         default=0.35,
         doc="float: Minimum window length (in log10(time) units) for the adaptive derivative calculation.",
@@ -397,6 +401,9 @@ class OutputDefaults:
     save_residual: bool = doc_field(
         default=True, doc="bool: Save residual data (e.g., difference between prediction and measurement)."
     )
+    save_perf: bool = doc_field(
+        default=False, doc="bool: Save performance monitor results when enabled."
+    )
     save_bz: bool = doc_field(
         default=True,
         doc="bool: Save relative thermal resistance B(z) curve (log of derivative magnitude) derived from voltage measurements.",
@@ -506,6 +513,9 @@ class OutputDefaults:
     )
     look_at_residual: bool = doc_field(
         default=True, doc="bool: Generate plot of the residuals from temperature prediction."
+    )
+    look_at_perf: bool = doc_field(
+        default=False, doc="bool: Generate performance profile figure when perf_eval is enabled."
     )
     look_at_bz: bool = doc_field(
         default=True, doc="bool: Generate plot of the relative thermal resistance B(z) log-derivative curve."

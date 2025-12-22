@@ -953,3 +953,27 @@ class PredictionImpulseUsedFigure(StructureFigure):
             markersize=1.5,
             marker="o",
         )
+
+
+class PerfFigure(StructureFigure):
+    def setup_axes(self):
+        self.init_axes(
+            "Performance profile",
+            "duration (s)",
+            "",
+        )
+
+    def plot_module_data(self, module):
+        monitor = getattr(module, "perf_monitor", None)
+        if monitor is None or not getattr(monitor, "enabled", False):
+            return
+
+        spans = monitor.spans()
+        if not spans:
+            return
+
+        names, durations = zip(*spans)
+        y_pos = np.arange(len(names))
+        self.ax.barh(y_pos, durations, color=self.next_color())
+        self.ax.set_yticks(y_pos, labels=names)
+        self.ax.invert_yaxis()

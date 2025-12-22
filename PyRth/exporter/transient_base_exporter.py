@@ -52,3 +52,6 @@ class BaseExporter:
 
     def boot_data_handler(self, module):
         "dummy data handler"
+
+    def perf_data_handler(self, module):
+        "dummy data handler"

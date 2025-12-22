@@ -54,6 +54,10 @@ class CSVExporter(BaseExporter):
         os.makedirs(csv_output_dir, exist_ok=True)
         return os.path.join(csv_output_dir, name)
 
+    def prefixed_name(self, prefix: str, name: str) -> str:
+        """Apply a numeric prefix to keep CSVs grouped/sorted."""
+        return f"{prefix}_{name}"
+
     def extrapol_data_handler(self, module):
         """Persist extrapolation inputs, fit window, and fitted polynomial values."""
         saved = []
@@ -336,6 +340,25 @@ class CSVExporter(BaseExporter):
                 module.bins,
                 module.gauss_curve,
             ),
+        ]
+
+    def perf_data_handler(self, module):
+        """Export performance monitor spans as CSV."""
+        if not getattr(module, "perf_eval", False) or not getattr(module, "save_perf", False):
+            return []
+
+        spans = getattr(getattr(module, "perf_monitor", None), "spans", lambda: [])()
+        if not spans:
+            return []
+
+        names, durations = zip(*spans)
+        return [
+            self.save_csv(
+                True,
+                self.construct_filename(module, "performance_spans"),
+                names,
+                durations,
+            )
         ]
 
     def boot_data_handler(self, module):

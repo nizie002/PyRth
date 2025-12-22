@@ -43,6 +43,7 @@ from .transient_figures import (
     BootTimeSpecFigure,
     BootSumTimeSpecFigure,
     BootCumulStrucFigure,
+    PerfFigure,
 )
 
 
@@ -123,6 +124,9 @@ class FigureExporter(BaseExporter):
             BootSumTimeSpecFigure,
         ),
         "boot_cumul_struc": ("84", "look_at_boot_cumul_struc", BootCumulStrucFigure),
+
+        # Utility
+        "perf": ("90", "look_at_perf", PerfFigure),
     }
 
     def __init__(self, figures):
@@ -340,6 +344,11 @@ class FigureExporter(BaseExporter):
         """Plot residual histograms and fits."""
 
         self.initialize_registered_figures(["residual"], module)
+
+    def perf_data_handler(self, module):
+        """Plot performance monitor results."""
+
+        self.initialize_registered_figures(["perf"], module)
 
     def boot_data_handler(self, module):
         """Plot bootstrap aggregates for every supported figure type."""

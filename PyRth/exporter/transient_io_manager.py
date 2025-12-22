@@ -43,6 +43,7 @@ class IOManager:
         "prediction": "prediction_data_handler",
         "residual": "residual_data_handler",
         "boot": "boot_data_handler",
+        "perf": "perf_data_handler",
     }
 
     def __init__(self, modules):

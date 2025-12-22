@@ -94,6 +94,9 @@ class StructureFunction(dbase.StructureParameters):
         self.current_filter = None
         self.therm_resist_fost = None
         self.therm_capa_fost = None
+        self.perf_monitor = None
+        self.save_perf = False
+        self.look_at_perf = False
         self.crop_time_spec = np.array([])
         self.crop_log_time = np.array([])
         self.cau_res = np.array([])

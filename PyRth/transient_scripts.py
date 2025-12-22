@@ -18,6 +18,7 @@ from scipy.signal import fftconvolve
 
 from .utils import transient_utils as utl
 from .utils import optimizer_utils as optu
+from .utils.perf_monitor import PerformanceMonitor
 
 from . import transient_optimizer as trop
 from . import transient_defaults as dbase
@@ -136,9 +137,19 @@ class Evaluation:
 
         return module
 
+    def _init_perf_monitor(self, module):
+        """Attach an optional performance monitor and configure output flags."""
+        enabled = getattr(module, "perf_eval", False)
+        module.perf_monitor = PerformanceMonitor(enabled)
+        if enabled:
+            module.save_perf = True
+            module.look_at_perf = True
+            module.data_handlers.add("perf")
+
     def _standard_module(self):
 
         module: StructureFunction = StructureFunction(self.parameters)
+        self._init_perf_monitor(module)
 
         if not hasattr(module, "label"):
             raise AttributeError(
@@ -171,7 +182,8 @@ class Evaluation:
                 )
 
         logger.debug("Computing impedance for '%s'", module.label)
-        module.make_z()
+        with module.perf_monitor.section("make_z"):
+            module.make_z()
 
         module.data_handlers.add("impedance")
 
@@ -184,30 +196,38 @@ class Evaluation:
             )
 
             if module.deconv_mode == "lasso":
-                module.z_fit_lasso()
+                with module.perf_monitor.section("z_fit_lasso"):
+                    module.z_fit_lasso()
                 logger.debug("Lasso deconvolution complete for '%s'", module.label)
                 module.data_handlers.add("time_spec")
 
             else:
-                module.z_fit_deriv()
+                with module.perf_monitor.section("z_fit_deriv"):
+                    module.z_fit_deriv()
                 logger.debug("Z fit derivative completed for '%s'", module.label)
 
                 if module.deconv_mode == "fourier":
                     logger.debug("Performing Fourier transform for '%s'", module.label)
-                    module.fft_signal()
-                    module.fft_weight()
-                    module.fft_time_spec()
+                    with module.perf_monitor.section("fft_signal"):
+                        module.fft_signal()
+                    with module.perf_monitor.section("fft_weight"):
+                        module.fft_weight()
+                    with module.perf_monitor.section("fft_time_spec"):
+                        module.fft_time_spec()
                     # Add FFT and time_spec handlers
                     module.data_handlers.update(["fft", "time_spec"])
                 elif module.deconv_mode == "bayesian":
                     logger.debug("Performing Bayesian deconvolution for '%s'", module.label)
-                    module.perform_bayesian_deconvolution()
+                    with module.perf_monitor.section("bayesian_deconvolution"):
+                        module.perform_bayesian_deconvolution()
                     # Add time_spec handler for Bayesian
                     module.data_handlers.add("time_spec")
                 elif module.deconv_mode == "adaptive":
                     logger.debug("Performing adaptive deconvolution for '%s'", module.label)
-                    module.perform_bayesian_deconvolution()
-                    module.z_fit_lasso()
+                    with module.perf_monitor.section("bayesian_deconvolution"):
+                        module.perform_bayesian_deconvolution()
+                    with module.perf_monitor.section("z_fit_lasso"):
+                        module.z_fit_lasso()
                     # Add time_spec handler for adaptive
                     module.data_handlers.add("time_spec")
 
@@ -215,7 +235,8 @@ class Evaluation:
                     raise ValueError("Invalid deconvolution mode specified.")
 
             logger.debug("Synthesizing Foster network for '%s'", module.label)
-            module.foster_network()
+            with module.perf_monitor.section("foster_network"):
+                module.foster_network()
 
             if module.calc_struc:
                 logger.info(
@@ -224,23 +245,23 @@ class Evaluation:
                     module.struc_method,
                 )
 
-                if module.struc_method == "polylong":
-                    logger.debug("Using poly long division for '%s'", module.label)
-                    module.mpfr_foster_impedance()
-                    module.poly_long_div()
-                elif module.struc_method in ["khatwani", "sobhy"]:
-                    logger.debug("Using continued fraction methods for '%s'", module.label)
-                    module.mpfr_foster_impedance()
-                    module.j_fraction_methods()
-                elif module.struc_method == "boor_golub":
-                    logger.debug("Using Boor-Golub method for '%s'", module.label)
-                    module.mpfr_foster_impedance()
-                    module.boor_golub()
-                elif module.struc_method == "lanczos":
-                    logger.debug("Using Lanczos method for '%s'", module.label)
-                    module.lanczos()
+                with module.perf_monitor.section(f"structure_{module.struc_method}"):
+                    if module.struc_method == "polylong":
+                        logger.debug("Using poly long division for '%s'", module.label)
+                        module.mpfr_foster_impedance()
+                        module.poly_long_div()
+                    elif module.struc_method in ["khatwani", "sobhy"]:
+                        logger.debug("Using continued fraction methods for '%s'", module.label)
+                        module.mpfr_foster_impedance()
+                        module.j_fraction_methods()
+                    elif module.struc_method == "boor_golub":
+                        logger.debug("Using Boor-Golub method for '%s'", module.label)
+                        module.mpfr_foster_impedance()
+                        module.boor_golub()
+                    elif module.struc_method == "lanczos":
+                        logger.debug("Using Lanczos method for '%s'", module.label)
+                        module.lanczos()
 
-                # Add structure handler after any structure calculation
                 module.data_handlers.add("structure")
 
                 logger.info(
@@ -898,6 +919,7 @@ class Evaluation:
                 raise ValueError(f"{key} must be provided in the parameters.")
 
         module: StructureFunction = StructureFunction(self.parameters)
+        self._init_perf_monitor(module)
         logger.info("Calculating theoretical impedance for '%s'", module.label)
         inv_module = trop.TransientOptimizer(self.parameters)
 
@@ -977,6 +999,7 @@ class Evaluation:
         ]
 
         results_module = StructureFunction(self.parameters)
+        self._init_perf_monitor(results_module)
         results_module.mod_key_display_name = "_".join(parameters["iterable_keywords"])
 
         iterators = [
