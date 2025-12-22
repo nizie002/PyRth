@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2025-12-22
+
+### Added
+
+- Agent instructions covering architecture, parameters, and workflows
+- Pylint configuration with max line length and logging f-string interpolation disabled
+
+### Changed
+
+- Refined evaluation and bootstrap defaults with clearer time/impedance names, tuned base_num_fine, and improved parameter merging and label handling
+- Standardized optimizer utilities and TransientOptimizer naming, expanded docstrings, adopted trapezoid integration, and removed the global_weight argument
+- Refactored transient core/utils/mpfr/engine/filter/scripts for clearer docstrings, streamlined imports, improved logging, and cleaner MPFR arithmetic and variable naming
+- Upgraded exporter stack (CSV/Figure/IO/base/figures) to return saved filenames, track failures, and log save outcomes with better resource handling
+- Refreshed tests and fixtures: pytest parameterization helpers, run_evaluation_test usage, richer lasso/adaptive/bayesian cases, log_time_size/repetition tweaks, removal of MOSFET_TIM_DATA dependency, and clearer logging
+- Documentation and build updates: expanded optimization techniques guidance, pytest-focused installation docs, streamlined evaluation parameter table generation, ReadTheDocs on Python 3.12, and dependency bumps in pyproject.toml
+
+### Fixed
+
+- UTF-8 file handling for measurements/logs, figure cleanup in StructureFigure/transient_figures, and tighter FigureExporter error handling
+- Early Zth handling and bootstrap optimization flow logging made more consistent
+
+### Removed
+
+- global_weight optimization argument and unused MPFR utility code plus redundant comments/blank lines in transient modules
+- parameterized testing dependency in favor of pytest-based parameterization
+
 ## [1.2.0] - 2025-07-21
 
 ### Added
