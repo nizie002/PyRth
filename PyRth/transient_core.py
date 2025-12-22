@@ -56,13 +56,61 @@ class StructureFunction(dbase.StructureParameters):
 
         self.data_handlers = set()
 
-        # Validate precision
+        self.data_header = None
+        self.data_pwr = None
+        self.data_tco = None
+        self.t3_lsb = None
+        self.t3_uref = None
+        self.t3_kfac = None
+
+        # placeholders for attributes populated during pipeline steps
+        self.time = None
+        self.time_raw = None
+        self.impedance = None
+        self.temperature = None
+        self.temp_raw = None
+        self.voltage = None
+        self.log_time = None
+        self.log_time_pad = None
+        self.log_time_interp = None
+        self.log_time_delta = None
+        self.imp_deriv_interp = None
+        self.imp_smooth = None
+        self.imp_smooth_full = None
+        self.time_spec = None
+        self.sum_time_spec = None
+        self.deconv_t = None
+        self.fft_idi = None
+        self.fft_idi_pegrm = None
+        self.fft_wgt = None
+        self.fft_freq = None
+        self.fft_wgt_freq = None
+        self.pad_time_size = 0
+        self.lower_fit_index = None
+        self.upper_fit_index = None
+        self.expl_ft_prm = None
+        self.trans_weight = None
+        self.current_filter = None
+        self.therm_resist_fost = None
+        self.therm_capa_fost = None
+        self.crop_time_spec = np.array([])
+        self.crop_log_time = np.array([])
+        self.cau_res = np.array([])
+        self.cau_cap = np.array([])
+        self.int_cau_res = np.array([])
+        self.int_cau_cap = np.array([])
+        self.diff_struc = np.array([])
+        self.mpfr_resist_fost = None
+        self.mpfr_capa_fost = None
+        self.mpfr_z_num = None
+        self.mpfr_z_denom = None
+
         if not isinstance(self.precision, int) or self.precision <= 0:
             raise ValueError(
                 f"Parameter 'precision' must be a positive integer, got {self.precision}"
             )
 
-        gp.get_context().precision = self.precision
+        gp.get_context().precision = self.precision  # pylint: disable=no-member
 
     def read_t3ster(self, f):
         """Read the three T3Ster companion files and derive instrument meta-data.
@@ -80,7 +128,7 @@ class StructureFunction(dbase.StructureParameters):
         self.data = np.loadtxt(self.infile, delimiter=" ", skiprows=7)
         self.data_pwr = [
             [block.strip() for block in line.split("=")]
-            for line in open(self.infile_pwr)
+            for line in open(self.infile_pwr, encoding="utf-8")
         ]
         self.data_tco = np.loadtxt(self.infile_tco, delimiter="\t", skiprows=7)
         self.power_step = next(
@@ -114,15 +162,12 @@ class StructureFunction(dbase.StructureParameters):
                 f"Conversion mode '{self.input_mode}' not recognised. Valid options are: {valid_input_modes}"
             )
 
-        # Data validation for non-t3ster modes
         if self.input_mode != "t3ster":
-            # Check if data exists and has correct shape
             if self.data is None:
                 raise ValueError("Data has not been given.")
 
             self.data = np.array(self.data)
 
-            # Validate data shape and length
             if self.data.shape[1] != 2:
                 raise ValueError("Data has to have two columns. Maybe transpose?")
 
@@ -148,7 +193,6 @@ class StructureFunction(dbase.StructureParameters):
             self.impedance = self.data[:, 1]
             logger.info("taking impedance data directly from data array")
 
-        # all calculations are done in logarithmic time
         self.log_time = np.log(self.time)
         if hasattr(self, "stored_early_zth"):
             current_early_zth = utl.get_early_zth(self)
@@ -166,7 +210,6 @@ class StructureFunction(dbase.StructureParameters):
         if self.input_mode == "volt" and self.calib is None:
             raise ValueError("Calibration data is required for voltage conversion")
 
-        # Convert voltage to temperature if needed
         if self.input_mode == "volt":
             self.voltage = self.data[:, 1]
             self.temp_raw = utl.volt_to_temp(
@@ -232,14 +275,14 @@ class StructureFunction(dbase.StructureParameters):
         drives deconvolution.
         """
 
-        with open(self.infile) as f:
+        with open(self.infile, encoding="utf-8") as f:
             self.read_t3ster(f)
 
         fnzi = utl.first_nonzero_index(self.data[:, 0])
-        self.dig = self.data[fnzi:, 1]
+        dig = self.data[fnzi:, 1]
         if self.kfac_fit_deg == 1:
             self.temp_raw, self.voltage = utl.volt_to_temp_t3ster(
-                self.dig, self.t3_lsb, self.t3_uref, self.t3_kfac
+                dig, self.t3_lsb, self.t3_uref, self.t3_kfac
             )
         elif self.kfac_fit_deg == 2:
             extrapol_limit = 20  # only allow extrapolation for 20 K beyond the range of the calibration
@@ -248,7 +291,7 @@ class StructureFunction(dbase.StructureParameters):
                 np.max(self.data_tco[:, 0]) + extrapol_limit,
             )
             self.temp_raw, self.voltage = utl.volt_to_temp_t3ster(
-                self.dig, self.t3_lsb, self.t3_uref, self.t3_kfac, span=span
+                dig, self.t3_lsb, self.t3_uref, self.t3_kfac, span=span
             )
         else:
             raise ValueError("kfac_fit_deg has to be 1 or 2")
@@ -384,7 +427,7 @@ class StructureFunction(dbase.StructureParameters):
                 f"z_fit_lasso: deconv_mode '{self.deconv_mode}' not recognised"
             )
 
-        warm_start = True if self.deconv_mode == "adaptive" else False
+        warm_start = self.deconv_mode == "adaptive"
 
         phi_unnormalized = 1.0 - np.exp(-time[:, None] / tau_grid[None, :])
 
@@ -400,7 +443,7 @@ class StructureFunction(dbase.StructureParameters):
         logger.debug(f"Condition number of phi: {np.linalg.cond(phi):.4e}")
 
         if self.deconv_mode == "adaptive":
-            epsilon = 1e-6 
+            epsilon = 1e-6
             gamma = 0.8
             weights = 1.0 / (np.abs(self.time_spec) + epsilon) ** gamma
 
@@ -415,16 +458,16 @@ class StructureFunction(dbase.StructureParameters):
                 f"Performing Lasso with Cross-Validation (folds={self.lasso_cv_folds})..."
             )
             lasso = LassoCV(
-                alphas=self.lasso_alpha, 
-                cv=self.lasso_cv_folds,  
-                positive=True, 
+                alphas=self.lasso_alpha,
+                cv=self.lasso_cv_folds,
+                positive=True,
                 fit_intercept=False,
-                max_iter=self.lasso_max_iter, 
-                tol=self.lasso_tol, 
-                n_jobs=-1,  
+                max_iter=self.lasso_max_iter,
+                tol=self.lasso_tol,
+                n_jobs=-1,
                 verbose=False,
                 selection=self.lasso_selection,
-                precompute=self.lasso_precompute, 
+                precompute=self.lasso_precompute,
             )
         else:
             if not isinstance(self.lasso_alpha, (int, float)):
@@ -434,19 +477,19 @@ class StructureFunction(dbase.StructureParameters):
             logger.debug(f"Performing Lasso with fixed alpha={self.lasso_alpha}...")
             lasso = Lasso(
                 alpha=self.lasso_alpha,
-                positive=True, 
+                positive=True,
                 fit_intercept=False,
-                max_iter=self.lasso_max_iter,  
-                tol=self.lasso_tol,  
+                max_iter=self.lasso_max_iter,
+                tol=self.lasso_tol,
                 selection=self.lasso_selection,
-                precompute=self.lasso_precompute, 
-                warm_start=warm_start,  
+                precompute=self.lasso_precompute,
+                warm_start=warm_start,
             )
 
         if self.deconv_mode == "adaptive" and self.lasso_cv_folds > 1:
             lasso.coef_ = self.time_spec.copy()
 
-        lasso.fit(phi, self.impedance.ravel())  
+        lasso.fit(phi, self.impedance.ravel())
         a_hat_normalized = lasso.coef_
 
         if self.deconv_mode == "adaptive":
@@ -461,7 +504,7 @@ class StructureFunction(dbase.StructureParameters):
 
         r2 = r2_score(self.impedance.ravel(), y_fit_unnormalized)
 
-        R_th_model = np.sum(a_hat)  
+        R_th_model = np.sum(a_hat)
 
         if hasattr(lasso, "alpha_"):
             used_alpha = lasso.alpha_
@@ -495,7 +538,7 @@ class StructureFunction(dbase.StructureParameters):
             self.imp_smooth_full = y_fit_unnormalized.flatten()
             self.pad_time_size = np.size(self.log_time_pad)
 
-            self.imp_deriv_interp, back_imp = utl.time_const_to_imp(
+            self.imp_deriv_interp, _ = utl.time_const_to_imp(
                 self.log_time_pad, a_hat
             )
 
