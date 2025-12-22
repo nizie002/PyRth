@@ -383,7 +383,9 @@ class Evaluation:
 
     def bootstrap_module(self, parameters: Dict):
         """
-        Bootstrap module for evaluation with specified parameters. The module is used to evaluate the impedance approximation using a structure function. The structure function is calculated from a given set of resistances and capacitances.
+        Bootstrap module for evaluation with specified parameters. The module is used to
+        evaluate the impedance approximation using a structure function. The structure
+        function is calculated from a given set of resistances and capacitances.
         """
 
         self.parameters = dbase.validate_and_merge_defaults(parameters, self.parameters)
