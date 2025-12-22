@@ -417,8 +417,8 @@ class StructureFunction(dbase.StructureParameters):
         if self.deconv_mode == "lasso":
             tau_min = 0.5 * np.diff(time).min()
             tau_max = 1 * time.max()
-            K = self.log_time_size
-            tau_grid = np.logspace(np.log10(tau_min), np.log10(tau_max), K)
+            grid_size = self.log_time_size
+            tau_grid = np.logspace(np.log10(tau_min), np.log10(tau_max), grid_size)
 
         elif self.deconv_mode == "adaptive":
             tau_grid = np.exp(self.log_time_pad.flatten())
@@ -500,11 +500,11 @@ class StructureFunction(dbase.StructureParameters):
         y_fit_unnormalized = (phi_unnormalized @ a_hat).ravel()
         sigma_hat = np.sqrt(
             ((self.impedance.ravel() - y_fit_unnormalized) ** 2).mean()
-        )  
+        )
 
         r2 = r2_score(self.impedance.ravel(), y_fit_unnormalized)
 
-        R_th_model = np.sum(a_hat)
+        r_th_model = np.sum(a_hat)
 
         if hasattr(lasso, "alpha_"):
             used_alpha = lasso.alpha_
@@ -516,7 +516,7 @@ class StructureFunction(dbase.StructureParameters):
             "Lasso results (mode=%s): R_meas=%.4f, R_model=%.4f, alpha=%.2e, RMSE=%.4f, R2=%.4f, active=%d",
             self.deconv_mode,
             self.impedance[-1],
-            R_th_model,
+            r_th_model,
             used_alpha,
             sigma_hat,
             r2,
@@ -691,23 +691,23 @@ class StructureFunction(dbase.StructureParameters):
             self.mpfr_z_num, self.mpfr_z_denom
         )
 
-        N = len(cleaned_mpfr_denom)
+        n_terms = len(cleaned_mpfr_denom)
 
         if self.struc_method == "khatwani":
             markov_parameters = mpu.generate_markov_params(
                 cleaned_mpfr_num, cleaned_mpfr_denom
             )
-            large_h, small_h = mpu.khatwani_method(N, markov_parameters)
+            large_h, small_h = mpu.khatwani_method(n_terms, markov_parameters)
         elif self.struc_method == "sobhy":
             large_h, small_h = mpu.sobhy_method(
-                N, cleaned_mpfr_num, cleaned_mpfr_denom
+                n_terms, cleaned_mpfr_num, cleaned_mpfr_denom
             )
         else:
             raise ValueError(
                 f"Unsupported struc_method '{self.struc_method}' for J-fraction conversion"
             )
 
-        self.cau_res, self.cau_cap = mpu.conti_frac_convers(N, large_h, small_h)
+        self.cau_res, self.cau_cap = mpu.conti_frac_convers(n_terms, large_h, small_h)
 
         self._finalize_cauer()
 
@@ -759,7 +759,7 @@ class StructureFunction(dbase.StructureParameters):
             self.cau_res[self.cau_cap < 0.0]
         ):
             logger.error(
-                "negative structure-function values detected for N=%d", len(self.cau_cap)
+                "negative structure-function values detected for n_terms=%d", len(self.cau_cap)
             )
 
         self.int_cau_res = np.cumsum(self.cau_res)

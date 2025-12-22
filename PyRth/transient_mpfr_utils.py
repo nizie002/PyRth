@@ -254,17 +254,17 @@ def boor_golub_cauer(mpfr_resist_fost, mpfr_capa_fost):
 
     poles = []
 
-    for R, C in zip(mpfr_resist_fost, mpfr_capa_fost):
-        if R > 0 and C > 0:
-            poles.append(mpfr("-1.0") / (R * C))
+    for resist, capa in zip(mpfr_resist_fost, mpfr_capa_fost):
+        if resist > 0 and capa > 0:
+            poles.append(mpfr("-1.0") / (resist * capa))
 
-    M = len(poles) - 1
-    w_0 = [0] * (M + 1)
+    pole_count = len(poles) - 1
+    w_0 = [0] * (pole_count + 1)
 
-    for i in range(M + 1):
+    for i in range(pole_count + 1):
         w_0[i] = mpfr("1.0") / mpfr_capa_fost[i]
 
-    k = [mpfr("0.0")] * (2 * (M + 1))
+    k = [mpfr("0.0")] * (2 * (pole_count + 1))
 
     w_sum = mpfr("0.0")
     for w in w_0:
@@ -272,48 +272,48 @@ def boor_golub_cauer(mpfr_resist_fost, mpfr_capa_fost):
 
     k[1] = mpfr("1.0") / w_sum
 
-    lmda = [mpfr("0.0")] * (M + 1)
-    mu = [mpfr("0.0")] * (M + 1)
-    l_mu_sum = [mpfr("0.0")] * (M)
-    l_mu_prod = [mpfr("0.0")] * (M)
-    B = [0] * (M + 1)
+    lmda = [mpfr("0.0")] * (pole_count + 1)
+    mu = [mpfr("0.0")] * (pole_count + 1)
+    l_mu_sum = [mpfr("0.0")] * (pole_count)
+    l_mu_prod = [mpfr("0.0")] * (pole_count)
+    poly_basis = [0] * (pole_count + 1)
 
-    B[0] = [mpfr("1.0")]
+    poly_basis[0] = [mpfr("1.0")]
 
-    for i in range(M + 1):
+    for i in range(pole_count + 1):
         lmda[0] = lmda[0] - w_0[i] * poles[i]
     lmda[0] = lmda[0] / w_sum
 
     k[2] = mpfr("1.0") / (k[1] * lmda[0])
-    B[1] = [lmda[0], mpfr("1.0")]
+    poly_basis[1] = [lmda[0], mpfr("1.0")]
 
-    l_mu_prod[0] = mpfr_weighted_self_product(poles, B[1], w_0) / mpfr_weighted_self_product(
-        poles, B[0], w_0
+    l_mu_prod[0] = mpfr_weighted_self_product(poles, poly_basis[1], w_0) / mpfr_weighted_self_product(
+        poles, poly_basis[0], w_0
     )
 
     mu[1] = l_mu_prod[0] / lmda[0]
 
-    for i in range(2, M + 1):
-        Bs = list(B[i - 1])
-        Bs.insert(0, mpfr("0.0"))
+    for i in range(2, pole_count + 1):
+        shifted_basis = list(poly_basis[i - 1])
+        shifted_basis.insert(0, mpfr("0.0"))
 
-        l_mu_sum[i - 1] = mpfr_weighted_inner_product(poles, B[i - 1], Bs, w_0) / mpfr_weighted_self_product(
-            poles, B[i - 1], w_0
-        )
+        l_mu_sum[i - 1] = mpfr_weighted_inner_product(
+            poles, poly_basis[i - 1], shifted_basis, w_0
+        ) / mpfr_weighted_self_product(poles, poly_basis[i - 1], w_0)
 
         lmda[i - 1] = l_mu_sum[i - 1] - mu[i - 1]
 
-        fst = mpfr_pol_mul(([l_mu_sum[i - 1], mpfr("1.0")]), B[i - 1])
-        snd = mpfr_pol_mul(([-l_mu_prod[i - 2]]), B[i - 2])
-        B[i] = mpfr_pol_add(fst, snd)
+        fst = mpfr_pol_mul(([l_mu_sum[i - 1], mpfr("1.0")]), poly_basis[i - 1])
+        snd = mpfr_pol_mul(([-l_mu_prod[i - 2]]), poly_basis[i - 2])
+        poly_basis[i] = mpfr_pol_add(fst, snd)
 
-        l_mu_prod[i - 1] = mpfr_weighted_self_product(poles, B[i], w_0) / mpfr_weighted_self_product(
-            poles, B[i - 1], w_0
+        l_mu_prod[i - 1] = mpfr_weighted_self_product(poles, poly_basis[i], w_0) / mpfr_weighted_self_product(
+            poles, poly_basis[i - 1], w_0
         )
         mu[i] = l_mu_prod[i - 1] / lmda[i - 1]
 
     k[3] = (k[1] * lmda[0]) / mu[1]
-    for i in range(2, M + 1):
+    for i in range(2, pole_count + 1):
         lambdas = k[1]
         mus = mu[1]
         for j in range(2, i):
@@ -323,13 +323,13 @@ def boor_golub_cauer(mpfr_resist_fost, mpfr_capa_fost):
         k[2 * i] = mus / lambdas
         k[2 * i + 1] = lambdas / (mus * mu[i])
 
-    cau_res = np.zeros(M + 1)
-    cau_cap = np.zeros(M + 1)
+    cau_res = np.zeros(pole_count + 1)
+    cau_cap = np.zeros(pole_count + 1)
 
-    for i in range(0, M):
+    for i in range(0, pole_count):
         cau_res[i] = float(k[2 * i + 2])
         cau_cap[i] = float(k[2 * i + 1])
-    cau_cap[M] = float(k[2 * M + 1])
+    cau_cap[pole_count] = float(k[2 * pole_count + 1])
 
     return cau_res, cau_cap
 
@@ -338,61 +338,61 @@ def normalize_rational_polynomials(mpfr_z_num, mpfr_z_denom):
     """Normalize numerator/denominator so the denominator's leading coefficient is one."""
     inv = mpfr("1.0") / mpfr_z_denom[-1]
 
-    N = len(mpfr_z_denom)
+    n_terms = len(mpfr_z_denom)
 
     cleaned_mpfr_num = [
         mpfr("0.0"),
-        *[inv * mpfr_z_num[N - i - 2] for i in range(N - 1)],
+        *[inv * mpfr_z_num[n_terms - i - 2] for i in range(n_terms - 1)],
     ]
-    cleaned_mpfr_denom = [inv * mpfr_z_denom[N - i - 1] for i in range(N)]
+    cleaned_mpfr_denom = [inv * mpfr_z_denom[n_terms - i - 1] for i in range(n_terms)]
 
     return cleaned_mpfr_num, cleaned_mpfr_denom
 
 
 def generate_markov_params(cleaned_mpfr_num, cleaned_mpfr_denom):
     """Produce the first ``2N`` Markov parameters via Newton doubling."""
-    N = len(cleaned_mpfr_denom)
-    order = int(np.ceil(np.log2(N)) + 1)
+    n_terms = len(cleaned_mpfr_denom)
+    order = int(np.ceil(np.log2(n_terms)) + 1)
 
-    L = 1
+    expansion_len = 1
 
     last_term = [mpfr("1.0")]
     last_error = cleaned_mpfr_denom[1:]
 
     for _ in range(1, order + 1):
-        pre_term = [mpfr("0.0")] * L
+        pre_term = [mpfr("0.0")] * expansion_len
         pre_term = pre_term + last_term
 
-        next_term = mpfr_pol_add(last_term, mpfr_neg_pol_mul(last_error, pre_term, maxorder=2 * N))
-        next_error = mpfr_neg_pol_mul(last_error, last_error, maxorder=2 * N)
+        next_term = mpfr_pol_add(last_term, mpfr_neg_pol_mul(last_error, pre_term, maxorder=2 * n_terms))
+        next_error = mpfr_neg_pol_mul(last_error, last_error, maxorder=2 * n_terms)
 
         last_term = next_term
         last_error = next_error
 
-        L = L * 2
+        expansion_len = expansion_len * 2
 
-    markov_parameters = mpfr_pol_mul(cleaned_mpfr_num, next_term)[1 : 2 * N + 1]
+    markov_parameters = mpfr_pol_mul(cleaned_mpfr_num, next_term)[1 : 2 * n_terms + 1]
 
     return markov_parameters
 
 
-def khatwani_method(N, markov_parameters):
+def khatwani_method(n_terms, markov_parameters):
     """Build the triangular table that yields the H–h coefficients."""
-    a_matrix = [[None] * (2 * N) for i in range(N + 1)]
-    a_matrix[0] = [mpfr("0.0")] * (2 * N)
+    a_matrix = [[None] * (2 * n_terms) for _ in range(n_terms + 1)]
+    a_matrix[0] = [mpfr("0.0")] * (2 * n_terms)
     a_matrix[0][0] = mpfr("1.0")
 
-    large_h = [None] * (N - 1)
-    small_h = [None] * (N - 1)
+    large_h = [None] * (n_terms - 1)
+    small_h = [None] * (n_terms - 1)
 
-    for i in range(2 * N):
+    for i in range(2 * n_terms):
         a_matrix[1][i] = markov_parameters[i]
 
     large_h[0] = a_matrix[0][0] / a_matrix[1][0]
     small_h[0] = (a_matrix[0][1] - large_h[0] * a_matrix[1][1]) / a_matrix[1][0]
 
-    for i in range(2, N):
-        for j in range(2 * N - (i - 1) * 2):
+    for i in range(2, n_terms):
+        for j in range(2 * n_terms - (i - 1) * 2):
             a_matrix[i][j] = (
                 a_matrix[i - 2][j + 2]
                 - large_h[i - 2] * a_matrix[i - 1][j + 2]
@@ -405,56 +405,56 @@ def khatwani_method(N, markov_parameters):
     return large_h, small_h
 
 
-def sobhy_method(N, cleaned_mpfr_num, cleaned_mpfr_denom):
+def sobhy_method(n_terms, cleaned_mpfr_num, cleaned_mpfr_denom):
     """Sobhy's interlaced A/B-table alternative to Khatwani."""
-    A = [[mpfr("0.0")] * (N) for i in range(N + 1)]
-    B = [[mpfr("0.0")] * (N) for i in range(N + 1)]
+    a_table = [[mpfr("0.0")] * (n_terms) for _ in range(n_terms + 1)]
+    b_table = [[mpfr("0.0")] * (n_terms) for _ in range(n_terms + 1)]
 
-    for i in range(N):
-        A[0][i] = cleaned_mpfr_denom[i]
-        B[0][i] = cleaned_mpfr_denom[i]
+    for i in range(n_terms):
+        a_table[0][i] = cleaned_mpfr_denom[i]
+        b_table[0][i] = cleaned_mpfr_denom[i]
 
-    for i in range(N - 1):
-        A[1][i] = cleaned_mpfr_num[i + 1]
+    for i in range(n_terms - 1):
+        a_table[1][i] = cleaned_mpfr_num[i + 1]
 
-    for k in range(N - 1):
+    for k in range(n_terms - 1):
         j = 1
-        B[j][k] = A[j - 1][k + 1] - A[j - 1][0] / A[j][0] * A[j][k + 1]
+        b_table[j][k] = a_table[j - 1][k + 1] - a_table[j - 1][0] / a_table[j][0] * a_table[j][k + 1]
 
-    for j in range(2, N + 1):
-        for k in range(N - j):
-            A[j][k] = B[j - 1][k + 1] - B[j - 1][0] / A[j - 1][0] * A[j - 1][k + 1]
-        for k in range(N - j):
-            B[j][k] = A[j - 1][k + 1] - A[j - 1][0] / A[j][0] * A[j][k + 1]
+    for j in range(2, n_terms + 1):
+        for k in range(n_terms - j):
+            a_table[j][k] = b_table[j - 1][k + 1] - b_table[j - 1][0] / a_table[j - 1][0] * a_table[j - 1][k + 1]
+        for k in range(n_terms - j):
+            b_table[j][k] = a_table[j - 1][k + 1] - a_table[j - 1][0] / a_table[j][0] * a_table[j][k + 1]
 
-    a = [None] * (N - 1)
-    b = [None] * (N - 1)
+    a = [None] * (n_terms - 1)
+    b = [None] * (n_terms - 1)
 
-    for m in range(1, N):
-        a[m - 1] = A[m - 1][0] / A[m][0]
-        b[m - 1] = B[m][0] / A[m][0]
+    for m in range(1, n_terms):
+        a[m - 1] = a_table[m - 1][0] / a_table[m][0]
+        b[m - 1] = b_table[m][0] / a_table[m][0]
 
     return a, b
 
 
-def conti_frac_convers(N, large_h, small_h):
+def conti_frac_convers(n_terms, large_h, small_h):
     """Map H–h coefficients to the Stieltjes (Cauer) continued fraction."""
-    a_square = [None] * (N - 1)
-    small_b = [None] * (N - 1)
+    a_square = [None] * (n_terms - 1)
+    small_b = [None] * (n_terms - 1)
 
     a_square[0] = mpfr("1.0") / large_h[0]
     small_b[0] = mpfr("-1.0") * small_h[0] / large_h[0]
 
-    for i in range(1, N - 1):
+    for i in range(1, n_terms - 1):
         a_square[i] = mpfr("-1.0") / (large_h[i] * large_h[i - 1])
         small_b[i] = -small_h[i] / large_h[i]
 
-    small_c = [None] * (2 * (N - 1))
+    small_c = [None] * (2 * (n_terms - 1))
 
     small_c[0] = mpfr("1.0") / a_square[0]
     small_c[1] = -a_square[0] / small_b[0]
 
-    for i in range(1, N - 1):
+    for i in range(1, n_terms - 1):
         small_c[2 * i] = mpfr("1.0") / (
             small_c[2 * i - 2] * small_c[2 * i - 1] * small_c[2 * i - 1] * a_square[i]
         )
@@ -462,10 +462,10 @@ def conti_frac_convers(N, large_h, small_h):
             mpfr("1.0") + small_c[2 * i] * small_c[2 * i - 1] * small_b[i]
         )
 
-    cau_res = np.zeros(N - 1)
-    cau_cap = np.zeros(N - 1)
+    cau_res = np.zeros(n_terms - 1)
+    cau_cap = np.zeros(n_terms - 1)
 
-    for i in range(0, N - 1):
+    for i in range(0, n_terms - 1):
         cau_cap[i] = float(small_c[2 * i])
         cau_res[i] = float(small_c[2 * i + 1])
 
