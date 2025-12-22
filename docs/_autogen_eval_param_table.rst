@@ -115,7 +115,7 @@ Standard Evaluation Parameters
 ``power_data`` (default: None)
     np.ndarray | None: Excitation power curve for temperature prediction. 2D array: [time, power].
 
-``lin_sampling_period`` (default: 1e-06)
+``lin_sampling_period`` (default: 1e-03)
     float: Sampling period [s] for linear interpolation of the impulse response in temperature prediction.
 
 ``minimum_window_length`` (default: 0.35)

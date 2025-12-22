@@ -187,7 +187,7 @@ class EvalDefaults:
         doc="np.ndarray | None: Excitation power curve for temperature prediction. 2D array: [time, power].",
     )
     lin_sampling_period: float = doc_field(
-        default=1e-6,
+        default=1e-3,
         doc="float: Sampling period [s] for linear interpolation of the impulse response in temperature prediction.",
     )
     minimum_window_length: float = doc_field(
