@@ -491,7 +491,7 @@ class BackwardsImpDerivFigure(StructureFigure):
 
         ax2 = self.ax.twinx()
         ax2.set_ylabel(r"difference, $\Delta h$, in K$\cdot$ W$^{-1}$", color='red')
-        
+
         difference = module.back_imp_deriv - module.imp_deriv_interp
         ax2.semilogx(
             np.exp(module.log_time_pad),
@@ -503,7 +503,7 @@ class BackwardsImpDerivFigure(StructureFigure):
             color='red',
         )
         ax2.tick_params(axis='y', labelcolor='red')
-        
+
         ax2.axhline(y=0, color='red', linestyle='--', alpha=0.3, linewidth=0.5)
 
 
