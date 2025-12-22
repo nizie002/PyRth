@@ -14,6 +14,7 @@ import numpy as np
 import scipy.interpolate as ipl
 import scipy.optimize as spo
 import scipy.integrate as sin
+from scipy.signal import fftconvolve
 
 from .utils import transient_utils as utl
 from .utils import optimizer_utils as optu
@@ -1145,16 +1146,17 @@ class Evaluation:
         logger.debug("Interpolated impulse area: %s", area_interp)
 
         logger.info(
-            "Starting convolution (size=%d)",
+            "Starting convolution (power len=%d, impulse len=%d, lin len=%d)",
             module.power_function_int.size,
+            module.impulse_response_int.size,
+            module.lin_time.size,
         )
 
-        module.predicted_temperature = (
-            np.convolve(
-                module.power_function_int, module.impulse_response_int, mode="same"
-            )
-            * dt
+        conv = fftconvolve(
+            module.power_function_int, module.impulse_response_int, mode="same"
         )
+
+        module.predicted_temperature = conv * dt
         module.predicted_temperature = module.predicted_temperature[
             lin_t_number // 2 - 1 :
         ]
