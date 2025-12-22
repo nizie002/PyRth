@@ -232,7 +232,7 @@ class FigureExporter(BaseExporter):
                     ops["updated"].add(plot_key)
 
                 try:
-                    fig_obj.plot_module_data(module)
+                    fig_obj.render(module)
                     self._maybe_add_comment(fig_obj, module, plot_key, created)
                 except (ValueError, TypeError, RuntimeError) as e:
                     logger.error(

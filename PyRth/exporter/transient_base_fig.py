@@ -70,6 +70,26 @@ class StructureFigure:
             )
             self.fig.tight_layout()
 
+    def init_axes(self, title: str, xlabel: str, ylabel: str) -> None:
+        """Initialize axes labels/title only once per figure."""
+        if self._axis_initialized:
+            return
+        self.ax.set_title(title)
+        self.ax.set_xlabel(xlabel)
+        self.ax.set_ylabel(ylabel)
+        self._axis_initialized = True
+
+    def setup_axes(self) -> None:
+        """Hook for subclasses to configure titles, labels, and limits."""
+        return
+
+    def ensure_initialized(self) -> None:
+        """Run one-time axis initialization."""
+        if self._axis_initialized:
+            return
+        self.setup_axes()
+        self._axis_initialized = True
+
     def add_comment(self, text: str) -> None:
         """Render a single annotation in the lower-left corner if provided."""
         if self._comment_added or not text:
@@ -93,18 +113,13 @@ class StructureFigure:
         return ""
 
     def plot_module_data(self, module):
-        """Dispatch to subclass-specific plotting logic for ``module``.
-        
-        # Example implementation in subclass:
-        # if not self._axis_initialized:
-        #     self.ax.set_title("My Plot Title")
-        #     self.ax.set_xlabel("X-axis")
-        #     self.ax.set_ylabel("Y-axis")
-        #     self._axis_initialized = True
-        # color = self.next_color()
-        # self.ax.plot(module.x_data, module.y_data, color=color, label=module.label)
-        """
+        """Dispatch to subclass-specific plotting logic for ``module``."""
         raise NotImplementedError("Subclasses must implement plot_module_data")
+
+    def render(self, module):
+        """Public orchestration entry-point for figure exporters."""
+        self.ensure_initialized()
+        self.plot_module_data(module)
 
     def close(self):
         """Release Matplotlib resources associated with this figure."""

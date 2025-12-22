@@ -19,13 +19,10 @@ from . import figure_comments
 
 
 class VoltageFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Voltage response")
-            self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"voltage, $U$, in V")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes("Voltage response", r"time, $t$, in s", r"voltage, $U$, in V")
 
+    def plot_module_data(self, module):
         self.ax.semilogx(
             module.time_raw,
             module.voltage,
@@ -38,13 +35,12 @@ class VoltageFigure(StructureFigure):
 
 
 class RawDataFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Raw Temperature Response")
-            self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"temperature, $T$, in $^\circ\!$C")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Raw Temperature Response", r"time, $t$, in s", r"temperature, $T$, in $^\circ\!$C"
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogx(module.time_raw, module.temp_raw, "x", label="raw data")
 
 
@@ -84,13 +80,12 @@ class ExtrapolationFigure(StructureFigure):
 
 
 class TempFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Cleaned Temperature Response")
-            self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"temperature, $T$, in $^\circ\!$C")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Cleaned Temperature Response", r"time, $t$, in s", r"temperature, $T$, in $^\circ\!$C"
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogx(
             module.time,
             module.temperature,
@@ -103,13 +98,14 @@ class TempFigure(StructureFigure):
 
 
 class ZCurveFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Thermal impedance")
-            self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"thermal impedance, $Z_{\rm th}$, in K$\cdot$ W$^{-1}$")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Thermal impedance",
+            r"time, $t$, in s",
+            r"thermal impedance, $Z_{\rm th}$, in K$\cdot$ W$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogx(
             np.exp(module.log_time),
             module.impedance,
@@ -133,13 +129,14 @@ class ZCurveFigure(StructureFigure):
 
 
 class DerivFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Impulse response")
-            self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"impulse response, $h$, in K$\cdot$ W$^{-1}$")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Impulse response",
+            r"time, $t$, in s",
+            r"impulse response, $h$, in K$\cdot$ W$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogx(
             np.exp(module.log_time_pad),
             module.imp_deriv_interp,
@@ -155,13 +152,14 @@ class DerivFigure(StructureFigure):
 
 
 class BzFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title(r"$B(z) = \log(h(z))$, log-derivative curve")
-            self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"logarithmic derivative, $B(z)$")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            r"$B(z) = \log(h(z))$, log-derivative curve",
+            r"time, $t$, in s",
+            r"logarithmic derivative, $B(z)$",
+        )
 
+    def plot_module_data(self, module):
         bz_values = np.asarray(module.bz_curve if module.bz_curve is not None else [])
         log_time = np.asarray(
             module.log_time_pad if module.log_time_pad is not None else []
@@ -193,15 +191,16 @@ class BzFigure(StructureFigure):
 
 
 class FFTFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_xlim(0, 7)
-            self.ax.set_ylim(1e-6, 1e3)
-            self.ax.set_title("Fourier transform")
-            self.ax.set_xlabel(r"angular frequency, $\omega$, in rad/s")
-            self.ax.set_ylabel(r"power density, $|H|^2$, in (K $\cdot$ s W$^{-1})^2$")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.ax.set_xlim(0, 7)
+        self.ax.set_ylim(1e-6, 1e3)
+        self.init_axes(
+            "Fourier transform",
+            r"angular frequency, $\omega$, in rad/s",
+            r"power density, $|H|^2$, in (K $\cdot$ s W$^{-1})^2$",
+        )
 
+    def plot_module_data(self, module):
         angular_freq = 2 * np.pi * module.fft_freq
         self.ax.semilogy(
             angular_freq, module.fft_idi_pegrm, "o", markersize=3, label="fft"
@@ -223,13 +222,14 @@ class FFTFigure(StructureFigure):
 
 
 class TimeSpecFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Time constant spectrum")
-            self.ax.set_xlabel(r"time constant, $\tau$, in s")
-            self.ax.set_ylabel(r"resistance, $R'$, in K$\cdot$ W$^{-1}$")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Time constant spectrum",
+            r"time constant, $\tau$, in s",
+            r"resistance, $R'$, in K$\cdot$ W$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogx(
             np.exp(module.crop_log_time),
             module.crop_time_spec,
@@ -253,15 +253,14 @@ class TimeSpecFigure(StructureFigure):
 
 
 class SumTimeSpecFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Cumulative time constant spectrum")
-            self.ax.set_xlabel(r"time constant, $\tau$, in s")
-            self.ax.set_ylabel(
-                r"cumulative resistance, $R'_\Sigma$, in K$\cdot$ W$^{-1}$"
-            )
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Cumulative time constant spectrum",
+            r"time constant, $\tau$, in s",
+            r"cumulative resistance, $R'_\Sigma$, in K$\cdot$ W$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogx(
             np.exp(module.log_time_pad),
             module.sum_time_spec,
@@ -273,18 +272,15 @@ class SumTimeSpecFigure(StructureFigure):
 
 
 class CumulStrucFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_ylim(1e-6, 1e5)
-            self.ax.set_title("Cumulative structure function")
-            self.ax.set_xlabel(
-                r"cumulative thermal resistance, $R_\Sigma$, in K$\cdot$ W$^{-1}$"
-            )
-            self.ax.set_ylabel(
-                r"cumulative thermal capacity, $C_\Sigma$, in J$\cdot$ K$^{-1}$"
-            )
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.ax.set_ylim(1e-6, 1e5)
+        self.init_axes(
+            "Cumulative structure function",
+            r"cumulative thermal resistance, $R_\Sigma$, in K$\cdot$ W$^{-1}$",
+            r"cumulative thermal capacity, $C_\Sigma$, in J$\cdot$ K$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         sliced = np.where(module.int_cau_cap <= 1e4)
 
         int_cau_res_sliced = module.int_cau_res[sliced]
@@ -302,16 +298,15 @@ class CumulStrucFigure(StructureFigure):
 
 
 class DiffStrucFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_ylim(1e-5, 1e5)
-            self.ax.set_title("Differential structure function")
-            self.ax.set_xlabel(r"thermal resistance, $R$, in K$\cdot$ W$^{-1}$")
-            self.ax.set_ylabel(
-                r"thermal capacity, $C$, in s$\cdot$ W$^2$ $\cdot$ K$^{-2}$"
-            )
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.ax.set_ylim(1e-5, 1e5)
+        self.init_axes(
+            "Differential structure function",
+            r"thermal resistance, $R$, in K$\cdot$ W$^{-1}$",
+            r"thermal capacity, $C$, in s$\cdot$ W$^2$ $\cdot$ K$^{-2}$",
+        )
 
+    def plot_module_data(self, module):
         int_cau_res_sliced = module.int_cau_res[:-1]
 
         self.ax.semilogy(
@@ -326,15 +321,14 @@ class DiffStrucFigure(StructureFigure):
 
 
 class LocalResistFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Local thermal resistance")
-            self.ax.set_xlabel(r"thermal resistance, $R$, in K$\cdot$ W$^{-1}$")
-            self.ax.set_ylabel(
-                r"local thermal resistance, $R_{\rm loc}$, in K$\cdot$ W$^{-1}$"
-            )
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Local thermal resistance",
+            r"thermal resistance, $R$, in K$\cdot$ W$^{-1}$",
+            r"local thermal resistance, $R_{\rm loc}$, in K$\cdot$ W$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogx(
             (module.int_cau_cap),
             module.cau_res,
@@ -347,19 +341,15 @@ class LocalResistFigure(StructureFigure):
 
 
 class LocalGradientFigure(StructureFigure):
+    def setup_axes(self):
+        self.ax.set_xlim(1e-5, 1e2)
+        self.init_axes(
+            "Local gradient diagram",
+            r"cumulative thermal capacity, $C_\Sigma$, in J$\cdot$ K$^{-1}$",
+            r"thermal gradient, $R/C$, in K$^2$ $\cdot$ (s$\cdot$ W$^2$)$^{-1}$",
+        )
+
     def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_xlim(1e-5, 1e2)
-
-            self.ax.set_title("Local gradient diagram")
-            self.ax.set_ylabel(
-                r"thermal gradient, $R/C$, in K$^2$ $\cdot$ (s$\cdot$ W$^2$)$^{-1}$"
-            )
-            self.ax.set_xlabel(
-                r"cumulative thermal capacity, $C_\Sigma$, in J$\cdot$ K$^{-1}$"
-            )
-            self._axis_initialized = True
-
         self.ax.semilogx(
             module.int_cau_cap,
             module.cau_res / module.cau_cap,
@@ -372,17 +362,14 @@ class LocalGradientFigure(StructureFigure):
 
 
 class TheoCStrucFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Theoretical cumulative structure function")
-            self.ax.set_xlabel(
-                r"cumulative thermal resistance, $R_\Sigma$, in K$\cdot$ W$^{-1}$"
-            )
-            self.ax.set_ylabel(
-                r"cumulative thermal capacity, $C_\Sigma$, in J$\cdot$ K$^{-1}$"
-            )
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Theoretical cumulative structure function",
+            r"cumulative thermal resistance, $R_\Sigma$, in K$\cdot$ W$^{-1}$",
+            r"cumulative thermal capacity, $C_\Sigma$, in J$\cdot$ K$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogy(
             module.theo_int_cau_res,
             module.theo_int_cau_cap,
@@ -393,15 +380,14 @@ class TheoCStrucFigure(StructureFigure):
 
 
 class TheoDiffStrucFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title(r"Theoretical differential structure function")
-            self.ax.set_xlabel(r"thermal resistance, $R$, in K$\cdot$ W$^{-1}$")
-            self.ax.set_ylabel(
-                r"thermal capacity, $C$, in s$\cdot$ W$^2$ $\cdot$ K$^{-2}$"
-            )
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            r"Theoretical differential structure function",
+            r"thermal resistance, $R$, in K$\cdot$ W$^{-1}$",
+            r"thermal capacity, $C$, in s$\cdot$ W$^2$ $\cdot$ K$^{-2}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogy(
             module.theo_int_cau_res[:-1],
             module.theo_diff_struc,
@@ -414,15 +400,14 @@ class TheoDiffStrucFigure(StructureFigure):
 
 
 class TheoLocalResistFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Theoretical local thermal resistance")
-            self.ax.set_xlabel(
-                r"cumulative thermal capacity, $C_\Sigma$, in J$\cdot$ K$^{-1}$"
-            )
-            self.ax.set_ylabel(r"thermal resistance, $R$, in K$\cdot$ W$^{-1}$")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Theoretical local thermal resistance",
+            r"cumulative thermal capacity, $C_\Sigma$, in J$\cdot$ K$^{-1}$",
+            r"thermal resistance, $R$, in K$\cdot$ W$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogy(
             module.theo_int_cau_res,
             module.theo_int_cau_cap,
@@ -432,13 +417,14 @@ class TheoLocalResistFigure(StructureFigure):
 
 
 class TheoTimeConstFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Theoretical time constant spectrum")
-            self.ax.set_xlabel(r"time constant, $\tau$, in s")
-            self.ax.set_ylabel(r"resistance, $R'$, in K$\cdot$ W$^{-1}$")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Theoretical time constant spectrum",
+            r"time constant, $\tau$, in s",
+            r"resistance, $R'$, in K$\cdot$ W$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogx(
             np.exp(module.theo_log_time),
             module.theo_time_const,
@@ -451,15 +437,14 @@ class TheoTimeConstFigure(StructureFigure):
 
 
 class TheoSumTimeConstFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Theoretical cumulative time constant spectrum")
-            self.ax.set_xlabel(r"time constant, $\tau$, in s")
-            self.ax.set_ylabel(
-                r"cumulative resistance, $R'_\Sigma$, in K$\cdot$ W$^{-1}$"
-            )
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Theoretical cumulative time constant spectrum",
+            r"time constant, $\tau$, in s",
+            r"cumulative resistance, $R'_\Sigma$, in K$\cdot$ W$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         sum_theo_time_spec = sin.cumulative_trapezoid(
             module.theo_time_const, x=module.theo_log_time, initial=0.0
         )
@@ -476,13 +461,14 @@ class TheoSumTimeConstFigure(StructureFigure):
 
 
 class TheoImpDerivFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Theoretical impulse response")
-            self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"impulse response, $h$, in K$\cdot$ W$^{-1}$")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Theoretical impulse response",
+            r"time, $t$, in s",
+            r"impulse response, $h$, in K$\cdot$ W$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogx(
             np.exp(module.theo_log_time),
             module.theo_imp_deriv,
@@ -494,13 +480,14 @@ class TheoImpDerivFigure(StructureFigure):
 
 
 class TheoImpFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Theoretical thermal impedance")
-            self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"thermal impedance, $Z_{\rm th}$, in K$\cdot$ W$^{-1}$")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Theoretical thermal impedance",
+            r"time, $t$, in s",
+            r"thermal impedance, $Z_{\rm th}$, in K$\cdot$ W$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogx(
             np.exp(module.theo_log_time),
             module.theo_impedance,
@@ -511,13 +498,17 @@ class TheoImpFigure(StructureFigure):
 
 
 class BackwardsImpDerivFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Backwards impulse response comparison")
-            self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"impulse response, $h$, in K$\cdot$ W$^{-1}$", color='blue')
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Backwards impulse response comparison",
+            r"time, $t$, in s",
+            r"impulse response, $h$, in K$\cdot$ W$^{-1}$",
+        )
+        self.ax.set_ylabel(
+            r"impulse response, $h$, in K$\cdot$ W$^{-1}$", color="blue"
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogx(
             np.exp(module.log_time_pad),
             module.imp_deriv_interp,
@@ -556,13 +547,17 @@ class BackwardsImpDerivFigure(StructureFigure):
 
 
 class BackwardsImpFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Backwards thermal impedance comparison")
-            self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"thermal impedance, $Z_{\rm th}$, in K$\cdot$ W$^{-1}$", color='blue')
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Backwards thermal impedance comparison",
+            r"time, $t$, in s",
+            r"thermal impedance, $Z_{\rm th}$, in K$\cdot$ W$^{-1}$",
+        )
+        self.ax.set_ylabel(
+            r"thermal impedance, $Z_{\rm th}$, in K$\cdot$ W$^{-1}$", color="blue"
+        )
 
+    def plot_module_data(self, module):
         time_orig = np.exp(module.log_time)
         time_pad = np.exp(module.log_time_pad)
 
@@ -626,13 +621,14 @@ class BackwardsImpFigure(StructureFigure):
 
 
 class TheoBackwardsImpFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Theoretical backwards thermal impedance")
-            self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"thermal impedance, $Z_{\rm th}$, in K$\cdot$ W$^{-1}$")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Theoretical backwards thermal impedance",
+            r"time, $t$, in s",
+            r"thermal impedance, $Z_{\rm th}$, in K$\cdot$ W$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogx(
             np.exp(module.log_time_pad),
             module.back_imp,
@@ -664,13 +660,14 @@ class TheoBackwardsImpFigure(StructureFigure):
 
 
 class OptimizeStrucFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Optimized structure function")
-            self.ax.set_xlabel(r"cumulative thermal resistance / K$\cdot$ W$^{-1}$")
-            self.ax.set_ylabel(r"cumulative thermal capacity / J$\cdot$ K$^{-1}$")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Optimized structure function",
+            r"cumulative thermal resistance / K$\cdot$ W$^{-1}$",
+            r"cumulative thermal capacity / J$\cdot$ K$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogy(
             module.int_cau_res,
             module.int_cau_cap,
@@ -709,13 +706,14 @@ class OptimizeStrucFigure(StructureFigure):
 
 
 class TimeConstComparisonFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Time constant accuracy comparison")
-            self.ax.set_xlabel(module.mod_key_display_name.replace("_", " "))
-            self.ax.set_ylabel(r"objective function time const")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Time constant accuracy comparison",
+            self.module.mod_key_display_name.replace("_", " "),
+            r"objective function time const",
+        )
 
+    def plot_module_data(self, module):
         self.ax.scatter(
             module.mod_value_list,
             module.time_const_comparison,
@@ -724,13 +722,14 @@ class TimeConstComparisonFigure(StructureFigure):
 
 
 class TotalResistComparisonFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Total resistance accuracy comparison")
-            self.ax.set_xlabel(module.mod_key_display_name.replace("_", " "))
-            self.ax.set_ylabel(r"total resistance difference")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Total resistance accuracy comparison",
+            self.module.mod_key_display_name.replace("_", " "),
+            r"total resistance difference",
+        )
 
+    def plot_module_data(self, module):
         self.ax.scatter(
             module.mod_value_list,
             module.total_resist_diff,
@@ -739,14 +738,14 @@ class TotalResistComparisonFigure(StructureFigure):
 
 
 class StrucComparisonFigure(StructureFigure):
+    def setup_axes(self):
+        self.init_axes(
+            "Structure function accuracy comparison",
+            self.module.mod_key_display_name.replace("_", " "),
+            r"objective function structure",
+        )
+
     def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Structure function accuracy comparison")
-            self.ax.set_xlabel(module.mod_key_display_name.replace("_", " "))
-            self.ax.set_ylabel(r"objective function structure")
-
-            self._axis_initialized = True
-
         self.ax.scatter(
             module.mod_value_list,
             module.structure_comparison,
@@ -755,13 +754,14 @@ class StrucComparisonFigure(StructureFigure):
 
 
 class BootZCurveFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Bootstrapped thermal impedance")
-            self.ax.set_ylabel(r"$Z_{\rm th}$ / K$\cdot$ W$^{-1}$")
-            self.ax.set_xlabel(r"time, $t$, in s")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Bootstrapped thermal impedance",
+            r"time, $t$, in s",
+            r"$Z_{\rm th}$ / K$\cdot$ W$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogx(
             np.exp(module.boot_imp_time),
             module.boot_imp_av,
@@ -781,13 +781,14 @@ class BootZCurveFigure(StructureFigure):
 
 
 class BootDerivFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Bootstrapped impulse response")
-            self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"impulse response, $h$, in K$\cdot$ W$^{-1}$")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Bootstrapped impulse response",
+            r"time, $t$, in s",
+            r"impulse response, $h$, in K$\cdot$ W$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogx(
             np.exp(module.boot_deriv_time),
             module.boot_deriv_av,
@@ -807,13 +808,14 @@ class BootDerivFigure(StructureFigure):
 
 
 class BootTimeSpecFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Bootstrapped time constant spectrum")
-            self.ax.set_xlabel(r"time constant, $\tau$, in s")
-            self.ax.set_ylabel(r"resistance, $R'$, in K$\cdot$ W$^{-1}$")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Bootstrapped time constant spectrum",
+            r"time constant, $\tau$, in s",
+            r"resistance, $R'$, in K$\cdot$ W$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogx(
             np.exp(module.boot_deriv_time),
             module.boot_time_spec_av,
@@ -833,15 +835,14 @@ class BootTimeSpecFigure(StructureFigure):
 
 
 class BootSumTimeSpecFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Bootstrapped cumulative time constant spectrum")
-            self.ax.set_xlabel(r"time constant, $\tau$, in s")
-            self.ax.set_ylabel(
-                r"cumulative resistance, $R'_\Sigma$, in K$\cdot$ W$^{-1}$"
-            )
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Bootstrapped cumulative time constant spectrum",
+            r"time constant, $\tau$, in s",
+            r"cumulative resistance, $R'_\Sigma$, in K$\cdot$ W$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogx(
             np.exp(module.boot_deriv_time),
             module.boot_sum_time_spec_av,
@@ -861,17 +862,14 @@ class BootSumTimeSpecFigure(StructureFigure):
 
 
 class BootCumulStrucFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Bootstrapped cumulative structure function")
-            self.ax.set_xlabel(
-                r"cumulative thermal resistance, $R_\Sigma$, in K$\cdot$ W$^{-1}$"
-            )
-            self.ax.set_ylabel(
-                r"cumulative thermal capacity, $C_\Sigma$, in J$\cdot$ K$^{-1}$"
-            )
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Bootstrapped cumulative structure function",
+            r"cumulative thermal resistance, $R_\Sigma$, in K$\cdot$ W$^{-1}$",
+            r"cumulative thermal capacity, $C_\Sigma$, in J$\cdot$ K$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.semilogy(
             module.boot_struc_res_fine,
             module.boot_struc_cap_av,
@@ -891,13 +889,10 @@ class BootCumulStrucFigure(StructureFigure):
 
 
 class ResidualFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Residuals")
-            self.ax.set_ylabel(r"residuals")
-            self.ax.set_xlabel(r"count")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes("Residuals", r"count", r"residuals")
 
+    def plot_module_data(self, module):
         self.ax.scatter(module.bins, module.hist, label="bins")
         self.ax.plot(
             module.bins,
@@ -910,13 +905,14 @@ class ResidualFigure(StructureFigure):
 
 
 class PredictionFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Predicted temperature")
-            self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"temperature, $T$, in $^\circ\!$C")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Predicted temperature",
+            r"time, $t$, in s",
+            r"temperature, $T$, in $^\circ\!$C",
+        )
 
+    def plot_module_data(self, module):
         self.ax.plot(
             module.lin_time,
             module.predicted_temperature,
@@ -941,13 +937,14 @@ class PredictionFigure(StructureFigure):
 
 
 class PredictionImpulseUsedFigure(StructureFigure):
-    def plot_module_data(self, module):
-        if not self._axis_initialized:
-            self.ax.set_title("Prediction Impulse Response Used")
-            self.ax.set_xlabel(r"time, $t$, in s")
-            self.ax.set_ylabel(r"thermal impedance, $Z_{\rm th}$, in K$\cdot$ W$^{-1}$")
-            self._axis_initialized = True
+    def setup_axes(self):
+        self.init_axes(
+            "Prediction Impulse Response Used",
+            r"time, $t$, in s",
+            r"thermal impedance, $Z_{\rm th}$, in K$\cdot$ W$^{-1}$",
+        )
 
+    def plot_module_data(self, module):
         self.ax.plot(
             module.reference_time,
             module.reference_impulse_response,

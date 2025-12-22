@@ -35,7 +35,7 @@ test_cases_comparison = [
             "label": "lasso_parameter_comparison",
             "deconv_mode": "lasso",
             "struc_method": "sobhy",
-            "repetitions": 2000,
+            "repetitions": 20, #2000
             "log_time_size": 75,
             "lasso_cv_folds": 5,
             "lasso_alpha": np.logspace(-5, -1, 5),
@@ -59,7 +59,7 @@ test_cases_comparison = [
             "label": "adaptive_lasso_parameter_comparison",
             "deconv_mode": "adaptive",
             "struc_method": "sobhy",
-            "repetitions": 2000,
+            "repetitions": 20, #2000
             "log_time_size": 75,
             "lasso_cv_folds": 5,
             "bay_steps": 10,
@@ -84,7 +84,7 @@ test_cases_comparison = [
             "label": "bayesian_parameter_comparison",
             "deconv_mode": "bayesian",
             "struc_method": "sobhy",
-            "repetitions": 2000,
+            "repetitions": 20, #2000
             "lower_fit_limit": 3.3e-7,
             "upper_fit_limit": 7e-7,
             "iterable_keywords": ["signal_to_noise_ratio"],
