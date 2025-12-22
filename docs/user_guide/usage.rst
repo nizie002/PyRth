@@ -69,3 +69,21 @@ PyRth supports four input modes to describe how raw measurement data is interpre
   - Parses `infile` (`.raw`), `infile_pwr` (`.pwr`), and `infile_tco` (`.tco`) to extract voltage and calibration.
   - Use when working directly with T3Ster instrument exports.
 
+Exports and Naming
+---------------------
+
+PyRth writes figures to ``<output_dir>/<label>/png`` and CSVs to ``<output_dir>/<label>/csv``. Each artifact is prefixed with a numeric ID so related files stay grouped and sortable. Figures and CSVs share the same scheme:
+
+- **00–03**: raw inputs (voltage, raw temp, extrapolation, cleaned temp)
+- **10–13**: impedance, smoothed impedance, derivative/B(z), FFT
+- **20–23**: time spectra (forward, backward, cumulative)
+- **30–33**: structure functions (cumulative, differential, local)
+- **40–46**: theoretical spectra/structure/impedance
+- **50**: optimization views
+- **60–62**: comparison outputs
+- **70–72**: prediction and residuals
+- **80–84**: bootstrap summaries
+- **90**: utilities/diagnostics (e.g., performance monitor when enabled)
+
+Handler flags (e.g., ``module.data_handlers.add("impedance")``) decide which exporters run; ``save_*`` / ``look_at_*`` toggles control per-artifact emission. If ``perf_eval`` is enabled, a performance CSV/figure is added under the 90-prefix without affecting normal runs.
+

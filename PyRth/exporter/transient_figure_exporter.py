@@ -1,4 +1,18 @@
-"""Figure exporting utilities that mirror the CSV handlers in IOManager."""
+"""Figure exporting utilities that mirror the CSV handlers in IOManager.
+
+Figure filenames are prefixed to keep deterministic grouping/order:
+    00–03 raw input (voltage/temp/extrapolation)
+    10–13 impedance/derivative/B(z)/FFT
+    20–23 time spectra and backwards projections
+    30–33 structure functions
+    40–46 theoretical products
+    50 optimization views
+    60–62 comparison views
+    70–72 prediction/residuals
+    80–84 bootstrap views
+    90 util/diagnostics (performance)
+The same numeric scheme is reused by the CSV exporter so assets stay aligned.
+"""
 
 import gc
 import logging

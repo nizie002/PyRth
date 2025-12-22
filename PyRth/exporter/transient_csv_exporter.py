@@ -1,4 +1,25 @@
-"""CSV exporter utilities shared across evaluation pipelines."""
+"""CSV exporter utilities shared across evaluation pipelines.
+
+Files are written to ``<output_dir>/<label>/csv`` with optional numeric
+prefixes that mirror the figure ordering so artifacts stay grouped and
+deterministic:
+
+    000–010: raw input (voltage/temperature)
+    020–022: extrapolation helpers
+    100–120: impedance, smoothed, derivative, B(z)
+    130: FFT frequency data
+    200–210: time spectra (forward/backwards, sum)
+    300–320: structure functions (cumulative/diff/local)
+    400–450: theoretical spectra/structure/impedance
+    600–620: comparison outputs
+    700–710: prediction outputs
+    720–721: residuals
+    800–842: bootstrap artifacts (all distinct)
+    900: performance spans
+
+Prefixes are applied via ``construct_filename(..., prefix=\"NNN\")`` so
+semantically different files never share an ID, matching the figure exporter.
+"""
 
 import logging
 import os
@@ -48,15 +69,13 @@ class CSVExporter(BaseExporter):
 
         return filename
 
-    def construct_filename(self, module, name):
+    def construct_filename(self, module, name, prefix=None):
         """Return the full CSV path for a given module label and artifact name."""
         csv_output_dir = os.path.join(module.output_dir, module.label, "csv")
         os.makedirs(csv_output_dir, exist_ok=True)
+        if prefix:
+            name = f"{prefix}_{name}"
         return os.path.join(csv_output_dir, name)
-
-    def prefixed_name(self, prefix: str, name: str) -> str:
-        """Apply a numeric prefix to keep CSVs grouped/sorted."""
-        return f"{prefix}_{name}"
 
     def extrapol_data_handler(self, module):
         """Persist extrapolation inputs, fit window, and fitted polynomial values."""
@@ -64,7 +83,7 @@ class CSVExporter(BaseExporter):
         saved.append(
             self.save_csv(
                 module.save_extrpl,
-                self.construct_filename(module, "exptrapolate_full"),
+                self.construct_filename(module, "exptrapolate_full", prefix="020"),
                 np.sqrt(module.time_raw),
                 module.temp_raw,
             )
@@ -72,7 +91,7 @@ class CSVExporter(BaseExporter):
         saved.append(
             self.save_csv(
                 module.save_extrpl,
-                self.construct_filename(module, "exptrapolate_fitting_values"),
+                self.construct_filename(module, "exptrapolate_fitting_values", prefix="021"),
                 np.sqrt(module.time_raw[module.lower_fit_index : module.upper_fit_index]),
                 module.temp_raw[module.lower_fit_index : module.upper_fit_index],
             )
@@ -80,7 +99,7 @@ class CSVExporter(BaseExporter):
         saved.append(
             self.save_csv(
                 module.save_extrpl,
-                self.construct_filename(module, "exptrapolate_polyval"),
+                self.construct_filename(module, "exptrapolate_polyval", prefix="022"),
                 np.sqrt(module.time_raw),
                 poly.polyval(np.sqrt(module.time_raw), module.expl_ft_prm),
             )
@@ -92,7 +111,7 @@ class CSVExporter(BaseExporter):
         return [
             self.save_csv(
                 module.save_voltage,
-                self.construct_filename(module, "voltage"),
+                self.construct_filename(module, "voltage", prefix="000"),
                 module.time_raw,
                 module.voltage,
             )
@@ -103,13 +122,13 @@ class CSVExporter(BaseExporter):
         return [
             self.save_csv(
                 module.save_temperature,
-                self.construct_filename(module, "temperature"),
+                self.construct_filename(module, "temperature", prefix="030"),
                 np.exp(module.log_time),
                 module.temperature,
             ),
             self.save_csv(
                 module.save_temperature,
-                self.construct_filename(module, "temp_raw"),
+                self.construct_filename(module, "temp_raw", prefix="010"),
                 module.time_raw,
                 module.temp_raw,
             ),
@@ -120,25 +139,25 @@ class CSVExporter(BaseExporter):
         return [
             self.save_csv(
                 module.save_impedance,
-                self.construct_filename(module, "impedance"),
+                self.construct_filename(module, "impedance", prefix="100"),
                 np.exp(module.log_time),
                 module.impedance,
             ),
             self.save_csv(
                 module.save_impedance_smooth,
-                self.construct_filename(module, "impedance_smooth"),
+                self.construct_filename(module, "impedance_smooth", prefix="101"),
                 np.exp(module.log_time_interp),
                 module.imp_smooth,
             ),
             self.save_csv(
                 module.save_derivative,
-                self.construct_filename(module, "derivative"),
+                self.construct_filename(module, "derivative", prefix="110"),
                 np.exp(module.log_time_pad),
                 module.imp_deriv_interp,
             ),
             self.save_csv(
                 module.save_bz,
-                self.construct_filename(module, "bz_log_derivative"),
+                self.construct_filename(module, "bz_log_derivative", prefix="120"),
                 np.exp(module.log_time_pad),
                 module.bz_curve,
             ),
@@ -149,7 +168,7 @@ class CSVExporter(BaseExporter):
         return [
             self.save_csv(
                 module.save_frequency,
-                self.construct_filename(module, "frequency"),
+                self.construct_filename(module, "frequency", prefix="130"),
                 module.fft_freq,
                 module.fft_idi,
             )
@@ -160,19 +179,19 @@ class CSVExporter(BaseExporter):
         saved = [
             self.save_csv(
                 module.save_back_impedance,
-                self.construct_filename(module, "back_impedance"),
+                self.construct_filename(module, "back_impedance", prefix="200"),
                 np.exp(module.log_time_pad),
                 module.back_imp,
             ),
             self.save_csv(
                 module.save_back_derivative,
-                self.construct_filename(module, "back_derivative"),
+                self.construct_filename(module, "back_derivative", prefix="201"),
                 np.exp(module.log_time_pad),
                 module.back_imp_deriv,
             ),
             self.save_csv(
                 module.save_time_spec,
-                self.construct_filename(module, "time_spec"),
+                self.construct_filename(module, "time_spec", prefix="202"),
                 np.exp(module.log_time_pad),
                 module.time_spec,
             ),
@@ -182,7 +201,7 @@ class CSVExporter(BaseExporter):
             saved.append(
                 self.save_csv(
                     True,
-                    self.construct_filename(module, "sum_time_spec"),
+                    self.construct_filename(module, "sum_time_spec", prefix="210"),
                     np.exp(module.log_time_pad),
                     module.sum_time_spec,
                 )
@@ -195,7 +214,7 @@ class CSVExporter(BaseExporter):
         saved = [
             self.save_csv(
                 module.save_cumul_struc,
-                self.construct_filename(module, "cumul_struc"),
+                self.construct_filename(module, "cumul_struc", prefix="300"),
                 module.int_cau_res,
                 module.int_cau_cap,
             )
@@ -205,7 +224,7 @@ class CSVExporter(BaseExporter):
             saved.append(
                 self.save_csv(
                     True,
-                    self.construct_filename(module, "diff_struc"),
+                    self.construct_filename(module, "diff_struc", prefix="310"),
                     module.int_cau_res[:-1],
                     module.diff_struc,
                 )
@@ -215,7 +234,7 @@ class CSVExporter(BaseExporter):
             saved.append(
                 self.save_csv(
                     True,
-                    self.construct_filename(module, "local_resist_struc"),
+                    self.construct_filename(module, "local_resist_struc", prefix="320"),
                     module.int_cau_cap,
                     module.cau_res,
                 )
@@ -228,13 +247,13 @@ class CSVExporter(BaseExporter):
         return [
             self.save_csv(
                 module.save_theo_struc,
-                self.construct_filename(module, "theo_struc"),
+                self.construct_filename(module, "theo_struc", prefix="400"),
                 module.theo_int_cau_res,
                 module.theo_int_cau_cap,
             ),
             self.save_csv(
                 module.save_theo_diff_struc,
-                self.construct_filename(module, "theo_diff_struc"),
+                self.construct_filename(module, "theo_diff_struc", prefix="410"),
                 module.theo_int_cau_res[:-1],
                 module.theo_diff_struc,
             ),
@@ -254,10 +273,10 @@ class CSVExporter(BaseExporter):
         ]
 
         filenames = [
-            self.construct_filename(module, "theo_time_const"),
-            self.construct_filename(module, "theo_sum_time_const"),
-            self.construct_filename(module, "theo_imp_deriv"),
-            self.construct_filename(module, "theo_impedance"),
+            self.construct_filename(module, "theo_time_const", prefix="420"),
+            self.construct_filename(module, "theo_sum_time_const", prefix="430"),
+            self.construct_filename(module, "theo_imp_deriv", prefix="440"),
+            self.construct_filename(module, "theo_impedance", prefix="450"),
         ]
 
         save_flags = [
@@ -279,9 +298,9 @@ class CSVExporter(BaseExporter):
     def comparison_data_handler(self, module):
         """Export comparison metrics across evaluated modules."""
         comparisons = [
-            (module.time_const_comparison, "time_const_comparison"),
-            (module.structure_comparison, "struc_comparison"),
-            (module.total_resist_diff, "total_resist_comparison"),
+            (module.time_const_comparison, "time_const_comparison", "600"),
+            (module.structure_comparison, "struc_comparison", "610"),
+            (module.total_resist_diff, "total_resist_comparison", "620"),
         ]
 
         save_flags = [
@@ -291,11 +310,11 @@ class CSVExporter(BaseExporter):
         ]
 
         saved = []
-        for save_flag, (data, filename) in zip(save_flags, comparisons):
+        for save_flag, (data, filename, prefix) in zip(save_flags, comparisons):
             saved.append(
                 self.save_csv(
                     save_flag,
-                    self.construct_filename(module, filename),
+                    self.construct_filename(module, filename, prefix=prefix),
                     module.mod_value_list,
                     data,
                 )
@@ -310,13 +329,13 @@ class CSVExporter(BaseExporter):
         return [
             self.save_csv(
                 True,
-                self.construct_filename(module, "impedance_prediction"),
+                self.construct_filename(module, "impedance_prediction", prefix="700"),
                 module.lin_time_pos,
                 module.predicted_temperature,
             ),
             self.save_csv(
                 True,
-                self.construct_filename(module, "power_prediction"),
+                self.construct_filename(module, "power_prediction", prefix="710"),
                 module.power_t,
                 module.power_function,
             ),
@@ -330,13 +349,13 @@ class CSVExporter(BaseExporter):
         return [
             self.save_csv(
                 True,
-                self.construct_filename(module, "residual_bins"),
+                self.construct_filename(module, "residual_bins", prefix="720"),
                 module.bins,
                 module.hist,
             ),
             self.save_csv(
                 True,
-                self.construct_filename(module, "residual_fit"),
+                self.construct_filename(module, "residual_fit", prefix="721"),
                 module.bins,
                 module.gauss_curve,
             ),
@@ -355,7 +374,7 @@ class CSVExporter(BaseExporter):
         return [
             self.save_csv(
                 True,
-                self.construct_filename(module, "performance_spans"),
+                self.construct_filename(module, "performance_spans", prefix="900"),
                 names,
                 durations,
             )
@@ -367,97 +386,112 @@ class CSVExporter(BaseExporter):
             (
                 module.save_boot_impedance,
                 "boot_deriv_figure_av",
+                "800",
                 np.exp(module.boot_imp_time),
                 module.boot_imp_av,
             ),
             (
                 module.save_boot_impedance,
                 "boot_deriv_figure_u",
+                "801",
                 np.exp(module.boot_imp_time),
                 module.boot_imp_perc_u,
             ),
             (
                 module.save_boot_impedance,
                 "boot_deriv_figure_l",
+                "802",
                 np.exp(module.boot_imp_time),
                 module.boot_imp_perc_l,
             ),
             (
                 module.save_boot_deriv,
                 "boot_deriv_figure_av",
+                "810",
                 np.exp(module.boot_deriv_time),
                 module.boot_deriv_av,
             ),
             (
                 module.save_boot_deriv,
                 "boot_deriv_figure_u",
+                "811",
                 np.exp(module.boot_deriv_time),
                 module.boot_deriv_perc_u,
             ),
             (
                 module.save_boot_deriv,
                 "boot_deriv_figure_l",
+                "812",
                 np.exp(module.boot_deriv_time),
                 module.boot_deriv_perc_l,
             ),
             (
                 module.save_boot_time_spec,
                 "boot_time_spec_av",
+                "820",
                 np.exp(module.boot_deriv_time),
                 module.boot_time_spec_av,
             ),
             (
                 module.save_boot_time_spec,
                 "boot_time_spec_u",
+                "821",
                 np.exp(module.boot_deriv_time),
                 module.boot_time_spec_perc_u,
             ),
             (
                 module.save_boot_time_spec,
                 "boot_time_spec_l",
+                "822",
                 np.exp(module.boot_deriv_time),
                 module.boot_time_spec_perc_l,
             ),
             (
                 module.save_boot_sum_time_spec,
                 "boot_sum_time_spec_av",
+                "830",
                 np.exp(module.boot_deriv_time),
                 module.boot_sum_time_spec_av,
             ),
             (
                 module.save_boot_sum_time_spec,
                 "boot_sum_time_spec_u",
+                "831",
                 np.exp(module.boot_deriv_time),
                 module.boot_sum_time_spec_perc_u,
             ),
             (
                 module.save_boot_sum_time_spec,
                 "boot_sum_time_spec_l",
+                "832",
                 np.exp(module.boot_deriv_time),
                 module.boot_sum_time_spec_perc_l,
             ),
             (
                 module.save_boot_cumul_struc,
                 "boot_cumul_struc_av",
+                "840",
                 module.boot_struc_res_fine,
                 module.boot_struc_cap_av,
             ),
             (
                 module.save_boot_cumul_struc,
                 "boot_cumul_struc_u",
+                "841",
                 module.boot_struc_res_fine,
                 module.boot_struc_cap_perc_u,
             ),
             (
                 module.save_boot_cumul_struc,
                 "boot_cumul_struc_l",
+                "842",
                 module.boot_struc_res_fine,
                 module.boot_struc_cap_perc_l,
             ),
         ]
 
         saved = []
-        for save_flag, filename, data1, data2 in boot_data:
-            constructed_filename = self.construct_filename(module, filename)
+        for save_flag, filename, prefix, data1, data2 in boot_data:
+            constructed_filename = self.construct_filename(module, filename, prefix=prefix)
             saved.append(self.save_csv(save_flag, constructed_filename, data1, data2))
         return saved
