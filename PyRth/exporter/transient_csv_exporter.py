@@ -112,7 +112,7 @@ class CSVExporter(BaseExporter):
         ]
 
     def impedance_data_handler(self, module):
-        """Export impedance step, smoothed impedance, and derivative."""
+        """Export impedance step, smoothed impedance, derivative, and B(z)."""
         return [
             self.save_csv(
                 module.save_impedance,
@@ -131,6 +131,12 @@ class CSVExporter(BaseExporter):
                 self.construct_filename(module, "derivative"),
                 np.exp(module.log_time_pad),
                 module.imp_deriv_interp,
+            ),
+            self.save_csv(
+                module.save_bz,
+                self.construct_filename(module, "bz_log_derivative"),
+                np.exp(module.log_time_pad),
+                module.bz_curve,
             ),
         ]
 

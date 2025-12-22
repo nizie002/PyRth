@@ -75,6 +75,7 @@ class StructureFunction(dbase.StructureParameters):
         self.log_time_interp = None
         self.log_time_delta = None
         self.imp_deriv_interp = None
+        self.bz_curve = np.array([])
         self.imp_smooth = None
         self.imp_smooth_full = None
         self.time_spec = None
@@ -396,6 +397,19 @@ class StructureFunction(dbase.StructureParameters):
                 "Impedance derivative is empty or contains all zeros. Maybe  heating / cooling transient interchanged?"
             )
 
+        self._update_bz_curve()
+
+    def _update_bz_curve(self):
+        """Compute the B(z) signature as log of the derivative magnitude."""
+
+        if self.imp_deriv_interp is None:
+            self.bz_curve = np.array([])
+            return
+
+        deriv_abs = np.abs(self.imp_deriv_interp)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            self.bz_curve = np.where(deriv_abs > 0.0, np.log(deriv_abs), np.nan)
+
     @utl.timer_decorator
     def z_fit_lasso(self):
         """Recover the time-constant spectrum via non-negative LASSO.
@@ -541,6 +555,7 @@ class StructureFunction(dbase.StructureParameters):
             self.imp_deriv_interp, _ = utl.time_const_to_imp(
                 self.log_time_pad, a_hat
             )
+            self._update_bz_curve()
 
     def fft_signal(self):
         """Transform the impedance derivative into the frequency domain.

@@ -147,6 +147,41 @@ class DerivFigure(StructureFigure):
         )
 
 
+class BzFigure(StructureFigure):
+    def plot_module_data(self, module):
+        if not self._axis_initialized:
+            self.ax.set_title("B(z) log-derivative signature")
+            self.ax.set_xlabel(r"time, $t$, in s")
+            self.ax.set_ylabel(r"$B(z) = \ln(|dZ_{\rm th}/dz|)$")
+            self._axis_initialized = True
+
+        bz_values = np.asarray(module.bz_curve if module.bz_curve is not None else [])
+        log_time = np.asarray(
+            module.log_time_pad if module.log_time_pad is not None else []
+        )
+
+        if bz_values.size == 0 or log_time.size == 0:
+            return
+
+        min_len = min(bz_values.size, log_time.size)
+        bz_values = bz_values[:min_len]
+        log_time = log_time[:min_len]
+
+        mask = np.isfinite(bz_values)
+        if not np.any(mask):
+            return
+
+        self.ax.semilogx(
+            np.exp(log_time[mask]),
+            bz_values[mask],
+            marker="o",
+            lw=1.5,
+            label="B(z) " + module.label,
+            markersize=0.0,
+            color=self.next_color(),
+        )
+
+
 class FFTFigure(StructureFigure):
     def plot_module_data(self, module):
         if not self._axis_initialized:

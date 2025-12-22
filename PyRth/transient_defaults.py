@@ -397,6 +397,10 @@ class OutputDefaults:
     save_residual: bool = doc_field(
         default=True, doc="bool: Save residual data (e.g., difference between prediction and measurement)."
     )
+    save_bz: bool = doc_field(
+        default=True,
+        doc="bool: Save relative thermal resistance B(z) curve (log of derivative magnitude) derived from voltage measurements.",
+    )
     look_at_raw_data: bool = doc_field(
         default=True, doc="bool: Generate plot of raw input data."
     )
@@ -498,6 +502,9 @@ class OutputDefaults:
     )
     look_at_residual: bool = doc_field(
         default=True, doc="bool: Generate plot of the residuals from temperature prediction."
+    )
+    look_at_bz: bool = doc_field(
+        default=True, doc="bool: Generate plot of the relative thermal resistance B(z) log-derivative curve."
     )
 
 

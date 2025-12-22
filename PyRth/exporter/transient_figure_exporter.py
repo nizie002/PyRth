@@ -14,6 +14,7 @@ from .transient_figures import (
     ExtrapolationFigure,
     ZCurveFigure,
     DerivFigure,
+    BzFigure,
     FFTFigure,
     TimeSpecFigure,
     SumTimeSpecFigure,
@@ -62,7 +63,8 @@ class FigureExporter(BaseExporter):
         # Basic processing
         "impedance": ("10", "look_at_impedance", ZCurveFigure),
         "deriv": ("11", "look_at_deriv", DerivFigure),
-        "fft": ("12", "look_at_fft", FFTFigure),
+        "bz": ("12", "look_at_bz", BzFigure),
+        "fft": ("13", "look_at_fft", FFTFigure),
         # Time spectra and backwards processing
         "time_spec": ("20", "look_at_time_spec", TimeSpecFigure),
         "sum_time_spec": ("21", "look_at_sum_time_spec", SumTimeSpecFigure),
@@ -238,9 +240,9 @@ class FigureExporter(BaseExporter):
         self.initialize_registered_figures(["raw", "temp"], module)
 
     def impedance_data_handler(self, module):
-        """Plot impedance curves and their derivatives."""
+        """Plot impedance curves, derivatives, and B(z) signatures."""
 
-        self.initialize_registered_figures(["impedance", "deriv"], module)
+        self.initialize_registered_figures(["impedance", "deriv", "bz"], module)
 
     def fft_data_handler(self, module):
         """Plot the FFT magnitude and window."""
