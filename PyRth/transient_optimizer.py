@@ -253,7 +253,7 @@ class TransientOptimizer:
         theo_time_const = self.struc_to_time_const(
             theo_log_time, theo_delta, opt_res, opt_cap
         )
-        theo_imp_deriv, theo_impedance = self.time_const_to_imp(
+        _, theo_impedance = self.time_const_to_imp(
             theo_log_time, theo_time_const
         )
         theo_impedance_int = np.interp(log_time, theo_log_time, theo_impedance)
