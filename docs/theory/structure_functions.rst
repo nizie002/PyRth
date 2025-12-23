@@ -185,3 +185,15 @@ Relation to NID workflow
 
 Hence the structure function is *nothing else* than the physical picture
 of heat flow through a **non-uniform RC line**.
+
+
+PyRth as a Foster-to-Cauer Reference
+--------------------------------------
+PyRth serves as an open-source reference implementation of the
+Foster-to-Cauer transformation used in thermal transient analysis. The
+high-precision conversion routines live in
+``PyRth/transient_mpfr_utils.py``, and the transformation is invoked as
+part of the structure-function pipeline in
+``PyRth/transient_core.py`` and ``PyRth/transient_engine.py``. This makes
+PyRth a practical source for validating Foster-to-Cauer conversions and
+their downstream structure functions in research or tooling workflows.
