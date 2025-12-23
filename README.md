@@ -17,6 +17,7 @@
 - [Why PyRth?](#-why-pyrth)
 - [Vision and Rationale](#-vision-and-rationale)
 - [Features](#-features)
+- [Foster-to-Cauer Transformation Reference](#foster-to-cauer-transformation-reference)
 - [Installation](#-installation)
 - [Usage](#-usage)
   - [Quick Start](#quick-start)
@@ -64,6 +65,19 @@ PyRth is built upon the comprehensive research conducted during my PhD, ensuring
 - **Multiple Output Formats**: Generate results in images and CSV files for comprehensive examination.
 - **Open Source**: Fully accessible source code for transparency and community contributions.
 - **Cross-Platform**: Compatible with Windows, macOS, and Linux systems.
+- **Algorithm Development Tools**: Includes a rich set of utilities to prototype, compare, and validate new thermal analysis algorithms.
+
+## Foster-to-Cauer Transformation Reference
+
+PyRth serves as an open-source reference implementation of the Foster-to-Cauer
+transformation used in thermal transient analysis. They aim
+for the same result but trade off speed and numerical behavior.
+
+- `sobhy`: Fast, general-purpose method and the default choice.
+- `lanczos`: Fastest, approximate method, trades accuracy for speed.
+- `polylong`: Classic polynomial long-division; straightforward but can become heavy for very long ladders.
+- `khatwani`: Series-expansion based route; very sensitive to numeric precision on large models.
+- `boor_golub`: Alternative route that works directly from the Foster ladder; very sensitive to numeric precision on large models.
 
 ## 🚀 Installation
 
@@ -252,17 +266,19 @@ Thank you for contributing to PyRth!
 
 PyRth is based on extensive research. Below are key publications that demonstrate its capabilities and development. For further mathematical background, please refer to these publications.
 
-1. N. J. Ziegeler and S. Schweizer, "Lanczos-based Foster-to-Cauer Transformation for Network Identification by Deconvolution," 2024 30th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Toulouse, France, 2024, pp. 1-6, [doi: 10.1109/THERMINIC62015.2024.10732055](https://doi.org/10.1109/THERMINIC62015.2024.10732055).
+1. N. J. Ziegeler and S. Schweizer, "Simplified Thermal Transient Testing: Unlocking Affordable, Open-Source Solutions," 2025 31st International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Naples, Italy, 2025, pp. 1-6, [doi: 10.1109/THERMINIC65879.2025.11216930](https://doi.org/10.1109/THERMINIC65879.2025.11216930)
 
-2. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Tridiagonal Approaches for Network Identification by Deconvolution," 2023 29th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Budapest, Hungary, 2023, pp. 1-6, [doi: 10.1109/THERMINIC60375.2023.10325879](https://doi.org/10.1109/THERMINIC60375.2023.10325879).
+2. N. J. Ziegeler and S. Schweizer, "Lanczos-based Foster-to-Cauer Transformation for Network Identification by Deconvolution," 2024 30th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Toulouse, France, 2024, pp. 1-6, [doi: 10.1109/THERMINIC62015.2024.10732055](https://doi.org/10.1109/THERMINIC62015.2024.10732055).
 
-3. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Accuracy Comparison of T3ster-Master and Optimization-based Network Identification," 2023 29th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Budapest, Hungary, 2023, pp. 1-6, [doi: 10.1109/THERMINIC60375.2023.10325681](https://doi.org/10.1109/THERMINIC60375.2023.10325681).
+3. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Tridiagonal Approaches for Network Identification by Deconvolution," 2023 29th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Budapest, Hungary, 2023, pp. 1-6, [doi: 10.1109/THERMINIC60375.2023.10325879](https://doi.org/10.1109/THERMINIC60375.2023.10325879).
 
-4. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "J-Fraction Approach for Calculating Thermal Structure Functions," 2022 28th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Dublin, Ireland, 2022, pp. 1-4, [doi: 10.1109/THERMINIC57263.2022.9950656](https://doi.org/10.1109/THERMINIC57263.2022.9950656).
+4. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Accuracy Comparison of T3ster-Master and Optimization-based Network Identification," 2023 29th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Budapest, Hungary, 2023, pp. 1-6, [doi: 10.1109/THERMINIC60375.2023.10325681](https://doi.org/10.1109/THERMINIC60375.2023.10325681).
 
-5. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Optimization-Based Network Identification for Thermal Transient Measurements," _Energies_, vol. 14, no. 22, p. 7648, Nov. 2021, [doi: 10.3390/en14227648](https://doi.org/10.3390/en14227648).
+5. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "J-Fraction Approach for Calculating Thermal Structure Functions," 2022 28th International Workshop on Thermal Investigations of ICs and Systems (THERMINIC), Dublin, Ireland, 2022, pp. 1-4, [doi: 10.1109/THERMINIC57263.2022.9950656](https://doi.org/10.1109/THERMINIC57263.2022.9950656).
 
-6. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Quantitative Performance Comparison of Thermal Structure Function Computations," _Energies_, vol. 14, no. 21, p. 7068, Oct. 2021, [doi: 10.3390/en14217068](https://doi.org/10.3390/en14217068).
+6. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Optimization-Based Network Identification for Thermal Transient Measurements," _Energies_, vol. 14, no. 22, p. 7648, Nov. 2021, [doi: 10.3390/en14227648](https://doi.org/10.3390/en14227648).
+
+7. N. J. Ziegeler, P. W. Nolte, and S. Schweizer, "Quantitative Performance Comparison of Thermal Structure Function Computations," _Energies_, vol. 14, no. 21, p. 7068, Oct. 2021, [doi: 10.3390/en14217068](https://doi.org/10.3390/en14217068).
 
 ## 📄 License
 
